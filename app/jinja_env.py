@@ -17,6 +17,7 @@ from markupsafe import Markup
 from .config import settings
 from .security import parse_iso
 from .services import markdown_lite
+from .services.catalog import every
 
 try:
     _TZ = ZoneInfo(settings.tz)
@@ -153,6 +154,7 @@ def build_env(templates_dir: Path | None = None) -> Environment:
         fmt_money=fmt_money,
         fmt_money_short=fmt_money_short,
         plural=plural,
+        every=every,
         md=markdown_lite.render,
     )
     env.globals.update(

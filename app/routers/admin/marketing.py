@@ -17,7 +17,7 @@ from .common import arender, as_int, dollars_to_cents
 
 router = APIRouter()
 
-SETTING_KEYS = ("promo_banner", "promo_banner_enabled", "newsletter_discount_percent", "newsletter_enabled", "reviews_enabled", "store_notice", "email_blocklist_extra", "subscription_discount_percent", "subscription_intervals")
+SETTING_KEYS = ("promo_banner", "promo_banner_enabled", "newsletter_discount_percent", "newsletter_enabled", "reviews_enabled", "store_notice", "email_blocklist_extra", "subscription_discount_percent", "subscription_intervals", "builder_subscription_interval")
 
 
 @router.get("/discounts")
@@ -137,6 +137,8 @@ async def settings_save(request: Request, conn: sqlite3.Connection = Depends(get
             elif key == "subscription_intervals":
                 months = sorted({m for m in (as_int(x) for x in str(form.get(key) or "").split(",")) if 1 <= m <= 12})
                 value = ",".join(str(m) for m in months) or "1"
+            elif key == "builder_subscription_interval":
+                value = str(as_int(form.get(key), 1) if 1 <= as_int(form.get(key), 1) <= 12 else 1)
             else:
                 value = str(form.get(key) or "").strip()[:2000]
             set_setting(conn, key, value)

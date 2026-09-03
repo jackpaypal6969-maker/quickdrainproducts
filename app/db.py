@@ -76,11 +76,27 @@ def _v4_drain_shot(conn: sqlite3.Connection) -> None:
     conn.execute("UPDATE settings SET value = '12' WHERE key = 'subscription_intervals' AND value = '1,2,3'")
 
 
+def _v5_monthly_box(conn: sqlite3.Connection) -> None:
+    """Build your box sells a month, not a year: one bottle per drain, shipped
+    once or every month. That needs a per-bottle SKU the product page does not
+    list (builder_only) and a monthly interval the builder alone may use."""
+    _add_column(conn, "variants", "builder_only", "INTEGER NOT NULL DEFAULT 0")
+    row = conn.execute("SELECT id FROM products WHERE slug = 'drain-shot'").fetchone()
+    if not row:
+        return
+    pid = row[0]
+    if not conn.execute("SELECT 1 FROM variants WHERE sku = 'DS-1'").fetchone():
+        conn.execute("INSERT INTO variants(product_id, sku, name, units_per_pack, price_cents, stock, sort, builder_only) VALUES (?, 'DS-1', 'Bottle · one drain, one month', 1, 1000, 600, 1, 1)", (pid,))
+        conn.execute("INSERT INTO inventory_movements(variant_id, delta, reason, note) VALUES ((SELECT id FROM variants WHERE sku = 'DS-1'), 600, 'restock', 'build your box launch')")
+    conn.execute("INSERT OR IGNORE INTO settings(key, value) VALUES ('builder_subscription_interval', '1')")
+
+
 MIGRATIONS: list[tuple[int, list]] = [
     (1, []),  # initial schema is schema.sql itself
     (2, [_v2_subscriptions]),
     (3, [_v3_checkout_lines]),
     (4, [_v4_drain_shot]),
+    (5, [_v5_monthly_box]),
 ]
 
 

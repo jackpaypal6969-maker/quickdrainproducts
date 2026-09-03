@@ -50,7 +50,10 @@
   {{ field('stripe_subscription_price_id', 'Stripe subscription price ID', v.stripe_subscription_price_id if v else '', mono=True, maxlength=80, help='Recurring price; blank hides the subscribe option', id=k ~ 'ssp') }}
   {{ field('subscription_discount_percent', 'Subscription discount (%)', (v.subscription_discount_percent if v.subscription_discount_percent is not none else '') if v else '', type='number', min=0, inputmode='numeric', help='Blank = site-wide default from Settings', id=k ~ 'subpct') }}
   <div class="flex flex-wrap items-center justify-between gap-3 sm:col-span-2 lg:col-span-4 pt-1">
-    <label class="text-sm"><input type="checkbox" class="checkbox" name="is_active" value="1" {% if (v and v.is_active) or not v %}checked{% endif %}>Active (purchasable)</label>
+    <div class="flex flex-wrap gap-x-5 gap-y-2">
+      <label class="text-sm"><input type="checkbox" class="checkbox" name="is_active" value="1" {% if (v and v.is_active) or not v %}checked{% endif %}>Active (purchasable)</label>
+      <label class="text-sm"><input type="checkbox" class="checkbox" name="builder_only" value="1" {% if v and v.builder_only %}checked{% endif %}>Build-your-box only (hidden from the product page)</label>
+    </div>
     <button type="submit" class="btn btn-secondary w-full sm:w-auto">{{ 'Save pack' if v else 'Add pack' }}</button>
   </div>
 </form>

@@ -130,13 +130,16 @@ def main() -> None:
                 pid = one(conn, "SELECT id FROM products WHERE slug = 'drain-shot'")["id"]
 
             # One SKU at launch: twelve monthly doses = one drain for one year.
+            # DS-1 is the per-bottle SKU behind /build-your-box (one bottle = one drain
+            # for one month); builder_only keeps it off the product page.
             variants = [
-                ("DS-12", "12-pack · one-year supply", 12, 12000, None, 50, 0),
+                ("DS-12", "12-pack · one-year supply", 12, 12000, None, 50, 0, 0),
+                ("DS-1", "Bottle · one drain, one month", 1, 1000, None, 600, 1, 1),
             ]
             fresh_product = product is None
-            for sku, name, units, price, compare, stock, sort in variants:
+            for sku, name, units, price, compare, stock, sort, builder_only in variants:
                 if (fresh_product or force) and not one(conn, "SELECT id FROM variants WHERE sku = ?", (sku,)):
-                    conn.execute("INSERT INTO variants(product_id, sku, name, units_per_pack, price_cents, compare_at_cents, stock, sort) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (pid, sku, name, units, price, compare, stock, sort))
+                    conn.execute("INSERT INTO variants(product_id, sku, name, units_per_pack, price_cents, compare_at_cents, stock, sort, builder_only) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (pid, sku, name, units, price, compare, stock, sort, builder_only))
                     conn.execute("INSERT INTO inventory_movements(variant_id, delta, reason, note) VALUES ((SELECT id FROM variants WHERE sku = ?), ?, 'restock', 'seed')", (sku, stock))
 
             if force or not one(conn, "SELECT 1 FROM product_specs WHERE product_id = ?", (pid,)):

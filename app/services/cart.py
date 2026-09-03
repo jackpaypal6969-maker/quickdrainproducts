@@ -7,7 +7,7 @@ from ..config import settings
 from ..db import all_rows, one, transaction
 from ..security import iso, new_token
 from . import discounts
-from .catalog import subscription_config, subscription_price
+from .catalog import every, subscription_config, subscription_price
 
 
 def get_cart(conn: sqlite3.Connection, session: dict, create: bool = False) -> dict | None:
@@ -40,12 +40,12 @@ def add_item(conn: sqlite3.Connection, cart: dict, variant_id: int, qty: int, su
         cfg = subscription_config(conn)
         if not cfg["enabled"]:
             subscribe = 0
-        elif subscribe not in cfg["intervals"]:
+        elif subscribe not in cfg["allowed"]:
             return False, "That delivery interval is not offered."
         else:
             other = one(conn, "SELECT subscribe FROM cart_items WHERE cart_id = ? AND subscribe > 0 AND subscribe != ? LIMIT 1", (cart["id"], subscribe))
             if other:
-                return False, f"Your cart already has a subscription every {other['subscribe']} {'month' if other['subscribe'] == 1 else 'months'}. Use the same interval, or check out that subscription first."
+                return False, f"Your cart already has a subscription every {every(other['subscribe'])}. Use the same interval, or check out that subscription first."
     existing = one(conn, "SELECT id, qty FROM cart_items WHERE cart_id = ? AND variant_id = ? AND subscribe = ?", (cart["id"], variant_id, subscribe))
     new_qty = min(qty + (existing["qty"] if existing else 0), 50)
     message = "Added to cart."
@@ -63,7 +63,7 @@ def add_item(conn: sqlite3.Connection, cart: dict, variant_id: int, qty: int, su
             conn.execute("INSERT INTO cart_items(cart_id, variant_id, qty, subscribe) VALUES (?, ?, ?, ?)", (cart["id"], variant_id, new_qty, subscribe))
         touch(conn, cart["id"])
     if subscribe:
-        message = f"Added — delivered every {subscribe} {'month' if subscribe == 1 else 'months'}, cancel any time."
+        message = f"Added — delivered every {every(subscribe)}, cancel any time."
     return True, message
 
 

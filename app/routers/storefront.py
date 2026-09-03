@@ -116,22 +116,25 @@ def media_upload(rel: str):
 
 @router.get("/build-your-box")
 def build_your_box(request: Request, conn: sqlite3.Connection = Depends(get_db)):
-    """Count the drains in a house, get a yearly box. One bottle is one drain-month,
-    so a 12-pack is one drain-year and the cart line is the 12-pack × drains."""
+    """Count the drains in a house, get a month's box. One bottle is one drain-month,
+    so the box is one bottle per drain, shipped once or every month."""
     product = catalog.get_product(conn, "drain-shot")
-    if not product or not product["variants"]:
+    if not product:
         raise HTTPException(404)
-    # The year box is the 12-pack; fall back to the first active pack if the catalog changes.
-    variant = next((v for v in product["variants"] if int(v.get("units_per_pack") or 0) == 12), product["variants"][0])
-    units = max(int(variant.get("units_per_pack") or 12), 1)
+    variant = catalog.builder_variant(conn, product)
+    if not variant:
+        raise HTTPException(404)
+    units = max(int(variant.get("units_per_pack") or 1), 1)
     return render(request, "pages/box_builder.html", {
         "product": product,
         "variant": variant,
+        "units_per_pack": units,
         "per_bottle_cents": round(variant["price_cents"] / units),
         "sub_percent": variant["sub_percent"],
+        "interval": product["subscriptions"]["builder_interval"],
         "jsonld": [organization_ld(), breadcrumb_ld([("Home", "/"), ("Build your box", "/build-your-box")])],
-        "meta_title": f"Build your box — a year of Drain Shot sized to your house | {settings.app_name}",
-        "meta_description": "Count the drains in your home and get a custom yearly box of Drain Shot: one bottle per drain per month, twelve months, one delivery. Subscribe and it renews every year.",
+        "meta_title": f"Build your box — a month of Drain Shot sized to your house | {settings.app_name}",
+        "meta_description": "Count the drains in your home and get a month of Drain Shot sized to it: one bottle per drain, priced per bottle. Ship it once, or subscribe and it arrives every month at 10% off.",
     }, conn=conn)
 
 

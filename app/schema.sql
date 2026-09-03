@@ -84,7 +84,8 @@ CREATE TABLE IF NOT EXISTS variants (
   low_stock_threshold INTEGER NOT NULL DEFAULT 5,
   weight_oz REAL,
   is_active INTEGER NOT NULL DEFAULT 1,
-  sort INTEGER NOT NULL DEFAULT 0
+  sort INTEGER NOT NULL DEFAULT 0,
+  builder_only INTEGER NOT NULL DEFAULT 0   -- sold only through /build-your-box, hidden from the product page
 );
 CREATE INDEX IF NOT EXISTS idx_variants_product ON variants(product_id);
 

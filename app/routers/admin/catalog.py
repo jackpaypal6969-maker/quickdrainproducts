@@ -147,6 +147,7 @@ async def variant_save(product_id: int, request: Request, conn: sqlite3.Connecti
         "low_stock_threshold": max(as_int(form.get("low_stock_threshold"), 5), 0),
         "weight_oz": float(form.get("weight_oz") or 0) or None,
         "is_active": 1 if form.get("is_active") else 0,
+        "builder_only": 1 if form.get("builder_only") else 0,
         "sort": as_int(form.get("sort")),
     }
     if not data["sku"] or not data["name"]:

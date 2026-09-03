@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% from "components/icons.html" import icon %}
-{# Build your box: count the drains in a house, get a year of Drain Shot sized to it.
-   One bottle = one drain-month (the label's dose), so drains × 12 bottles = drains × one 12-pack.
+{# Build your box: count the drains in a house, get a month of Drain Shot sized to it.
+   One bottle = one drain-month (the label's dose), so drains = bottles, priced per bottle.
+   Ship it once, or subscribe and the same box arrives every month at the subscriber discount.
    Behaviour lives in static/js/box.js (reads #box-config); styles in static/css/src/box.css. #}
 
 {# Simple line icons, drawn here so the builder has no dependency on the shared icon set. #}
@@ -25,21 +26,23 @@
   ("tub", "Bathtubs", "A tub-shower combination counts once."),
   ("floor", "Laundry / utility / floor drains", "Laundry standpipes, utility sinks, basement and garage floor drains."),
 ] %}
-{% set months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] %}
-{% set sub_ok = product.subscriptions.enabled and (12 in product.subscriptions.intervals) %}
+{% set max_each = 20 %}
+{% set sub_ok = product.subscriptions.enabled %}
+{% set every = 'month' if interval == 1 else interval ~ ' months' %}
 
 {% block content %}
 <script type="application/json" id="box-config">{{ render_jsonld({
   "variantId": variant.id,
   "sku": variant.sku,
+  "unitsPerPack": units_per_pack,
   "priceCents": variant.price_cents,
   "perBottleCents": per_bottle_cents,
   "subPriceCents": variant.sub_price_cents,
   "subPercent": sub_percent,
   "subscriptionsEnabled": sub_ok,
-  "intervals": product.subscriptions.intervals,
+  "interval": interval,
   "stock": variant.stock,
-  "maxEach": 20,
+  "maxEach": max_each,
   "maxTotal": 50
 }) }}</script>
 
@@ -50,8 +53,8 @@
 <section class="container-x pt-6 pb-10 glow-top">
   <div class="max-w-2xl" data-reveal>
     <p class="eyebrow">Build your box</p>
-    <h1 class="h1 mt-3">Count your drains. We size the year.</h1>
-    <p class="lede mt-4">{{ product.name }} is dosed for monthly use on any drain: one bottle, one drain, once a month. Tell us what is in the house and the box comes out to exactly twelve months for every drain in it.</p>
+    <h1 class="h1 mt-3">Count your drains. We size the month.</h1>
+    <p class="lede mt-4">{{ product.name }} is dosed for monthly use on any drain: one bottle, one drain, once a month. Tell us what is in the house and the box comes out to exactly one bottle for every drain in it, at {{ per_bottle_cents|fmt_money }} a bottle. Ship it once, or have the same box arrive every {{ every }}.</p>
   </div>
 </section>
 
@@ -89,7 +92,7 @@
           </div>
           <div class="box-stepper" role="group" aria-label="{{ label }}">
             <button type="button" class="icon-btn" data-step="-1" data-for="{{ key }}" aria-label="Fewer {{ label|lower }}">{{ icon('minus', 16) }}</button>
-            <input id="count-{{ key }}" class="box-count" type="number" inputmode="numeric" min="0" max="20" value="0" data-count="{{ key }}" aria-describedby="count-{{ key }}-live">
+            <input id="count-{{ key }}" class="box-count" type="number" inputmode="numeric" min="0" max="{{ max_each }}" value="0" data-count="{{ key }}" aria-describedby="count-{{ key }}-live">
             <button type="button" class="icon-btn" data-step="1" data-for="{{ key }}" aria-label="More {{ label|lower }}">{{ icon('plus', 16) }}</button>
             <span id="count-{{ key }}-live" class="sr-only" data-count-live="{{ key }}">0 {{ label|lower }}</span>
           </div>
@@ -101,19 +104,12 @@
     <div class="card card-pad" data-reveal>
       <div class="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p class="eyebrow">Your dose calendar</p>
-          <h2 class="h3 mt-2">Twelve months, every drain.</h2>
+          <p class="eyebrow">Your box this month</p>
+          <h2 class="h3 mt-2">One bottle, every drain.</h2>
         </div>
         <p class="text-sm text-muted tabular-nums" data-cal-caption aria-live="polite">No drains yet.</p>
       </div>
-      <div class="box-cal mt-5" role="img" aria-label="Dose calendar: one row per fixture type, twelve month columns" data-calendar>
-        <div class="box-cal-row box-cal-head" aria-hidden="true">
-          <span class="box-cal-fixture"></span>
-          <span class="box-cal-label hidden sm:block"></span>
-          <div class="box-cal-cells">
-            {% for m in months %}<span class="box-cal-month" title="{{ m }}">{{ m[0] }}</span>{% endfor %}
-          </div>
-        </div>
+      <div class="box-cal mt-5" role="img" aria-label="Your box: one row per fixture type, one bottle per drain" data-calendar>
         {% for key, label, hint in fixtures %}
         <div class="box-cal-row" data-cal-row="{{ key }}">
           <span class="box-cal-fixture">
@@ -122,19 +118,19 @@
           </span>
           <span class="box-cal-label hidden sm:block">{{ label }}</span>
           <div class="box-cal-cells">
-            {% for m in months %}<span class="box-cell"></span>{% endfor %}
+            {% for i in range(max_each) %}<span class="box-cell"></span>{% endfor %}
           </div>
         </div>
         {% endfor %}
         <div class="box-cal-row box-cal-foot">
           <span class="box-cal-fixture" aria-hidden="true">{{ icon('package', 20, 'text-accent') }}</span>
-          <span class="box-cal-label hidden sm:block">Bottles</span>
+          <span class="box-cal-label hidden sm:block">In the box</span>
           <div class="box-cal-cells box-cal-totals" data-cal-totals>
-            {% for m in months %}<span class="box-cal-total tabular-nums">0</span>{% endfor %}
+            <span class="box-cal-total tabular-nums" data-cal-total>0 bottles</span>
           </div>
         </div>
       </div>
-      <p class="text-xs text-faint mt-4">Each lit cell is one monthly dose for every drain of that type. The bottom row is bottles used that month; the box holds the whole year.</p>
+      <p class="text-xs text-faint mt-4">Each lit bottle is one monthly dose for one drain. Twelve of these boxes is a year; subscribe and they arrive on their own.</p>
     </div>
 
   </div>
@@ -147,9 +143,9 @@
         <span class="text-muted" data-sum-drains-word>drains</span>
       </div>
       <dl class="mt-5 grid grid-cols-3 gap-2 text-center">
-        <div class="panel py-3 px-2"><dt class="text-xs text-faint">Per month</dt><dd class="font-display font-bold text-lg tabular-nums" data-sum-month>0</dd></div>
-        <div class="panel py-3 px-2"><dt class="text-xs text-faint">Per year</dt><dd class="font-display font-bold text-lg tabular-nums" data-sum-year>0</dd></div>
-        <div class="panel py-3 px-2"><dt class="text-xs text-faint">Boxes of 12</dt><dd class="font-display font-bold text-lg tabular-nums" data-sum-boxes>0</dd></div>
+        <div class="panel py-3 px-2"><dt class="text-xs text-faint">Bottles a month</dt><dd class="font-display font-bold text-lg tabular-nums" data-sum-month>0</dd></div>
+        <div class="panel py-3 px-2"><dt class="text-xs text-faint">Per bottle</dt><dd class="font-display font-bold text-lg tabular-nums" data-sum-per-bottle>{{ per_bottle_cents|fmt_money }}</dd></div>
+        <div class="panel py-3 px-2"><dt class="text-xs text-faint">Bottles a year</dt><dd class="font-display font-bold text-lg tabular-nums" data-sum-year>0</dd></div>
       </dl>
 
       <form action="/cart/add" method="post" class="mt-5 space-y-4" data-add-form data-box-form>
@@ -164,14 +160,14 @@
             <label class="choice">
               <input type="radio" name="delivery" value="once" checked>
               <span class="choice-body">
-                <span><span class="block font-semibold">One-time box</span><span class="block text-xs text-muted">A year of bottles, shipped once.</span></span>
+                <span><span class="block font-semibold">One-time box</span><span class="block text-xs text-muted">A month of bottles, shipped once.</span></span>
                 <span class="font-display font-bold tabular-nums whitespace-nowrap" data-price-once>$0.00</span>
               </span>
             </label>
             <label class="choice">
               <input type="radio" name="delivery" value="sub">
               <span class="choice-body">
-                <span><span class="block font-semibold">Subscribe &amp; save {{ sub_percent }}%</span><span class="block text-xs text-muted">Renews every 12 months. Cancel any time.</span></span>
+                <span><span class="block font-semibold">Subscribe &amp; save {{ sub_percent }}%</span><span class="block text-xs text-muted">The same box every {{ every }}. Cancel any time.</span></span>
                 <span class="text-right whitespace-nowrap"><span class="block font-display font-bold tabular-nums text-accent" data-price-sub>$0.00</span><span class="block text-xs text-faint tabular-nums" data-savings-inline></span></span>
               </span>
             </label>
@@ -208,8 +204,8 @@
       <p class="text-muted mt-2 text-sm">Anything with its own trap: sinks, tubs, showers, toilets, laundry standpipes and floor drains. A tub-shower combination is one drain. Skip the dishwasher; it drains through the kitchen sink.</p>
     </div>
     <div data-reveal>
-      <p class="eyebrow">Why twelve</p>
-      <p class="text-muted mt-2 text-sm">The label reads “dosed for monthly use on any drain”. Twelve bottles keep one drain on that schedule for a year, so a box of 12 is one drain-year and your count is the number of boxes.</p>
+      <p class="eyebrow">Why a month</p>
+      <p class="text-muted mt-2 text-sm">The label reads “dosed for monthly use on any drain”. One bottle per drain is that sentence for your whole house, for one month. Subscribe and the next month's box ships on its own. Prefer a year for one drain at once? That is the <a href="/products/{{ product.slug }}" class="link">12-pack</a>.</p>
     </div>
     <div data-reveal>
       <p class="eyebrow">When it is not maintenance</p>

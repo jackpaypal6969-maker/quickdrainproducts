@@ -29,6 +29,7 @@
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="field"><label class="label" for="subscription_discount_percent">Subscription discount (%)</label><input id="subscription_discount_percent" class="input" type="number" name="subscription_discount_percent" min="0" max="90" inputmode="numeric" value="{{ values.get('subscription_discount_percent', '10') }}"><p class="help">Site-wide default; a pack can override it.</p></div>
         <div class="field"><label class="label" for="subscription_intervals">Delivery intervals (months)</label><input id="subscription_intervals" class="input font-mono" name="subscription_intervals" value="{{ values.get('subscription_intervals', '1,2,3') }}" maxlength="40" placeholder="1,2,3"><p class="help">Comma list, 1–12. Offered on the product page.</p></div>
+        <div class="field"><label class="label" for="builder_subscription_interval">Build-your-box renews every (months)</label><input id="builder_subscription_interval" class="input" type="number" name="builder_subscription_interval" min="1" max="12" inputmode="numeric" value="{{ values.get('builder_subscription_interval', '1') }}"><p class="help">The builder ships a month of bottles at a time; 1 = monthly. Uses the same discount.</p></div>
       </div>
       <p class="help">Subscriptions only appear when SUBSCRIPTIONS_ENABLED is on and a pack has a Stripe subscription price.</p>
     </section>

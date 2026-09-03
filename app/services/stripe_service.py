@@ -14,6 +14,7 @@ from ..config import settings
 from ..db import one, transaction
 from ..security import iso
 from . import analytics, emails, orders, subscriptions
+from .catalog import every
 
 log = logging.getLogger("qd.stripe")
 
@@ -51,7 +52,7 @@ def create_checkout_session(conn: sqlite3.Connection, cart: dict, tot: dict, *, 
             "unit_amount": it["price_cents"],
             "tax_behavior": "exclusive",
             "product_data": {
-                "name": f"{it['product_name']} — {it['variant_name']}" + (f" (every {months} {'month' if months == 1 else 'months'})" if months else ""),
+                "name": f"{it['product_name']} — {it['variant_name']}" + (f" (every {every(months)})" if months else ""),
                 "description": (f"{it['units_per_pack']} × 4 fl oz bottle" if it["units_per_pack"] > 1 else "4 fl oz bottle") + (f", {it['sub_percent']}% subscriber price, cancel any time" if months else ""),
                 "metadata": {"variant_id": str(it["variant_id"]), "sku": it["sku"], "kind": "product"},
                 "images": _image_url(it.get("image_base"), it.get("image_source")),
@@ -119,7 +120,7 @@ def create_checkout_session(conn: sqlite3.Connection, cart: dict, tot: dict, *, 
         params["customer"] = customer["stripe_customer_id"]
         params["customer_update"] = {"shipping": "auto", "address": "auto"}
     if has_sub:
-        params["subscription_data"] = {"metadata": metadata, "description": f"{settings.app_name} — every {interval} {'month' if interval == 1 else 'months'}"}
+        params["subscription_data"] = {"metadata": metadata, "description": f"{settings.app_name} — every {every(interval)}"}
         params["customer_creation"] = None  # subscription mode always creates a customer
     else:
         params["payment_intent_data"] = {"metadata": metadata, "description": f"{settings.app_name} order"}

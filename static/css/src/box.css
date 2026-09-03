@@ -22,22 +22,23 @@
   /* ---- presets ---- */
   .box-preset[aria-pressed="true"] { border-color: var(--color-accent); background: var(--color-accent-soft); color: var(--color-text); }
 
-  /* ---- dose calendar: fixture · (label) · 12 cells ---- */
-  .box-cal { display: grid; gap: .375rem; }
+  /* ---- bottle rack: fixture · (label) · one bottle per drain ---- */
+  .box-cal { display: grid; gap: .5rem; }
   .box-cal-row { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); align-items: center; gap: .625rem; }
   @media (min-width: 40rem) { .box-cal-row { grid-template-columns: 2.25rem 11rem minmax(0, 1fr); } }
   .box-cal-fixture { position: relative; display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: var(--radius-sm); background: var(--color-raised); color: var(--color-text-faint); transition: color var(--dur-base) var(--ease-standard); }
   .box-cal-row.is-on .box-cal-fixture { color: var(--color-accent); }
-  .box-cal-head .box-cal-fixture, .box-cal-foot .box-cal-fixture { background: transparent; }
+  .box-cal-foot .box-cal-fixture { background: transparent; }
   .box-cal-label { font-size: var(--text-sm); color: var(--color-text-faint); transition: color var(--dur-base) var(--ease-standard); }
   .box-cal-row.is-on .box-cal-label { color: var(--color-text); }
   .box-cal-foot .box-cal-label { color: var(--color-text-nav); font-weight: 600; }
-  .box-cal-cells { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3px; min-width: 0; }
-  .box-cal-month { white-space: nowrap; font-family: var(--font-display); font-size: .65rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--color-text-faint); text-align: center; line-height: 1; padding-bottom: .25rem; }
-  .box-cell { position: relative; aspect-ratio: 1; border-radius: 4px; background: var(--color-raised); border: 1px solid var(--color-border-soft); overflow: hidden; }
-  .box-cell::after { content: ""; position: absolute; inset: 0; background: var(--color-accent); opacity: 0; transform: scale(.4); transition: opacity var(--dur-base) var(--ease-standard), transform var(--dur-base) var(--ease-standard); }
+  .box-cal-cells { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 4px; min-width: 0; min-height: 1.5rem; }
+  .box-cell { position: relative; width: .8rem; height: 1.5rem; border-radius: .2rem .2rem .3rem .3rem; background: var(--color-raised); border: 1px solid var(--color-border-soft); overflow: hidden; }
+  .box-cell::before { content: ""; position: absolute; top: 0; left: 28%; right: 28%; height: .3rem; background: var(--color-border); border-radius: 0 0 2px 2px; z-index: 1; }
+  .box-cell::after { content: ""; position: absolute; inset: 0; background: var(--color-accent); opacity: 0; transform: translateY(100%); transition: opacity var(--dur-base) var(--ease-standard), transform var(--dur-base) var(--ease-standard); }
   .box-cell.is-dosed::after { opacity: 1; transform: none; }
-  .box-cal-total { font-family: var(--font-display); font-size: .7rem; font-weight: 700; text-align: center; color: var(--color-text-faint); transition: color var(--dur-base) var(--ease-standard); }
+  .box-cell.is-dosed::before { background: var(--color-text-on-accent); opacity: .7; }
+  .box-cal-total { font-family: var(--font-display); font-size: var(--text-sm); font-weight: 700; color: var(--color-text-faint); transition: color var(--dur-base) var(--ease-standard); }
   .box-cal-total.is-on { color: var(--color-accent); }
 
   /* count chip anchored to the fixture icon */

@@ -179,7 +179,7 @@
           <li class="card card-pad text-sm">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p class="font-semibold">Every {{ s.interval_months }} {{ 'month' if s.interval_months == 1 else 'months' }}{% if s.line_list %} · {% for ln in s.line_list %}{{ ln.name }} {{ ln.variant }} × {{ ln.q }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</p>
+                <p class="font-semibold">Every {{ s.interval_months|every }}{% if s.line_list %} · {% for ln in s.line_list %}{{ ln.name }} {{ ln.variant }} × {{ ln.q }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</p>
                 <p class="text-muted mt-1">Started {{ s.created_at|est_date }}{% if s.next_renewal_at and s.is_live %} · next delivery billed {{ s.next_renewal_at|est_date }}{% endif %}{% if s.canceled_at %} · canceled {{ s.canceled_at|est_date }}{% endif %}</p>
                 {% if s.line_list %}<p class="text-muted mt-1 tabular-nums">{% set ns = namespace(total=0) %}{% for ln in s.line_list %}{% set ns.total = ns.total + ln.p * ln.q %}{% endfor %}{{ ns.total|fmt_money }} per delivery{% if s.shipping_cents %} + {{ s.shipping_cents|fmt_money }} shipping{% endif %}, plus tax</p>{% endif %}
               </div>

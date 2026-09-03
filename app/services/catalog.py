@@ -57,7 +57,7 @@ def image_sources(image: dict) -> dict:
 
 def _product_bundle(conn: sqlite3.Connection, row: sqlite3.Row) -> dict:
     p = dict(row)
-    p["variants"] = [dict(v) for v in all_rows(conn, "SELECT * FROM variants WHERE product_id = ? AND is_active = 1 ORDER BY sort, id", (p["id"],))]
+    p["variants"] = [dict(v) for v in all_rows(conn, "SELECT * FROM variants WHERE product_id = ? AND is_active = 1 AND builder_only = 0 ORDER BY sort, id", (p["id"],))]
     p["images"] = [image_sources(dict(i)) | {"id": i["id"], "kind": i["kind"], "base": i["base"]} for i in all_rows(conn, "SELECT * FROM product_images WHERE product_id = ? ORDER BY CASE kind WHEN 'hero' THEN 0 ELSE 1 END, sort, id", (p["id"],))]
     p["specs"] = [dict(s) for s in all_rows(conn, "SELECT label, value FROM product_specs WHERE product_id = ? ORDER BY sort, id", (p["id"],))]
     p["faqs"] = [dict(f) for f in all_rows(conn, "SELECT question, answer FROM product_faqs WHERE product_id = ? ORDER BY sort, id", (p["id"],))]
@@ -94,7 +94,40 @@ def subscription_config(conn: sqlite3.Connection) -> dict:
             continue
         if 1 <= m <= 12 and m not in intervals:
             intervals.append(m)
-    return {"enabled": settings.subscriptions_enabled, "percent": percent, "intervals": sorted(intervals) or [1]}
+    intervals = sorted(intervals) or [1]
+    # The box builder ships a month at a time, so it has its own interval (default monthly)
+    # that the product page never offers. `allowed` is what the cart accepts.
+    try:
+        builder = int(get_setting(conn, "builder_subscription_interval", "1") or 1)
+    except ValueError:
+        builder = 1
+    builder = builder if 1 <= builder <= 12 else 1
+    return {"enabled": settings.subscriptions_enabled, "percent": percent, "intervals": intervals, "builder_interval": builder, "allowed": sorted(set(intervals) | {builder})}
+
+
+def builder_variant(conn: sqlite3.Connection, product: dict) -> dict | None:
+    """The per-bottle SKU behind /build-your-box (builder_only, hidden from the
+    product page), with subscribe-and-save pricing attached. Falls back to the
+    smallest pack on the product page so the builder never 404s."""
+    row = one(conn, "SELECT * FROM variants WHERE product_id = ? AND is_active = 1 AND builder_only = 1 ORDER BY units_per_pack, sort, id LIMIT 1", (product["id"],))
+    v = dict(row) if row else (min(product["variants"], key=lambda x: int(x.get("units_per_pack") or 1)) if product.get("variants") else None)
+    if not v:
+        return None
+    cfg = subscription_config(conn)
+    pct = v.get("subscription_discount_percent")
+    pct = cfg["percent"] if pct is None else int(pct)
+    v["sub_percent"] = pct
+    v["sub_price_cents"] = subscription_price(int(v["price_cents"]), pct)
+    return v
+
+
+def every(months) -> str:
+    """Delivery cadence in words: 1 → "month", 3 → "3 months"."""
+    try:
+        months = int(months)
+    except (TypeError, ValueError):
+        months = 0
+    return "month" if months == 1 else f"{months} months"
 
 
 def subscription_price(price_cents: int, percent: int) -> int:
