@@ -325,6 +325,7 @@
   .offer-sum { margin-top: 1.5rem; display: flex; align-items: baseline; flex-wrap: wrap; gap: .5rem .75rem; font-family: var(--font-display); font-weight: 800; letter-spacing: -0.04em; font-size: clamp(1.5rem, 2.6vw, 2.125rem); line-height: 1; }
   .offer-sum span { font-family: var(--font-body); font-weight: 500; font-size: var(--text-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--color-text-faint); }
   .offer-sum .op { font-family: var(--font-body); font-weight: 300; font-size: .85em; color: var(--color-text-faint); letter-spacing: 0; }
+  .offer-sum .unit { font-family: var(--font-body); font-weight: 400; font-size: .55em; letter-spacing: 0; text-transform: none; color: var(--color-text-muted); }
 
   /* Dose calendar: twelve month cells, a typographic device (letters, not bars). */
   .cal { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3px; margin-top: 1.25rem; }
