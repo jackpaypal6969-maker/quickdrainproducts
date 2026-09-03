@@ -58,7 +58,7 @@ def image_sources(image: dict) -> dict:
 def _product_bundle(conn: sqlite3.Connection, row: sqlite3.Row) -> dict:
     p = dict(row)
     p["variants"] = [dict(v) for v in all_rows(conn, "SELECT * FROM variants WHERE product_id = ? AND is_active = 1 ORDER BY sort, id", (p["id"],))]
-    p["images"] = [image_sources(dict(i)) | {"id": i["id"], "kind": i["kind"], "base": i["base"]} for i in all_rows(conn, "SELECT * FROM product_images WHERE product_id = ? ORDER BY sort, id", (p["id"],))]
+    p["images"] = [image_sources(dict(i)) | {"id": i["id"], "kind": i["kind"], "base": i["base"]} for i in all_rows(conn, "SELECT * FROM product_images WHERE product_id = ? ORDER BY CASE kind WHEN 'hero' THEN 0 ELSE 1 END, sort, id", (p["id"],))]
     p["specs"] = [dict(s) for s in all_rows(conn, "SELECT label, value FROM product_specs WHERE product_id = ? ORDER BY sort, id", (p["id"],))]
     p["faqs"] = [dict(f) for f in all_rows(conn, "SELECT question, answer FROM product_faqs WHERE product_id = ? ORDER BY sort, id", (p["id"],))]
     try:
