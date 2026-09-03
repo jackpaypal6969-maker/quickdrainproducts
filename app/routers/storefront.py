@@ -84,7 +84,7 @@ def _safe_media(rel: str) -> Path:
 def product_sds(slug: str, conn: sqlite3.Connection = Depends(get_db)):
     row = one(conn, "SELECT sds_path, name FROM products WHERE slug = ? AND is_active = 1", (slug,))
     if not row or not row["sds_path"]:
-        raise HTTPException(404, "The safety data sheet has not been uploaded yet. Email us and we will send it.")
+        raise HTTPException(404, "The safety data sheet has not been published here yet. Contact us and we will send it as soon as it is available.")
     path = _safe_media(row["sds_path"])
     return FileResponse(path, media_type="application/pdf", filename=f"{slug}-sds.pdf")
 

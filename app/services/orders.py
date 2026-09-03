@@ -79,10 +79,18 @@ def create_from_checkout_session(conn: sqlite3.Connection, session: dict, event_
             lines = _lines_from_stripe(session)
 
         total_details = session.get("total_details") or {}
+        interval_months = int(meta.get("interval_months") or 0)
+        shipping_cents = int(total_details.get("amount_shipping") or 0)
+        subtotal_cents = int(session.get("amount_subtotal") or 0)
+        if interval_months and not shipping_cents:
+            # Subscription checkouts bill shipping as a recurring line, so Stripe
+            # folds it into amount_subtotal; pull it back out using our own figure.
+            shipping_cents = int(meta.get("shipping_cents") or 0)
+            subtotal_cents = max(subtotal_cents - shipping_cents, 0)
         amounts = {
-            "subtotal_cents": int(session.get("amount_subtotal") or 0),
+            "subtotal_cents": subtotal_cents,
             "discount_cents": int(total_details.get("amount_discount") or 0),
-            "shipping_cents": int(total_details.get("amount_shipping") or 0),
+            "shipping_cents": shipping_cents,
             "tax_cents": int(total_details.get("amount_tax") or 0),
             "total_cents": int(session.get("amount_total") or 0),
             "credit_cents": int(meta.get("credit_cents") or 0),
@@ -163,6 +171,10 @@ def create_from_checkout_session(conn: sqlite3.Connection, session: dict, event_
                     # order is held for a human instead of silently overselling.
                     oversold.append(f"{variant['sku']} x{qty} (stock {variant['stock']})")
 
+        if not lines:
+            # Money was taken but nothing resolved to a line: hold it for a human, never a silent empty 'paid' order.
+            conn.execute("UPDATE orders SET status = 'on_hold', admin_note = ? WHERE id = ?", ("LINES MISSING: Stripe session had no resolvable items — check the Stripe dashboard and add lines by hand", order_id))
+            audit.log(conn, "order.lines_missing", actor_type="webhook", target_type="order", target_id=order_id, after={"session": session_id})
         if oversold:
             conn.execute("UPDATE orders SET status = 'on_hold', admin_note = ? WHERE id = ?", ("STOCK SHORT AT PAYMENT: " + "; ".join(oversold), order_id))
             audit.log(conn, "order.stock_short", actor_type="webhook", target_type="order", target_id=order_id, after={"oversold": oversold})
@@ -177,10 +189,11 @@ def create_from_checkout_session(conn: sqlite3.Connection, session: dict, event_
             conn.execute("DELETE FROM cart_items WHERE cart_id = ?", (order_data["cart_id"],))
 
         if sub_id:
-            first_sub = next((ln for ln in lines if int(ln.get("s") or 0)), None)
-            conn.execute(
-                "INSERT OR IGNORE INTO subscriptions(customer_id, email, variant_id, stripe_subscription_id, status, interval_days) VALUES (?, ?, ?, ?, 'active', ?)",
-                (customer_id, normalize_email(email), int(first_sub["v"]) if first_sub else None, sub_id, 30),
+            from . import subscriptions  # local import: subscriptions imports orders
+            subscriptions.register_from_checkout(
+                conn, stripe_subscription_id=sub_id, stripe_customer_id=stripe_customer or "", customer_id=customer_id,
+                email=email, lines=lines, interval_months=int(meta.get("interval_months") or 1),
+                shipping_cents=int(meta.get("shipping_cents") or 0), order_id=order_id,
             )
 
         audit.log(conn, "order.created", actor_type="webhook", target_type="order", target_id=order_id, after={"number": number, "total_cents": amounts["total_cents"], "event": event_id})
@@ -192,8 +205,13 @@ def _lines_from_stripe(session: dict) -> list[dict]:
     out = []
     for it in items:
         price = it.get("price") or {}
-        meta = (price.get("product") or {}).get("metadata", {}) if isinstance(price.get("product"), dict) else {}
-        out.append({"v": int(meta.get("variant_id") or 0), "q": int(it.get("quantity") or 1), "p": int(price.get("unit_amount") or 0), "name": it.get("description", "Item")})
+        product = price.get("product")
+        meta = (product.get("metadata") or {}) if isinstance(product, dict) else {}
+        if meta.get("kind") == "shipping":
+            continue
+        recurring = price.get("recurring") or {}
+        months = int(recurring.get("interval_count") or 0) if recurring.get("interval") == "month" else 0
+        out.append({"v": int(meta.get("variant_id") or 0), "q": int(it.get("quantity") or 1), "p": int(price.get("unit_amount") or 0), "s": months, "name": it.get("description", "Item")})
     return out
 
 
@@ -245,6 +263,8 @@ def set_status(conn: sqlite3.Connection, order: dict, status: str, *, tracking: 
 
 
 def record_refund(conn: sqlite3.Connection, payment_intent_id: str, refunded_cents: int, event_id: str) -> dict | None:
+    if not payment_intent_id:
+        return None
     with transaction(conn):
         try:
             conn.execute("INSERT INTO processed_events(event_id, source, type) VALUES (?, 'stripe', 'charge.refunded')", (event_id,))
@@ -253,7 +273,8 @@ def record_refund(conn: sqlite3.Connection, payment_intent_id: str, refunded_cen
         row = one(conn, "SELECT * FROM orders WHERE stripe_payment_intent_id = ?", (payment_intent_id,))
         if not row:
             return None
-        status = "refunded" if refunded_cents >= row["total_cents"] else "partially_refunded"
+        # A partial refund keeps the fulfilment state (on_hold/shipped/...) so queues and reminders still see it.
+        status = "refunded" if refunded_cents >= row["total_cents"] else ("partially_refunded" if row["status"] in ("paid", "processing", "partially_refunded") else row["status"])
         conn.execute("UPDATE orders SET refunded_cents = ?, status = ?, updated_at = ? WHERE id = ?", (refunded_cents, status, iso(), row["id"]))
         audit.log(conn, "order.refund_recorded", actor_type="webhook", target_type="order", target_id=row["id"], after={"refunded_cents": refunded_cents, "status": status})
         return dict(one(conn, "SELECT * FROM orders WHERE id = ?", (row["id"],)))

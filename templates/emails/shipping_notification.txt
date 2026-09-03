@@ -1,0 +1,47 @@
+{% autoescape false %}
+{% set carrier = (order.carrier or '')|lower %}
+{% set tracking = order.tracking_number or '' %}
+{% if tracking and 'usps' in carrier %}{% set track_url = 'https://tools.usps.com/go/TrackConfirmAction?tLabels=' ~ tracking|urlencode %}
+{% elif tracking and 'ups' in carrier %}{% set track_url = 'https://www.ups.com/track?tracknum=' ~ tracking|urlencode %}
+{% elif tracking and 'fedex' in carrier %}{% set track_url = 'https://www.fedex.com/fedextrack/?trknbr=' ~ tracking|urlencode %}
+{% else %}{% set track_url = '' %}{% endif %}
+QUICK DRAIN PRODUCTS
+Order {{ order.order_number }} is on its way
+
+{% if order.shipped_at %}It left us {{ order.shipped_at|est_date }}{% else %}It has left us{% endif %}{% if order.carrier %} with {{ order.carrier }}{% endif %}, as an ordinary parcel.
+
+{% if tracking %}
+TRACKING
+{{ order.carrier or 'Carrier' }}: {{ tracking }}
+{% if track_url %}{{ track_url }}
+{% endif %}
+{% else %}
+No tracking number was issued for this shipment.
+{% endif %}
+
+IN THE BOX
+{% for it in items %}
+- {{ it.product_name }} — {{ it.variant_name }}{% if it.units_per_pack %} ({{ it.units_per_pack }} x 4 fl oz){% endif %}, qty {{ it.qty }}
+{% endfor %}
+
+SHIPS TO
+{% if order.shipping_line1 %}
+{% if order.shipping_name %}{{ order.shipping_name }}
+{% endif %}
+{{ order.shipping_line1 }}
+{% if order.shipping_line2 %}{{ order.shipping_line2 }}
+{% endif %}
+{{ order.shipping_city }}, {{ order.shipping_state }} {{ order.shipping_postal_code }}
+{% if order.shipping_country and order.shipping_country != 'US' %}{{ order.shipping_country }}
+{% endif %}
+{% else %}
+The address you gave Stripe at checkout.
+{% endif %}
+
+Pour the first bottle the day it arrives and mark the calendar 30 days
+out. The rest of the pack keeps in a cupboard.
+
+Order details: {{ base_url }}/orders/lookup
+Reply to this email if the parcel is late or arrives damaged.
+{% include "emails/_footer.txt" %}
+{% endautoescape %}

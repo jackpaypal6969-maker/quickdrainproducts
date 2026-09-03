@@ -34,22 +34,25 @@ def abandoned_carts(conn: sqlite3.Connection, limit: int = 100) -> int:
         with transaction(conn):
             code = discounts.issue_locked_code(conn, cart["email"], "abandoned", percent=10, days=7, prefix="BACK")
             tot = cart_service.totals(conn, cart, cart["email"])
-            emails.send(
-                conn, cart["email"], "abandoned_cart", "You left Quick Shot in your cart",
-                {"cart": cart, "totals": tot, "code": code, "resume_url": f"{settings.base_url}/cart/resume/{cart['token']}"},
-                category="marketing", related_type="cart", related_id=cart["id"],
-            )
             conn.execute("UPDATE carts SET abandoned_email_sent_at = ? WHERE id = ?", (iso(), cart["id"]))
+        emails.send(
+            conn, cart["email"], "abandoned_cart", "You left Quick Shot in your cart",
+            {"cart": cart, "totals": tot, "code": code, "resume_url": f"{settings.base_url}/cart/resume/{cart['token']}"},
+            category="marketing", related_type="cart", related_id=cart["id"],
+        )
         sent += 1
     return sent
 
 
 def coverage_days(items: list[dict]) -> int:
-    """How long the order covers one drain: units × interval, per the label."""
-    total = 0
+    """How long the order covers one drain: units × interval, per the label.
+    Different products are dosed concurrently, so the reminder follows the one
+    that runs out first."""
+    per_product: dict = {}
     for it in items:
-        total += int(it["qty"]) * int(it["units_per_pack"]) * int(it["dose_interval_days"]) * max(int(it["drains_per_unit"]), 1)
-    return total
+        key = it.get("product_id") or it.get("sku") or id(it)
+        per_product[key] = per_product.get(key, 0) + int(it["qty"]) * int(it["units_per_pack"]) * int(it["dose_interval_days"]) * max(int(it["drains_per_unit"]), 1)
+    return min(per_product.values()) if per_product else 0
 
 
 def reorder_reminders(conn: sqlite3.Connection, limit: int = 200) -> int:
@@ -75,12 +78,12 @@ def reorder_reminders(conn: sqlite3.Connection, limit: int = 200) -> int:
         if now < due:
             continue
         with transaction(conn):
-            emails.send(
-                conn, order["email"], "reorder_reminder", "Time for the next Quick Shot dose",
-                {"order": order, "items": items, "coverage_days": days, "reorder_url": f"{settings.base_url}/reorder/{order['order_number']}/{_reorder_token(order)}"},
-                category="marketing", related_type="order", related_id=order["id"],
-            )
             conn.execute("UPDATE orders SET reorder_reminder_sent_at = ? WHERE id = ?", (iso(), order["id"]))
+        emails.send(
+            conn, order["email"], "reorder_reminder", "Time for the next Quick Shot dose",
+            {"order": order, "items": items, "coverage_days": days, "reorder_url": f"{settings.base_url}/reorder/{order['order_number']}/{_reorder_token(order)}"},
+            category="marketing", related_type="order", related_id=order["id"],
+        )
         sent += 1
     return sent
 
@@ -109,12 +112,12 @@ def review_invites(conn: sqlite3.Connection, limit: int = 200) -> int:
         order = dict(row)
         items = [dict(i) for i in all_rows(conn, "SELECT * FROM order_items WHERE order_id = ?", (order["id"],))]
         with transaction(conn):
-            emails.send(
-                conn, order["email"], "review_invite", "How is Quick Shot working for you?",
-                {"order": order, "items": items, "review_url": f"{settings.base_url}/reviews/new/{order['order_number']}/{_reorder_token(order)}"},
-                category="marketing", related_type="order", related_id=order["id"],
-            )
             conn.execute("UPDATE orders SET review_invite_sent_at = ? WHERE id = ?", (iso(), order["id"]))
+        emails.send(
+            conn, order["email"], "review_invite", "How is Quick Shot working for you?",
+            {"order": order, "items": items, "review_url": f"{settings.base_url}/reviews/new/{order['order_number']}/{_reorder_token(order)}"},
+            category="marketing", related_type="order", related_id=order["id"],
+        )
         sent += 1
     return sent
 
@@ -132,12 +135,12 @@ def back_in_stock(conn: sqlite3.Connection, limit: int = 300) -> int:
     for row in rows:
         n = dict(row)
         with transaction(conn):
-            emails.send(
-                conn, n["email"], "back_in_stock", f"{n['product_name']} {n['variant_name']} is back in stock",
-                {"notice": n, "product_url": f"{settings.base_url}/products/{n['product_slug']}"},
-                category="marketing", related_type="stock_notification", related_id=n["id"],
-            )
             conn.execute("UPDATE stock_notifications SET notified_at = ? WHERE id = ?", (iso(), n["id"]))
+        emails.send(
+            conn, n["email"], "back_in_stock", f"{n['product_name']} {n['variant_name']} is back in stock",
+            {"notice": n, "product_url": f"{settings.base_url}/products/{n['product_slug']}"},
+            category="marketing", related_type="stock_notification", related_id=n["id"],
+        )
         sent += 1
     return sent
 

@@ -141,7 +141,7 @@
   .label { display: block; font-size: var(--text-sm); font-weight: 600; color: var(--color-text-nav); margin-bottom: .375rem; }
   .help { font-size: var(--text-sm); color: var(--color-text-faint); margin-top: .375rem; }
   .field + .field { margin-top: 1rem; }
-  .checkbox { width: 1.1rem; height: 1.1rem; accent-color: var(--color-accent); }
+  .checkbox { accent-color: var(--color-accent); }
 
   /* Table — shadcn/ui table */
   .table { width: 100%; font-size: var(--text-sm); }
@@ -232,6 +232,10 @@
   .stars .off { color: var(--color-border-strong); }
 
   .link { color: var(--color-accent); text-decoration: underline; text-underline-offset: .2em; text-decoration-thickness: 1px; }
+  /* Text links keep their inline flow but get an invisible 44px-tall hit area (padding cancelled by negative margin). */
+  .link, .prose a, .help a, .tap-text { display: inline-block; padding-block: calc((2.75rem - 1lh) / 2); margin-block: calc((2.75rem - 1lh) / -2); }
+  label:has(> .checkbox), label:has(> input[type="radio"]) { display: inline-flex; align-items: center; gap: .6rem; min-height: 2.75rem; }
+  .checkbox, input[type="radio"].checkbox { width: 1.5rem; height: 1.5rem; }
   .link:hover { color: var(--color-accent-tint); }
   .nav-link { font-size: var(--text-sm); font-weight: 600; color: var(--color-text-nav); padding: .5rem .75rem; border-radius: var(--radius-pill); transition: color var(--dur-base) var(--ease-standard), background-color var(--dur-base) var(--ease-standard); }
   .nav-link:hover, .nav-link[aria-current="page"] { color: var(--color-text); background: var(--color-raised); }

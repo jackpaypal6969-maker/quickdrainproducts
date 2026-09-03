@@ -21,7 +21,7 @@
     <li class="card card-pad" data-reveal>
       <span class="text-accent">{{ icon('package', 22) }}</span>
       <p class="font-display font-bold text-xl mt-3">Ordinary parcel</p>
-      <p class="text-sm text-muted mt-1">No hazmat surcharge, no ground-only rule, no carrier refusal.</p>
+      <p class="text-sm text-muted mt-1">Flat rate, standard ground or air service.</p>
     </li>
     <li class="card card-pad" data-reveal>
       <span class="text-accent">{{ icon('shield', 22) }}</span>
@@ -41,8 +41,8 @@
     <div data-reveal>
       <p class="eyebrow">Shipping regime</p>
       <h2 class="h2 mt-3">Why there is no hazmat line on the receipt.</h2>
-      <p class="text-muted mt-4">Enzymatic and bacterial drain products are not DOT-regulated corrosives. Carriers treat them as ordinary parcels: no hazmat surcharge, no ground-only restriction, no carrier refusal. Caustic and acid drain openers are the opposite{% if not any_hazmat %}, which is one reason there is none in this catalog{% endif %}.</p>
-      <p class="text-muted mt-4">Each product's class is listed in the table, straight from its formulation type. If that ever changes for a product, this page changes with it.</p>
+      <p class="text-muted mt-4">Quick Shot ships as an ordinary parcel. Enzymatic products are not classed as corrosives for shipping; its safety data sheet, once published here, is the document that confirms the classification. Caustic and acid drain openers are the opposite{% if not any_hazmat %}, which is one reason there is none in this catalog{% endif %}.</p>
+      <p class="text-muted mt-4">Each product's shipping class is listed in the table and is checked against its safety data sheet when that is on file. If that ever changes for a product, this page changes with it.</p>
     </div>
     <div class="card overflow-hidden" data-reveal>
       <div class="table-wrap">
@@ -125,7 +125,7 @@
     <div data-reveal>
       <p class="eyebrow">Safety</p>
       <h2 class="h2 mt-3">What the label says. Only that.</h2>
-      <p class="text-muted mt-4">Dose and net contents below are copied from each label. Full directions are printed on the bottle and appear on the product page once the back panel is on file. The label and the SDS are the complete safety instructions; nothing here replaces them.</p>
+      <p class="text-muted mt-4">Dose and net contents below are copied from each label. The dosing line is the only direction on the label we have; any further directions on the packaging appear on the product page once on file. The label and the SDS are the complete safety instructions; nothing here replaces them.</p>
     </div>
     <div class="space-y-3" data-reveal data-reveal-stagger>
       {% for p in products %}

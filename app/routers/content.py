@@ -27,7 +27,7 @@ LEGAL_PAGES = {
 @router.get("/blog")
 def blog_index(request: Request, conn: sqlite3.Connection = Depends(get_db)):
     posts = [dict(r) for r in all_rows(conn, "SELECT slug, title, excerpt, cover_base, published_at, author FROM posts WHERE status = 'published' ORDER BY published_at DESC")]
-    return render(request, "blog/index.html", {"posts": posts, "jsonld": [breadcrumb_ld([("Home", "/"), ("Drain maintenance notes", "/blog")])], "meta_title": f"Drain maintenance notes | {settings.app_name}", "meta_description": "Plain-English notes on drain maintenance from Quick Drain: what a monthly enzyme dose does, what it cannot do, and when to book a camera inspection."}, conn=conn)
+    return render(request, "blog/index.html", {"posts": posts, "jsonld": [breadcrumb_ld([("Home", "/"), ("Drain maintenance notes", "/blog")])], "meta_title": f"Drain maintenance notes | {settings.app_name}", "meta_description": "Plain-English notes on drain maintenance from Quick Drain: where a monthly dose fits, what it cannot do, and when to book a camera inspection."}, conn=conn)
 
 
 @router.get("/blog/{slug}")
@@ -70,8 +70,8 @@ def contact_submit(request: Request, name: str = Form(""), email: str = Form("")
     with transaction(conn):
         cur = conn.execute("INSERT INTO contact_messages(name, email, phone, order_number, subject, body, ip) VALUES (?, ?, ?, ?, ?, ?, ?)", (name.strip()[:100], norm, phone.strip()[:30], order_number.strip().upper()[:20], subject.strip()[:150], body.strip()[:5000], ip(request)))
         mid = int(cur.lastrowid)
-        if settings.contact_inbox:
-            emails.send(conn, settings.contact_inbox, "contact_notification", f"[Store contact] {subject.strip()[:80] or 'New message'} — {name.strip()[:60]}", {"name": name.strip(), "email": norm, "phone": phone.strip(), "order_number": order_number.strip().upper(), "subject": subject.strip(), "body": body.strip()}, related_type="contact", related_id=mid, reply_to=norm)
+    if settings.contact_inbox:
+        emails.send(conn, settings.contact_inbox, "contact_notification", f"[Store contact] {subject.strip()[:80] or 'New message'} — {name.strip()[:60]}", {"name": name.strip(), "email": norm, "phone": phone.strip(), "order_number": order_number.strip().upper(), "subject": subject.strip(), "body": body.strip()}, related_type="contact", related_id=mid, reply_to=norm)
     flash(request, "Message received. We reply within one business day.")
     return redirect("/contact?sent=1")
 
@@ -105,11 +105,12 @@ def lookup_rma(request: Request, order_number: str = Form(""), email: str = Form
     if not order:
         flash(request, "No order matched that number and email.", "error")
         return redirect("/orders/lookup")
+    reason = reason.strip()[:120] or "Return requested"
     with transaction(conn):
-        cur = conn.execute("INSERT INTO rma_requests(order_id, email, reason, details) VALUES (?, ?, ?, ?)", (order["id"], order["email"], reason.strip()[:120] or "Return requested", details.strip()[:4000]))
+        cur = conn.execute("INSERT INTO rma_requests(order_id, email, reason, details) VALUES (?, ?, ?, ?)", (order["id"], order["email"], reason, details.strip()[:4000]))
         audit.log(conn, "rma.requested", actor_type="customer", target_type="rma", target_id=int(cur.lastrowid), after={"order": order["order_number"]}, ip=ip(request))
-        if settings.contact_inbox:
-            emails.send(conn, settings.contact_inbox, "rma_notification", f"Return request on {order['order_number']}", {"order": order, "reason": reason.strip(), "details": details.strip()[:4000]}, related_type="order", related_id=order["id"])
+    if settings.contact_inbox:
+        emails.send(conn, settings.contact_inbox, "rma_notification", f"Return request on {order['order_number']}", {"order": order, "reason": reason, "details": details.strip()[:4000]}, related_type="order", related_id=order["id"])
     flash(request, "Return request received. We reply within one business day.")
     return redirect("/orders/lookup")
 
@@ -155,8 +156,8 @@ def review_submit(request: Request, product_id: int = Form(0), rating: int = For
             "INSERT INTO reviews(product_id, customer_id, order_id, author_name, email, rating, title, body, is_verified, ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (product_id, customer["id"] if customer else None, order_id, author_name.strip()[:60], normalize_email(email)[:254], rating, title.strip()[:120], body.strip()[:3000], verified, ip(request)),
         )
-        analytics.capture(conn, "review_submitted", normalize_email(email) or ip(request), {"product_id": product_id, "rating": rating, "verified": verified})
         audit.log(conn, "review.submitted", actor_type="customer", actor_id=customer["id"] if customer else None, target_type="review", target_id=int(cur.lastrowid), ip=ip(request))
+    analytics.capture(conn, "review_submitted", normalize_email(email) or ip(request), {"product_id": product_id, "rating": rating, "verified": verified})
     flash(request, "Thanks. Your review is in the moderation queue and will appear once approved.")
     return redirect(f"/products/{product['slug']}#reviews")
 

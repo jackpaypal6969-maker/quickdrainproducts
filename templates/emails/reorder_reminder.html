@@ -1,0 +1,21 @@
+{% extends "emails/base.html" %}
+{% from "emails/_macros.html" import S_EYEBROW, S_H1, S_H2, S_P, S_MUTED, S_LINK, button, items_table %}
+{% block title %}Time for the next Quick Shot dose{% endblock %}
+{% block preheader %}Your last order covered its drain-months. The next dose is due around now.{% endblock %}
+{% block body %}
+{% set ns = namespace(months=0) %}
+{% for it in items %}{% set ns.months = ns.months + (it.qty or 0) * (it.units_per_pack or 1) %}{% endfor %}
+<p style="{{ S_EYEBROW }}">Dose due</p>
+<h1 style="{{ S_H1 }}">The next dose is due around now.</h1>
+<p style="{{ S_P }}">Your last order, {{ order.order_number }}{% if order.created_at %} on {{ order.created_at|est_date }}{% endif %}, covered <strong>{{ ns.months|plural('drain-month') }}</strong>, about {{ coverage_days|plural('day') }} on one drain at one bottle a month. That window is closing, so this is the moment to have the next bottle on hand.</p>
+
+<h2 style="{{ S_H2 }}">What you had</h2>
+{{ items_table(items, money=False) }}
+
+{{ button(reorder_url, 'Reorder the same pack') }}
+<p style="{{ S_MUTED }}">The link drops the same items into a cart. Nothing is charged until you check out, and you can change the pack size there.</p>
+{% if settings.subscriptions_enabled %}
+<p style="{{ S_MUTED }}">Prefer not to track it? Choose monthly on the <a href="{{ base_url }}/products/quick-shot" style="{{ S_LINK }}">product page</a> and a bottle arrives before each dose is due.</p>
+{% endif %}
+<p style="{{ S_MUTED }}">If a drain is slow or backing up, a bottle is not the fix. Call <a href="tel:{{ settings.phone_tel }}" style="{{ S_LINK }}">{{ settings.phone_display }}</a> for a diagnostic visit.</p>
+{% endblock %}

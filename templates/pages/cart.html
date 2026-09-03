@@ -19,8 +19,8 @@
           <div class="w-20 h-20 rounded-md bg-bg-deep border border-line-soft shrink-0 overflow-hidden">{% if it.image_base %}<img src="/static/img/products/{{ it.image_base }}-480.jpg" width="80" height="80" alt="" class="w-full h-full object-cover" loading="lazy">{% endif %}</div>
           <div class="flex-1 min-w-0">
             <div class="flex justify-between gap-3">
-              <div><a href="/products/{{ it.product_slug }}" class="font-semibold hover:underline">{{ it.product_name }}</a><p class="text-sm text-muted">{{ it.variant_name }} · {{ it.units_per_pack }} × 4 fl oz{% if it.subscribe %} · monthly subscription{% endif %}</p></div>
-              <p class="font-bold tabular-nums">{{ it.line_total_cents|fmt_money }}</p>
+              <div><a href="/products/{{ it.product_slug }}" class="font-semibold hover:underline">{{ it.product_name }}</a><p class="text-sm text-muted">{{ it.variant_name }} · {{ it.units_per_pack }} × 4 fl oz</p>{% if it.interval_months %}<p class="text-xs text-accent mt-1">Subscription · every {{ it.interval_months }} {{ 'month' if it.interval_months == 1 else 'months' }} · {{ it.sub_percent }}% off · cancel any time</p>{% endif %}</div>
+              <p class="font-bold tabular-nums">{{ it.line_total_cents|fmt_money }}{% if it.interval_months and it.base_price_cents > it.price_cents %}<span class="block text-xs text-faint line-through font-normal">{{ (it.base_price_cents * it.qty)|fmt_money }}</span>{% endif %}</p>
             </div>
             <div class="mt-3 flex items-center gap-3 flex-wrap">
               <form action="/cart/update" method="post" class="inline-flex items-center gap-2">
@@ -45,6 +45,7 @@
         <div class="flex justify-between"><dt class="text-muted">Subtotal</dt><dd class="tabular-nums">{{ totals['subtotal_cents']|fmt_money }}</dd></div>
         {% if totals['discount_cents'] %}<div class="flex justify-between text-success"><dt>Discount {{ totals['discount'].code }}</dt><dd class="tabular-nums">−{{ totals['discount_cents']|fmt_money }}</dd></div>{% endif %}
         <div class="flex justify-between"><dt class="text-muted">Shipping</dt><dd class="tabular-nums">{% if totals['shipping_cents'] == 0 %}Free{% else %}{{ totals['shipping_cents']|fmt_money }}{% endif %}</dd></div>
+        {% if totals['subscription_savings_cents'] %}<div class="flex justify-between text-success"><dt>Subscriber savings</dt><dd class="tabular-nums">−{{ totals['subscription_savings_cents']|fmt_money }}</dd></div>{% endif %}
         <div class="flex justify-between"><dt class="text-muted">Tax</dt><dd class="text-faint">At checkout</dd></div>
         <div class="flex justify-between font-bold text-base pt-2 border-t border-line-soft"><dt>Estimated total</dt><dd class="tabular-nums">{{ totals['total_estimate_cents']|fmt_money }}</dd></div>
       </dl>
@@ -72,7 +73,7 @@
         {% endif %}
         <button type="submit" class="btn btn-primary btn-lg btn-block" {% if not stripe_ready %}disabled{% endif %}>{{ icon('lock', 16) }} Check out with Stripe</button>
         {% if not stripe_ready %}<p class="alert alert-warn text-xs">Checkout is not configured yet: Stripe keys are missing from the environment.</p>{% endif %}
-        <p class="text-xs text-faint">Address, shipping and tax are collected on Stripe's secure page. Ships to the US.</p>
+        <p class="text-xs text-faint">Address, shipping and tax are collected on Stripe's secure page. Ships to the US.{% if totals['has_subscription'] %} Subscription items renew every {{ totals['subscription_interval'] }} {{ 'month' if totals['subscription_interval'] == 1 else 'months' }} until you cancel from your account.{% endif %}</p>
       </form>
     </aside>
   </div>

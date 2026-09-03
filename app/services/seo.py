@@ -13,7 +13,7 @@ def organization_ld() -> dict:
         "url": settings.base_url,
         "parentOrganization": {"@type": "Organization", "name": "Quick Drain", "url": settings.parent_site_url, "telephone": settings.phone_tel},
         "telephone": settings.phone_tel,
-        "areaServed": "Long Island, NY",
+        "areaServed": "US",
     }
 
 

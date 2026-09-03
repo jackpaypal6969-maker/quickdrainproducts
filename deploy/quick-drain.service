@@ -1,0 +1,34 @@
+# Quick Drain Products — systemd unit TEMPLATE.
+# deploy.sh renders it with:  envsubst '${APP_DIR} ${PORT} ${WORKERS} ${SERVICE_USER}'
+# and installs the result as /etc/systemd/system/quick-drain.service.
+# Do not edit the installed copy by hand; edit .env and re-run ./deploy.sh.
+
+[Unit]
+Description=Quick Drain Products storefront (uvicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=${SERVICE_USER}
+Group=${SERVICE_USER}
+WorkingDirectory=${APP_DIR}
+EnvironmentFile=${APP_DIR}/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=${APP_DIR}/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port ${PORT} --workers ${WORKERS} --proxy-headers --forwarded-allow-ips=127.0.0.1
+Restart=always
+RestartSec=3
+TimeoutStopSec=20
+KillSignal=SIGINT
+
+# Hardening. The app binds 127.0.0.1 only; nginx is the public face.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=${APP_DIR}
+# deploy.sh adds a drop-in with extra ReadWritePaths when DB_PATH, MEDIA_DIR
+# or BACKUP_DIR live outside APP_DIR.
+
+[Install]
+WantedBy=multi-user.target

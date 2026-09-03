@@ -1,0 +1,30 @@
+{% extends "emails/base.html" %}
+{% from "emails/_macros.html" import S_EYEBROW, S_H1, S_H2, S_P, S_MUTED, FONT, INK, DEEP, button, code_box %}
+{% block title %}Your {{ percent }}% welcome code{% endblock %}
+{% block preheader %}{{ code.code }} takes {{ percent }}% off at the cart. Tied to this address, one use.{% endblock %}
+{% block body %}
+<p style="{{ S_EYEBROW }}">Welcome</p>
+<h1 style="{{ S_H1 }}">Your {{ percent }}% code.</h1>
+<p style="{{ S_P }}">Thanks for signing up. Here is the code we promised.</p>
+{{ code_box(code.code) }}
+<p style="{{ S_MUTED }}">Tied to this email address, works once, and expires {{ code.expires_at|est_date }}.</p>
+
+<h2 style="{{ S_H2 }}">How to apply it</h2>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+<tr>
+<td width="28" style="padding:6px 0;font:700 15px/1.5 {{ FONT }};color:{{ DEEP }};vertical-align:top;">1.</td>
+<td style="padding:6px 0;font:400 15px/1.5 {{ FONT }};color:{{ INK }};">Add Quick Shot to your cart, in whatever pack size fits your drains.</td>
+</tr>
+<tr>
+<td style="padding:6px 0;font:700 15px/1.5 {{ FONT }};color:{{ DEEP }};vertical-align:top;">2.</td>
+<td style="padding:6px 0;font:400 15px/1.5 {{ FONT }};color:{{ INK }};">On the cart page, type the code into the <strong>Discount code</strong> box and press <strong>Apply</strong>. The total updates on the spot.</td>
+</tr>
+<tr>
+<td style="padding:6px 0;font:700 15px/1.5 {{ FONT }};color:{{ DEEP }};vertical-align:top;">3.</td>
+<td style="padding:6px 0;font:400 15px/1.5 {{ FONT }};color:{{ INK }};">Check out. The discount carries through to the Stripe payment page.</td>
+</tr>
+</table>
+
+{{ button(base_url ~ '/products/quick-shot', 'See Quick Shot') }}
+<p style="{{ S_MUTED }}">What the list is: a short note when something changes, such as a restock, a new pack size, or a maintenance note worth reading. Nothing weekly.</p>
+{% endblock %}

@@ -143,6 +143,7 @@ async def variant_save(product_id: int, request: Request, conn: sqlite3.Connecti
         "compare_at_cents": compare if compare and compare > price else None,
         "stripe_price_id": str(form.get("stripe_price_id") or "").strip()[:80],
         "stripe_subscription_price_id": str(form.get("stripe_subscription_price_id") or "").strip()[:80],
+        "subscription_discount_percent": (max(0, min(as_int(form.get("subscription_discount_percent")), 90)) if str(form.get("subscription_discount_percent") or "").strip() != "" else None),
         "low_stock_threshold": max(as_int(form.get("low_stock_threshold"), 5), 0),
         "weight_oz": float(form.get("weight_oz") or 0) or None,
         "is_active": 1 if form.get("is_active") else 0,

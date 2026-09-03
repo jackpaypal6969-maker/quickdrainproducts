@@ -60,8 +60,35 @@
         </div>
         <button type="submit" class="btn btn-primary btn-lg flex-1" data-add-button data-add-button-main>Add to cart</button>
       </div>
-      {% if settings.subscriptions_enabled and product.variants and product.variants[0].stripe_subscription_price_id %}
-      <label class="flex items-start gap-3 panel p-3 text-sm"><input type="checkbox" name="subscribe" value="1" class="checkbox mt-0.5"><span><span class="font-semibold block">Subscribe monthly and save</span><span class="text-muted">A fresh dose lands before the next one is due. Cancel from your account any time.</span></span></label>
+      {% if product.subscriptions.enabled and product.variants %}
+      {# Source: shadcn/ui "radio-group" tiles (MIT); interval + price logic in app.js #}
+      <fieldset data-delivery-selector>
+        <legend class="label">Delivery</legend>
+        <input type="hidden" name="subscribe" value="0" data-subscribe-input>
+        <div class="grid gap-2" role="radiogroup">
+          <label class="choice">
+            <input type="radio" name="delivery" value="once" checked>
+            <span class="choice-body">
+              <span><span class="block font-semibold">One-time purchase</span><span class="block text-xs text-muted">Ships once. Reorder whenever you like.</span></span>
+              <span class="font-display font-bold tabular-nums" data-once-price>{{ product.variants[0].price_cents|fmt_money }}</span>
+            </span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="delivery" value="sub">
+            <span class="choice-body">
+              <span><span class="block font-semibold">Subscribe &amp; save <span data-sub-percent>{{ product.variants[0].sub_percent }}</span>%</span><span class="block text-xs text-muted">Auto-delivered and billed on your schedule. Cancel any time from your account.</span></span>
+              <span class="font-display font-bold tabular-nums text-accent" data-sub-price>{{ product.variants[0].sub_price_cents|fmt_money }}</span>
+            </span>
+          </label>
+        </div>
+        <div class="mt-3 panel p-3 flex flex-wrap items-center gap-3" data-interval-wrap hidden>
+          <label class="label !mb-0" for="interval">Deliver every</label>
+          <select id="interval" name="interval" class="input !w-auto !min-h-[2.75rem]" data-interval-select>
+            {% for m in product.subscriptions.intervals %}<option value="{{ m }}">{{ m }} {{ 'month' if m == 1 else 'months' }}</option>{% endfor %}
+          </select>
+          <p class="text-xs text-muted basis-full" data-interval-hint aria-live="polite"></p>
+        </div>
+      </fieldset>
       {% endif %}
     </form>
 
@@ -75,8 +102,8 @@
     </form>
 
     <ul class="mt-6 space-y-2 text-sm text-muted">
-      <li class="flex gap-2">{{ icon('package', 16, 'text-accent mt-0.5 shrink-0') }} Ships as an ordinary parcel — {{ 'enzymatic' if product.formulation_type == 'enzymatic' else product.formulation_type }} formulation, not a DOT-regulated corrosive.</li>
-      <li class="flex gap-2">{{ icon('truck', 16, 'text-accent mt-0.5 shrink-0') }} {{ settings.flat_shipping_cents|fmt_money }} flat-rate shipping, free over {{ settings.free_shipping_threshold_cents|fmt_money_short }}. <a href="/shipping-and-safety" class="link tap-inline">Details</a></li>
+      <li class="flex gap-2">{{ icon('package', 16, 'text-accent mt-0.5 shrink-0') }} Ships as an ordinary parcel at the flat rate. <a href="/shipping-and-safety" class="link">Why</a></li>
+      <li class="flex gap-2">{{ icon('truck', 16, 'text-accent mt-0.5 shrink-0') }} {{ settings.flat_shipping_cents|fmt_money }} flat-rate shipping, free from {{ settings.free_shipping_threshold_cents|fmt_money_short }}.</li>
       <li class="flex gap-2">{{ icon('shield', 16, 'text-accent mt-0.5 shrink-0') }} Stripe-hosted checkout. Card details never touch this server.</li>
       {% if product.prop65_warning %}<li class="flex gap-2 text-warning">{{ icon('alert', 16, 'mt-0.5 shrink-0') }} {{ product.prop65_warning }}</li>{% endif %}
     </ul>
@@ -106,7 +133,7 @@
   <div class="container-x">
     <div class="max-w-2xl" data-reveal>
       <p class="eyebrow">Dose &amp; coverage</p>
-      <h2 class="h2 mt-3">One bottle treats one drain for one month.</h2>
+      <h2 class="h2 mt-3">One bottle is one monthly dose for one drain.</h2>
       <p class="text-muted mt-4">{{ product.dose_text }} — {{ product.net_volume_oz|int }} fl oz ({{ product.net_volume_ml|int }} mL) per bottle. The table multiplies that by the pack.</p>
     </div>
     <div class="mt-8" data-reveal>{{ ledger(product, True, csrf_token) }}</div>
@@ -114,7 +141,7 @@
       <div>
         <h3 class="h3">Directions</h3>
         {% if product.directions %}<div class="prose mt-3">{{ product.directions|md }}</div>
-        {% else %}<p class="text-muted mt-3">Use one bottle per drain, once a month, as the label directs. Full directions are printed on the back label; we publish them here word for word once the back panel is on file.</p>{% endif %}
+        {% else %}<p class="text-muted mt-3">The label's direction is “dosed for monthly use on any drain”: one bottle per drain, once a month. If the packaging carries further directions, they appear here word for word once they are on file.</p>{% endif %}
       </div>
       <div>
         <h3 class="h3">Specifications</h3>

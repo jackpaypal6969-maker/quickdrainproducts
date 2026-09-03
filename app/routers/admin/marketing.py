@@ -10,13 +10,13 @@ from starlette.responses import StreamingResponse
 
 from ...db import all_rows, all_settings, one, set_setting, transaction
 from ...deps import flash, get_db, ip, redirect, require_admin
-from ...security import normalize_email, parse_iso
+from ...security import hash_password, normalize_email, parse_iso, password_policy_error, verify_password
 from ...services import audit, discounts
 from .common import arender, as_int, dollars_to_cents
 
 router = APIRouter()
 
-SETTING_KEYS = ("promo_banner", "promo_banner_enabled", "newsletter_discount_percent", "newsletter_enabled", "reviews_enabled", "store_notice", "email_blocklist_extra")
+SETTING_KEYS = ("promo_banner", "promo_banner_enabled", "newsletter_discount_percent", "newsletter_enabled", "reviews_enabled", "store_notice", "email_blocklist_extra", "subscription_discount_percent", "subscription_intervals")
 
 
 @router.get("/discounts")
@@ -123,11 +123,32 @@ async def settings_save(request: Request, conn: sqlite3.Connection = Depends(get
         for key in SETTING_KEYS:
             if key in ("promo_banner_enabled", "newsletter_enabled", "reviews_enabled"):
                 value = "1" if form.get(key) else "0"
+            elif key in ("newsletter_discount_percent", "subscription_discount_percent"):
+                value = str(max(0, min(as_int(form.get(key), 10), 90)))
+            elif key == "subscription_intervals":
+                months = sorted({m for m in (as_int(x) for x in str(form.get(key) or "").split(",")) if 1 <= m <= 12})
+                value = ",".join(str(m) for m in months) or "1"
             else:
                 value = str(form.get(key) or "").strip()[:2000]
             set_setting(conn, key, value)
         audit.log(conn, "settings.save", actor_type="admin", actor_id=admin["id"], actor_name=admin["username"], target_type="settings", before={k: before.get(k) for k in SETTING_KEYS}, after={k: form.get(k) for k in SETTING_KEYS}, ip=ip(request))
     flash(request, "Settings saved.")
+    return redirect("/admin/settings")
+
+
+@router.post("/settings/password")
+def admin_password(request: Request, current_password: str = Form(""), password: str = Form(""), conn: sqlite3.Connection = Depends(get_db), admin: dict = Depends(require_admin)):
+    if not verify_password(admin["password_hash"], current_password):
+        flash(request, "Your current password was not right.", "error")
+        return redirect("/admin/settings")
+    err = password_policy_error(password)
+    if err:
+        flash(request, err, "error")
+        return redirect("/admin/settings")
+    with transaction(conn):
+        conn.execute("UPDATE admin_users SET password_hash = ? WHERE id = ?", (hash_password(password), admin["id"]))
+        audit.log(conn, "admin.password_change", actor_type="admin", actor_id=admin["id"], actor_name=admin["username"], target_type="admin", target_id=admin["id"], ip=ip(request))
+    flash(request, "Admin password changed.")
     return redirect("/admin/settings")
 
 

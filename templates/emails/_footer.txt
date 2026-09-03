@@ -1,0 +1,10 @@
+{% autoescape false %}
+
+--
+{{ settings.app_name }}
+{{ settings.phone_display }} · quickdrainny.com
+{{ base_url }}
+{% if category == 'marketing' %}
+Unsubscribe: {{ unsubscribe_url }}
+{% endif %}
+{% endautoescape %}

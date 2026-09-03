@@ -1,0 +1,24 @@
+{% extends "emails/base.html" %}
+{% from "emails/_macros.html" import S_EYEBROW, S_H1, S_H2, S_P, S_MUTED, S_SMALL, DEEP, button, items_table, code_box, discount_label %}
+{% block title %}You left Quick Shot in your cart{% endblock %}
+{% block preheader %}Your cart is saved. A {{ discount_label(code) }} code inside, tied to this address.{% endblock %}
+{% block body %}
+<p style="{{ S_EYEBROW }}">Your cart</p>
+<h1 style="{{ S_H1 }}">You left Quick Shot in your cart.</h1>
+<p style="{{ S_P }}">It is still there, exactly as you left it. If you meant to finish, the button below picks up where you stopped.</p>
+
+{{ items_table(totals['items']) }}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border-top:1px solid #E3E5EE;">
+<tr>
+<td style="padding:12px 0 0;{{ S_SMALL }}">Subtotal, before shipping and tax</td>
+<td align="right" style="padding:12px 0 0;font-weight:700;color:{{ DEEP }};white-space:nowrap;">{{ totals['subtotal_cents']|fmt_money }}</td>
+</tr>
+</table>
+
+<h2 style="{{ S_H2 }}">{{ discount_label(code) }} if you want it</h2>
+{{ code_box(code.code) }}
+<p style="{{ S_MUTED }}">Tied to this email address, works once, and expires {{ code.expires_at|est_date }}. Enter it in the discount box on the cart page.</p>
+
+{{ button(resume_url, 'Return to your cart') }}
+<p style="{{ S_MUTED }}">No rush, and this is the only reminder we send about this cart.</p>
+{% endblock %}

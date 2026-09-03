@@ -1,0 +1,49 @@
+{% from "emails/_macros.html" import FONT, PAGE, CARD, DEEP, ACCENT, LINE, FAINT %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
+<title>{% block title %}{{ settings.app_name }}{% endblock %}</title>
+</head>
+<body style="margin:0;padding:0;background:{{ PAGE }};-webkit-text-size-adjust:100%;">
+<div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:{{ PAGE }};">{% block preheader %}{% endblock %}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="{{ PAGE }}" style="background:{{ PAGE }};">
+<tr>
+<td align="center" style="padding:32px 16px 40px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
+
+<tr>
+<td bgcolor="{{ DEEP }}" style="background:{{ DEEP }};border-radius:12px 12px 0 0;padding:22px 32px;">
+<a href="{{ base_url }}" style="text-decoration:none;color:#F7FBFF;font:800 19px/1 {{ FONT }};letter-spacing:-0.03em;">Quick Drain <span style="display:inline-block;margin-left:6px;font:700 10px/1 {{ FONT }};letter-spacing:.16em;text-transform:uppercase;color:{{ ACCENT }};vertical-align:middle;">Products</span></a>
+</td>
+</tr>
+<tr>
+<td bgcolor="{{ ACCENT }}" style="background:{{ ACCENT }};height:3px;font-size:0;line-height:0;">&nbsp;</td>
+</tr>
+
+<tr>
+<td bgcolor="{{ CARD }}" style="background:{{ CARD }};padding:36px 32px 28px;border:1px solid {{ LINE }};border-top:0;border-radius:0 0 12px 12px;">
+{% block body %}{% endblock %}
+</td>
+</tr>
+
+<tr>
+<td align="center" style="padding:24px 8px 0;">
+<p style="margin:0 0 6px;font:400 12px/1.6 {{ FONT }};color:{{ FAINT }};">{{ settings.app_name }} · <a href="tel:{{ settings.phone_tel }}" style="color:{{ FAINT }};text-decoration:underline;">{{ settings.phone_display }}</a> · <a href="{{ settings.parent_site_url }}" style="color:{{ FAINT }};text-decoration:underline;">quickdrainny.com</a></p>
+<p style="margin:0;font:400 12px/1.6 {{ FONT }};color:{{ FAINT }};"><a href="{{ base_url }}" style="color:{{ FAINT }};text-decoration:underline;">{{ base_url|replace('https://', '')|replace('http://', '') }}</a>{% if category == 'marketing' %} · <a href="{{ unsubscribe_url }}" style="color:{{ FAINT }};text-decoration:underline;">Unsubscribe</a>{% endif %}</p>
+{% if category == 'marketing' %}
+<p style="margin:8px 0 0;font:400 11px/1.6 {{ FONT }};color:{{ FAINT }};">You are getting this because you gave us this address at the store. One click above stops marketing email; order and account messages still arrive.</p>
+{% endif %}
+</td>
+</tr>
+
+</table>
+</td>
+</tr>
+</table>
+</body>
+</html>

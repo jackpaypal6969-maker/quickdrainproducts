@@ -1,0 +1,36 @@
+{% extends "emails/base.html" %}
+{% from "emails/_macros.html" import S_EYEBROW, S_H1, S_H2, S_P, S_MUTED, S_LINK, button, items_table, address, code_box %}
+{% set carrier = (order.carrier or '')|lower %}
+{% set tracking = order.tracking_number or '' %}
+{% if tracking and 'usps' in carrier %}{% set track_url = 'https://tools.usps.com/go/TrackConfirmAction?tLabels=' ~ tracking|urlencode %}
+{% elif tracking and 'ups' in carrier %}{% set track_url = 'https://www.ups.com/track?tracknum=' ~ tracking|urlencode %}
+{% elif tracking and 'fedex' in carrier %}{% set track_url = 'https://www.fedex.com/fedextrack/?trknbr=' ~ tracking|urlencode %}
+{% else %}{% set track_url = '' %}{% endif %}
+{% block title %}Order {{ order.order_number }} is on its way{% endblock %}
+{% block preheader %}{% if order.carrier %}Shipped via {{ order.carrier }}.{% else %}Shipped.{% endif %} Pour the first dose the day it arrives.{% endblock %}
+{% block body %}
+<p style="{{ S_EYEBROW }}">Shipped</p>
+<h1 style="{{ S_H1 }}">Order {{ order.order_number }} is on its way.</h1>
+<p style="{{ S_P }}">{% if order.shipped_at %}It left us {{ order.shipped_at|est_date }}{% else %}It has left us{% endif %}{% if order.carrier %} with {{ order.carrier }}{% endif %}, as an ordinary parcel.</p>
+
+{% if tracking %}
+<h2 style="{{ S_H2 }}">Tracking number</h2>
+{{ code_box(tracking) }}
+{% if track_url %}
+{{ button(track_url, 'Track the parcel') }}
+{% else %}
+<p style="{{ S_MUTED }}">Paste the number into {{ order.carrier or "the carrier" }}'s tracking page.</p>
+{% endif %}
+{% else %}
+<p style="{{ S_MUTED }}">No tracking number was issued for this shipment.</p>
+{% endif %}
+
+<h2 style="{{ S_H2 }}">In the box</h2>
+{{ items_table(items, money=False) }}
+
+<h2 style="{{ S_H2 }}">Ships to</h2>
+{{ address(order) }}
+
+<p style="{{ S_P }}">Pour the first bottle the day it arrives and mark the calendar 30 days out. The rest of the pack keeps in a cupboard.</p>
+<p style="{{ S_MUTED }}">Order details are at <a href="{{ base_url }}/orders/lookup" style="{{ S_LINK }}">{{ base_url|replace('https://', '')|replace('http://', '') }}/orders/lookup</a>. Reply to this email if the parcel is late or arrives damaged.</p>
+{% endblock %}

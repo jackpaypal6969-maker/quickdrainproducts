@@ -97,6 +97,8 @@ def _seed_defaults() -> None:
             "reviews_enabled": "1",
             "store_notice": "",
             "email_blocklist_extra": "",
+            "subscription_discount_percent": "10",
+            "subscription_intervals": "1,2,3",
         }
         for k, v in defaults.items():
             conn.execute("INSERT OR IGNORE INTO settings(key, value) VALUES (?, ?)", (k, v))

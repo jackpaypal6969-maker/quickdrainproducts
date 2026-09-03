@@ -1,0 +1,17 @@
+{% autoescape false %}
+QUICK DRAIN PRODUCTS
+Admin sign-in code
+
+Signing in as {{ username }}. Enter this on the admin page that asked
+for it:
+
+    {{ code }}
+
+The code works for ten minutes and once. It is the last step after your
+password and authenticator.
+
+If you did not just try to sign in, someone has your password. Rotate it
+now at {{ base_url }}/admin/login, then check the login log for the
+attempt.
+{% include "emails/_footer.txt" %}
+{% endautoescape %}

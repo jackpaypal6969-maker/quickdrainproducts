@@ -74,7 +74,10 @@ def issue_locked_code(conn: sqlite3.Connection, email: str, channel: str, percen
     email = normalize_email(email)
     existing = one(conn, "SELECT * FROM discount_codes WHERE restricted_to_email = ? AND channel = ? ORDER BY id DESC LIMIT 1", (email, channel))
     if existing:
-        return dict(existing)
+        ok, _ = validate(dict(existing), email=email, subtotal_cents=10**9)
+        if ok:
+            return dict(existing)
+        # Expired or fully used: leave that row exactly as it is and issue a new one.
     for _ in range(10):
         code = f"{prefix}-{secrets.token_hex(3).upper()}"
         if not one(conn, "SELECT 1 FROM discount_codes WHERE code = ?", (code,)):

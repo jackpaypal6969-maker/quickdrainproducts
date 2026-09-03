@@ -47,8 +47,8 @@ def customer_deactivate(customer_id: int, request: Request, conn: sqlite3.Connec
     row = one(conn, "SELECT * FROM customers WHERE id = ?", (customer_id,))
     if not row:
         raise HTTPException(404)
-    has_orders = one(conn, "SELECT 1 FROM orders WHERE customer_id = ? LIMIT 1", (customer_id,))
     with transaction(conn):
+        has_orders = one(conn, "SELECT 1 FROM orders WHERE customer_id = ? LIMIT 1", (customer_id,))
         if has_orders:
             # Soft delete only: order history must keep its customer link.
             conn.execute("UPDATE customers SET is_active = 0, deleted_at = ?, marketing_opt_in = 0 WHERE id = ?", (iso(), customer_id))

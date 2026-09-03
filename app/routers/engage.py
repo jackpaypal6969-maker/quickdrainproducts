@@ -47,9 +47,9 @@ def newsletter(request: Request, email: str = Form(""), source: str = Form("moda
             conn.execute("DELETE FROM email_suppressions WHERE email = ? AND reason = 'unsubscribe'", (norm,))
         else:
             conn.execute("INSERT INTO newsletter_subscribers(email, source, welcome_code_id, ip) VALUES (?, ?, ?, ?)", (norm, source[:30], code["id"], ip(request)))
-        if not existing or not existing["welcome_code_id"]:
-            emails.send(conn, norm, "newsletter_welcome", f"Your {percent}% welcome code", {"code": code, "percent": percent}, category="marketing", related_type="newsletter", related_id=code["id"])
-        analytics.capture(conn, "newsletter_signup", norm, {"source": source[:30], "code": code["code"]})
+    if not existing or not existing["welcome_code_id"]:
+        emails.send(conn, norm, "newsletter_welcome", f"Your {percent}% welcome code", {"code": code, "percent": percent}, category="marketing", related_type="newsletter", related_id=code["id"])
+    analytics.capture(conn, "newsletter_signup", norm, {"source": source[:30], "code": code["code"]})
     return _respond(request, True, "Thanks — your welcome code is on its way." if not existing else "You are already on the list. Your code was re-sent if it was unused.")
 
 
@@ -67,5 +67,5 @@ def notify_me(request: Request, email: str = Form(""), variant_id: int = Form(0)
         return _respond(request, False, "That option was not found.")
     with transaction(conn):
         conn.execute("INSERT OR IGNORE INTO stock_notifications(email, variant_id, ip) VALUES (?, ?, ?)", (norm, variant_id, ip(request)))
-        analytics.capture(conn, "notify_me", norm, {"variant_id": variant_id})
+    analytics.capture(conn, "notify_me", norm, {"variant_id": variant_id})
     return _respond(request, True, "We will email you the moment it is back in stock.", back=f"/products/{variant['slug']}")

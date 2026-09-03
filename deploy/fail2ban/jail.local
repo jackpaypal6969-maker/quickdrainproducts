@@ -1,0 +1,19 @@
+# fail2ban jail — Quick Drain Products admin sign-in.
+# deploy.sh renders ${PUBLIC_PORT} with envsubst and installs the result as
+# /etc/fail2ban/jail.d/quick-drain.local (its own file: nothing else in
+# jail.d or jail.local is touched).
+#
+# Manual bans: `ufw deny from <ip>` does NOT block an attacker when an
+# ALLOW rule for 80/443 (or ${PUBLIC_PORT}) sits above it — ufw evaluates
+# rules top-down and the allow wins. Insert the deny at the top instead:
+#     ufw insert 1 deny from <ip>
+# fail2ban's own bans go through iptables directly and are not affected.
+
+[quick-drain]
+enabled  = true
+filter   = quick-drain
+logpath  = /var/log/nginx/access.log
+port     = http,https,${PUBLIC_PORT}
+maxretry = 10
+findtime = 15m
+bantime  = 1h

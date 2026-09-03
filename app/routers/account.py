@@ -13,7 +13,7 @@ from ..db import all_rows, one, transaction
 from ..deps import csrf_protect, current_customer, flash, get_db, ip, redirect, render, require_customer
 from ..security import (check_rate_limit, hash_password, hash_token, iso, new_token, normalize_email, password_policy_error,
                         utcnow, validate_email, verify_password)
-from ..services import audit, emails, orders
+from ..services import audit, emails, orders, stripe_service, subscriptions
 from ..services import cart as cart_service
 
 router = APIRouter(prefix="/account", dependencies=[Depends(csrf_protect)])
@@ -114,7 +114,7 @@ def reset_request(request: Request, email: str = Form(""), conn: sqlite3.Connect
         token = new_token(32)
         with transaction(conn):
             conn.execute("INSERT INTO password_resets(customer_id, token_hash, expires_at) VALUES (?, ?, ?)", (row["id"], hash_token(token), iso(utcnow() + timedelta(hours=2))))
-            emails.send(conn, row["email"], "password_reset", "Reset your Quick Drain Products password", {"reset_url": f"{settings.base_url}/account/reset/{token}"}, related_type="customer", related_id=row["id"])
+        emails.send(conn, row["email"], "password_reset", "Reset your Quick Drain Products password", {"reset_url": f"{settings.base_url}/account/reset/{token}"}, related_type="customer", related_id=row["id"])
     flash(request, "If that email has an account or past orders, a reset link is on its way. It expires in two hours.")
     return redirect("/account/login")
 
@@ -153,8 +153,69 @@ def reset_with_token(token: str, request: Request, password: str = Form(""), con
 def dashboard(request: Request, conn: sqlite3.Connection = Depends(get_db), customer: dict = Depends(require_customer)):
     order_rows = orders.list_for_customer(conn, customer["id"])
     addresses = [dict(a) for a in all_rows(conn, "SELECT * FROM addresses WHERE customer_id = ? ORDER BY is_default DESC, id", (customer["id"],))]
-    subs = [dict(s) for s in all_rows(conn, "SELECT * FROM subscriptions WHERE customer_id = ? ORDER BY created_at DESC", (customer["id"],))]
-    return render(request, "account/dashboard.html", {"orders": order_rows, "addresses": addresses, "subscriptions": subs, "states": US_STATES, "profile": customer, "meta_title": "Your account"}, conn=conn)
+    subs = subscriptions.for_customer(conn, customer["id"])
+    return render(request, "account/dashboard.html", {"orders": order_rows, "addresses": addresses, "subscriptions": subs, "states": US_STATES, "profile": customer, "stripe_ready": stripe_service.configured(), "meta_title": "Your account"}, conn=conn)
+
+
+# ------------------------------------------------------------ subscriptions
+def _owned_subscription(conn: sqlite3.Connection, sub_id: int, customer: dict) -> dict:
+    row = one(conn, "SELECT * FROM subscriptions WHERE id = ? AND customer_id = ?", (sub_id, customer["id"]))
+    if not row:
+        raise HTTPException(404)
+    return dict(row)
+
+
+@router.post("/subscriptions/{sub_id}/cancel")
+def subscription_cancel(sub_id: int, request: Request, conn: sqlite3.Connection = Depends(get_db), customer: dict = Depends(require_customer)):
+    sub = _owned_subscription(conn, sub_id, customer)
+    if sub["status"] in ("canceled", "incomplete_expired"):
+        flash(request, "That subscription is already canceled.")
+        return redirect("/account")
+    try:
+        stripe_service.cancel_subscription(sub["stripe_subscription_id"], at_period_end=True)
+    except Exception as exc:  # noqa: BLE001
+        flash(request, "Stripe could not update the subscription right now. Nothing changed; try again in a minute or contact us.", "error")
+        audit.log(conn, "subscription.cancel_failed", actor_type="customer", actor_id=customer["id"], target_type="subscription", target_id=sub_id, after={"error": str(exc)[:200]}, ip=ip(request))
+        return redirect("/account")
+    with transaction(conn):
+        conn.execute("UPDATE subscriptions SET status = 'canceling', cancel_at_period_end = 1, updated_at = ? WHERE id = ?", (iso(), sub_id))
+        audit.log(conn, "subscription.cancel", actor_type="customer", actor_id=customer["id"], target_type="subscription", target_id=sub_id, before={"status": sub["status"]}, after={"status": "canceling"}, ip=ip(request))
+    flash(request, "Canceled. You keep what you already paid for; nothing renews after this period.")
+    return redirect("/account")
+
+
+@router.post("/subscriptions/{sub_id}/resume")
+def subscription_resume(sub_id: int, request: Request, conn: sqlite3.Connection = Depends(get_db), customer: dict = Depends(require_customer)):
+    sub = _owned_subscription(conn, sub_id, customer)
+    if sub["status"] != "canceling":
+        return redirect("/account")
+    try:
+        stripe_service.resume_subscription(sub["stripe_subscription_id"])
+    except Exception as exc:  # noqa: BLE001
+        flash(request, "Stripe could not update the subscription right now. Try again in a minute.", "error")
+        audit.log(conn, "subscription.resume_failed", actor_type="customer", actor_id=customer["id"], target_type="subscription", target_id=sub_id, after={"error": str(exc)[:200]}, ip=ip(request))
+        return redirect("/account")
+    with transaction(conn):
+        conn.execute("UPDATE subscriptions SET status = 'active', cancel_at_period_end = 0, updated_at = ? WHERE id = ?", (iso(), sub_id))
+        audit.log(conn, "subscription.resume", actor_type="customer", actor_id=customer["id"], target_type="subscription", target_id=sub_id, ip=ip(request))
+    flash(request, "Subscription resumed.")
+    return redirect("/account")
+
+
+@router.post("/subscriptions/portal")
+def subscription_portal(request: Request, conn: sqlite3.Connection = Depends(get_db), customer: dict = Depends(require_customer)):
+    """Stripe's hosted billing portal: update the card, change address, see invoices."""
+    stripe_customer_id = customer.get("stripe_customer_id") or (one(conn, "SELECT stripe_customer_id FROM subscriptions WHERE customer_id = ? AND stripe_customer_id != '' ORDER BY created_at DESC LIMIT 1", (customer["id"],)) or {"stripe_customer_id": ""})["stripe_customer_id"]
+    if not stripe_customer_id or not stripe_service.configured():
+        flash(request, "No billing profile found for this account yet.", "error")
+        return redirect("/account")
+    try:
+        url = stripe_service.billing_portal_url(stripe_customer_id, f"{settings.base_url}/account")
+    except Exception as exc:  # noqa: BLE001
+        flash(request, "Stripe's billing page is not available right now. Contact us to update payment details.", "error")
+        audit.log(conn, "subscription.portal_failed", actor_type="customer", actor_id=customer["id"], after={"error": str(exc)[:200]}, ip=ip(request))
+        return redirect("/account")
+    return redirect(url, status_code=303)
 
 
 @router.get("/orders/{order_id}")
@@ -194,8 +255,8 @@ def rma_request(order_id: int, request: Request, reason: str = Form(""), details
     with transaction(conn):
         cur = conn.execute("INSERT INTO rma_requests(order_id, email, reason, details) VALUES (?, ?, ?, ?)", (order["id"], order["email"], reason, details.strip()[:4000]))
         audit.log(conn, "rma.requested", actor_type="customer", actor_id=customer["id"], target_type="rma", target_id=int(cur.lastrowid), after={"order": order["order_number"], "reason": reason}, ip=ip(request))
-        if settings.contact_inbox:
-            emails.send(conn, settings.contact_inbox, "rma_notification", f"Return request on {order['order_number']}", {"order": order, "reason": reason, "details": details.strip()[:4000]}, related_type="order", related_id=order["id"])
+    if settings.contact_inbox:
+        emails.send(conn, settings.contact_inbox, "rma_notification", f"Return request on {order['order_number']}", {"order": order, "reason": reason, "details": details.strip()[:4000]}, related_type="order", related_id=order["id"])
     flash(request, "Return request received. We reply within one business day.")
     return redirect(f"/account/orders/{order_id}")
 

@@ -32,16 +32,16 @@ SPECS = [
     ("Net contents", "4 fl oz (118 mL) per bottle (label)"),
     ("Dosing", "Dosed for monthly use on any drain — one bottle is one monthly dose (label)"),
     ("Active ingredients", "Not printed on the front label. Added from the SDS when uploaded."),
-    ("Shipping class", "Ordinary parcel. Enzymatic formulation, not a DOT-regulated corrosive."),
-    ("Made for", "Long Island drains, by Quick Drain"),
+    ("Shipping class", "Ordinary parcel. Enzymatic per the label; confirmed against the safety data sheet once it is on file."),
+    ("Sold by", "Quick Drain, Long Island, NY"),
 ]
 
 FAQS = [
     ("Is one bottle one dose?", "Yes. The label reads “dosed for monthly use on any drain” and the bottle holds 4 fl oz (118 mL). Use one bottle per drain, once a month."),
-    ("What is in it?", "The front label describes it as a natural drain enzyme. The full ingredient statement lives on the back label and the safety data sheet; we publish the SDS on this page as soon as it is uploaded and we do not list ingredients we cannot show you."),
+    ("What is in it?", "The label describes it as a natural drain enzyme and does not list ingredients. When the safety data sheet is on file we publish it here unchanged; until then we do not list ingredients we cannot show you."),
     ("Will it clear a drain that is already backed up?", "It is a maintainer, not an emergency product. If water is standing or backing up right now, that needs a diagnosis — a camera inspection tells you whether it is grease, roots, scale or a broken line. Book that with Quick Drain and use Quick Shot afterwards to keep the line clean."),
-    ("Is it safe for septic systems and cesspools?", "The front label says “any drain” and does not make a specific septic claim. Until the SDS is published here we will not claim more than the label does. If you are on a cesspool, ask us before use."),
-    ("How does it ship?", "As an ordinary parcel. Enzymatic products are not DOT-regulated corrosives, so there is no hazmat surcharge, no ground-only restriction and no carrier refusal. Flat-rate shipping, free over the threshold shown in the cart."),
+    ("Is it safe for septic systems and cesspools?", "The label says “any drain” and does not make a specific septic claim. Until the SDS is published here we will not claim more than the label does. If you are on a cesspool, ask us before use."),
+    ("How does it ship?", "As an ordinary parcel at a flat rate, free from the threshold shown in the cart. Enzymatic products are not classed as corrosives for shipping; the safety data sheet, once published here, is the document that confirms the classification."),
     ("How do the packs work?", "A 3-pack is three monthly doses for one drain, or one month for three drains. A 6-pack is six. The coverage table above does the arithmetic for you."),
 ]
 
@@ -49,17 +49,17 @@ POSTS = [
     {
         "slug": "clearing-vs-cleaning-and-where-a-monthly-dose-fits",
         "title": "Clearing a drain is not cleaning it — and where a monthly dose fits",
-        "excerpt": "Punching a hole through a clog and restoring the pipe wall are different jobs. Maintenance only makes sense once the line is actually clean.",
+        "excerpt": "Punching a hole through a clog and restoring the pipe wall are different jobs. A monthly dose belongs after the second one.",
         "body": (
-            "Quick Drain's service pages draw a line most contractors never explain: **drain clearing** opens a blockage fast but leaves the buildup behind, so clogs return sooner. **Drain cleaning** — high pressure water jetting — removes grease, sludge and scale and restores the pipe's diameter.\n\n"
+            "Quick Drain's service pages separate two jobs: **drain clearing** punches a hole through a blockage, while **drain cleaning** — high pressure water jetting — restores the full pipe wall and original diameter.\n\n"
             "That distinction matters for a maintenance product. A monthly enzyme dose is a way to keep a *clean* line clean. It is not a substitute for jetting a line that is already coated, and it will not fix roots, offsets, bellies or collapsed pipe.\n\n"
             "## The honest sequence\n\n"
             "1. If a drain is backing up, get it diagnosed. A camera inspection with 512 Hz locating shows what is actually in the line.\n"
             "2. If the line is dirty, have it jetted wall-to-wall.\n"
-            "3. Then start the monthly dose so the next emergency call is a maintenance visit instead.\n\n"
+            "3. Then start the monthly dose as the label directs.\n\n"
             "[Read about camera inspections and jetting on quickdrainny.com](https://www.quickdrainny.com/)"
         ),
-        "seo_description": "Drain clearing opens a clog; drain cleaning restores the pipe. Where a monthly enzyme dose fits in that sequence.",
+        "seo_description": "Opening a clog and cleaning the pipe wall are different jobs. Where a monthly enzyme dose fits in that sequence.",
     },
     {
         "slug": "long-island-conditions-cast-iron-groundwater-and-roots",
@@ -68,8 +68,8 @@ POSTS = [
         "body": (
             "Quick Drain's field work is shaped by local conditions the parent site calls out directly: high groundwater, older cast iron, Orangeburg pipe, sandy soil, roots and heavy rainfall.\n\n"
             "Each one changes what maintenance can and cannot do:\n\n"
-            "- **Older cast iron** scales and tuberculates from the inside. Descaling is a mechanical job; a maintainer keeps a descaled line from re-coating with grease.\n"
-            "- **Roots** are a structural problem. No bottle removes a root mass. Cutting and a camera follow-up are the fix.\n"
+            "- **Older cast iron** scales and tuberculates from the inside. Descaling is a mechanical job; once a line is clean, the label's monthly dose is the maintenance step.\n"
+            "- **Roots** are a structural problem. No bottle removes a root mass. Root cutting and a camera follow-up are the fix.\n"
             "- **High groundwater and cesspools** raise the stakes on what goes down the drain. Ask before using any additive on a cesspool.\n\n"
             "If you are buying a home on Long Island, the parent site's sewer and septic inspection pages explain what to check before closing.\n\n"
             "[See Quick Drain's inspection services](https://www.quickdrainny.com/)"
@@ -94,7 +94,7 @@ def main() -> None:
                 "name": "Quick Shot",
                 "tagline": "A natural drain enzyme, dosed for monthly use on any drain.",
                 "description": (
-                    "Quick Shot is the maintenance step between service visits. One 4 fl oz bottle is one monthly dose for one drain — the label says exactly that, and this page will not say more than the label does.\n\n"
+                    "Quick Shot is the maintenance step between service visits. The label reads “dosed for monthly use on any drain”, 4 fl oz per bottle. We read that as one bottle, one drain, one month — and this page will not say more than the label does.\n\n"
                     "It comes from Quick Drain, the Long Island sewer and drain company that diagnoses before it quotes. The same posture applies here: if your drain is backing up today, that is a diagnostic visit, not a bottle."
                 ),
                 "formulation_type": "enzymatic",

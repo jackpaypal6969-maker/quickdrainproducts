@@ -1,0 +1,15 @@
+{% extends "emails/base.html" %}
+{% from "emails/_macros.html" import S_EYEBROW, S_H1, S_P, S_MUTED, S_LINK, button, items_table %}
+{% block title %}How is Quick Shot working for you?{% endblock %}
+{% block preheader %}Two minutes on what you saw helps the next person decide.{% endblock %}
+{% block body %}
+<p style="{{ S_EYEBROW }}">Verified order</p>
+<h1 style="{{ S_H1 }}">How is Quick Shot working for you?</h1>
+<p style="{{ S_P }}">Order {{ order.order_number }} has had time for a dose or two. Two minutes on what you saw helps the next person decide, and helps us see what the label is and is not doing.</p>
+
+{{ items_table(items, money=False) }}
+
+{{ button(review_url, 'Write a review') }}
+<p style="{{ S_MUTED }}">Reviews from an order carry a verified badge. Blunt is fine; if it did nothing for you, say so.</p>
+<p style="{{ S_MUTED }}">If a drain is actually backing up, do not wait on a review. Call <a href="tel:{{ settings.phone_tel }}" style="{{ S_LINK }}">{{ settings.phone_display }}</a> for a diagnostic visit.</p>
+{% endblock %}

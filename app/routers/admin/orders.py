@@ -109,7 +109,8 @@ def rma_update(rma_id: int, request: Request, status: str = Form(""), admin_note
     with transaction(conn):
         resolved = "strftime('%Y-%m-%dT%H:%M:%SZ','now')" if status in ("refunded", "rejected") else "resolved_at"
         conn.execute(f"UPDATE rma_requests SET status = ?, admin_note = ?, resolved_at = {resolved} WHERE id = ?", (status, admin_note.strip()[:2000], rma_id))
-        if status == "received" and restock and row["status"] != "received":
+        already = one(conn, "SELECT 1 FROM inventory_movements WHERE order_id = ? AND reason = 'rma' LIMIT 1", (row["order_id"],))
+        if status == "received" and restock and row["status"] != "received" and not already:
             for it in all_rows(conn, "SELECT variant_id, qty FROM order_items WHERE order_id = ? AND variant_id IS NOT NULL", (row["order_id"],)):
                 conn.execute("UPDATE variants SET stock = stock + ? WHERE id = ?", (it["qty"], it["variant_id"]))
                 conn.execute("INSERT INTO inventory_movements(variant_id, delta, reason, order_id, admin_id, note) VALUES (?, ?, 'rma', ?, ?, 'return received')", (it["variant_id"], it["qty"], row["order_id"], admin["id"]))

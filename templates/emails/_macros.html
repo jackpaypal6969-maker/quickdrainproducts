@@ -1,0 +1,105 @@
+{# Shared inline-style strings and table macros for templates/emails/*.
+   Emails carry no stylesheet, so every colour and font lives here once.
+   Palette: white card on a light neutral ground, deep indigo header, one cyan
+   accent (rule or button only, always with dark text). #}
+{% set FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" %}
+{% set MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" %}
+{% set PAGE = "#EEF0F5" %}
+{% set CARD = "#FFFFFF" %}
+{% set WELL = "#F4F5F9" %}
+{% set DEEP = "#140B33" %}
+{% set INK = "#1B1433" %}
+{% set MUTED = "#5F5E75" %}
+{% set FAINT = "#8A89A0" %}
+{% set LINE = "#E3E5EE" %}
+{% set ACCENT = "#31F3E6" %}
+{% set ON_ACCENT = "#031010" %}
+
+{% set S_EYEBROW = "margin:0 0 10px;font:700 11px/1.4 " ~ FONT ~ ";letter-spacing:.14em;text-transform:uppercase;color:" ~ MUTED ~ ";" %}
+{% set S_H1 = "margin:0 0 14px;font:800 26px/1.15 " ~ FONT ~ ";letter-spacing:-0.02em;color:" ~ DEEP ~ ";" %}
+{% set S_H2 = "margin:28px 0 10px;font:700 16px/1.3 " ~ FONT ~ ";letter-spacing:-0.01em;color:" ~ DEEP ~ ";" %}
+{% set S_P = "margin:0 0 14px;font:400 15px/1.55 " ~ FONT ~ ";color:" ~ INK ~ ";" %}
+{% set S_MUTED = "margin:0 0 14px;font:400 14px/1.55 " ~ FONT ~ ";color:" ~ MUTED ~ ";" %}
+{% set S_SMALL = "font:400 13px/1.5 " ~ FONT ~ ";color:" ~ MUTED ~ ";" %}
+{% set S_TD = "padding:12px 0;font:400 15px/1.45 " ~ FONT ~ ";color:" ~ INK ~ ";vertical-align:top;" %}
+{% set S_LINK = "color:" ~ DEEP ~ ";text-decoration:underline;" %}
+{% set S_PRE = "margin:0;font:400 15px/1.55 " ~ FONT ~ ";color:" ~ INK ~ ";white-space:pre-wrap;word-wrap:break-word;" %}
+
+{% macro button(url, label) %}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0 20px;">
+<tr><td bgcolor="{{ ACCENT }}" style="background:{{ ACCENT }};border-radius:999px;">
+<a href="{{ url }}" style="display:inline-block;padding:14px 28px;font:700 15px/1 {{ FONT }};color:{{ ON_ACCENT }};text-decoration:none;border-radius:999px;">{{ label }}</a>
+</td></tr>
+</table>
+{% endmacro %}
+
+{% macro rule() %}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;"><tr><td style="border-top:1px solid {{ LINE }};font-size:0;line-height:0;">&nbsp;</td></tr></table>
+{% endmacro %}
+
+{% macro code_box(code, big=False) %}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
+<tr><td align="center" bgcolor="{{ WELL }}" style="background:{{ WELL }};border:1px solid {{ LINE }};border-radius:12px;padding:{{ '24px 20px' if big else '18px 20px' }};">
+<span style="font:700 {{ '34px' if big else '22px' }}/1.2 {{ MONO }};letter-spacing:{{ '.2em' if big else '.1em' }};color:{{ DEEP }};">{{ code }}</span>
+</td></tr>
+</table>
+{% endmacro %}
+
+{% macro discount_label(code) -%}
+{% if code.kind == 'fixed' %}{{ code.value|fmt_money }} off{% elif code.kind == 'free_shipping' %}Free shipping{% else %}{{ code.value }}% off{% endif %}
+{%- endmacro %}
+
+{# Works for order_items rows and cart lines: both carry product_name,
+   variant_name, qty, units_per_pack, line_total_cents. #}
+{% macro items_table(rows, money=True) %}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+{% for it in rows %}
+<tr>
+<td style="{{ S_TD }}border-top:1px solid {{ LINE }};">
+<span style="font-weight:600;color:{{ DEEP }};">{{ it.product_name }}</span><br>
+<span style="{{ S_SMALL }}">{{ it.variant_name }}{% if it.units_per_pack %} · {{ it.units_per_pack }} × 4 fl oz{% endif %}{% if it.interval_months %} · delivered every {{ it.interval_months|plural('month') if it.interval_months != 1 else 'month' }}{% elif it.is_subscription or it.subscribe %} · monthly subscription{% endif %}</span>
+</td>
+<td align="right" style="{{ S_TD }}border-top:1px solid {{ LINE }};white-space:nowrap;padding-left:16px;">
+{% if money %}<span style="font-weight:700;color:{{ DEEP }};">{{ it.line_total_cents|fmt_money }}</span><br>{% endif %}
+<span style="{{ S_SMALL }}">Qty {{ it.qty }}</span>
+</td>
+</tr>
+{% endfor %}
+</table>
+{% endmacro %}
+
+{% macro total_row(label, value, strong=False) %}
+<tr>
+<td style="padding:6px 0;font:{{ '700' if strong else '400' }} {{ '16px' if strong else '14px' }}/1.4 {{ FONT }};color:{{ DEEP if strong else MUTED }};{% if strong %}border-top:1px solid {{ LINE }};padding-top:12px;{% endif %}">{{ label }}</td>
+<td align="right" style="padding:6px 0;font:{{ '700' if strong else '400' }} {{ '16px' if strong else '14px' }}/1.4 {{ FONT }};color:{{ DEEP if strong else INK }};white-space:nowrap;{% if strong %}border-top:1px solid {{ LINE }};padding-top:12px;{% endif %}">{{ value }}</td>
+</tr>
+{% endmacro %}
+
+{% macro order_totals(order) %}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border-top:1px solid {{ LINE }};margin-top:0;padding-top:8px;">
+<tr><td colspan="2" style="height:8px;font-size:0;line-height:0;">&nbsp;</td></tr>
+{{ total_row('Subtotal', order.subtotal_cents|fmt_money) }}
+{% if order.discount_cents %}{{ total_row('Discount' ~ (' ' ~ order.discount_code if order.discount_code else ''), '−' ~ order.discount_cents|fmt_money) }}{% endif %}
+{% if order.credit_cents %}{{ total_row('Store credit', '−' ~ order.credit_cents|fmt_money) }}{% endif %}
+{{ total_row('Shipping', 'Free' if not order.shipping_cents else order.shipping_cents|fmt_money) }}
+{{ total_row('Tax', order.tax_cents|fmt_money) }}
+{{ total_row('Total', order.total_cents|fmt_money, strong=True) }}
+{% if order.refunded_cents %}{{ total_row('Refunded', '−' ~ order.refunded_cents|fmt_money) }}{% endif %}
+</table>
+{% endmacro %}
+
+{% macro address(order) %}
+{% if order.shipping_line1 %}
+<p style="{{ S_P }}">{% if order.shipping_name %}{{ order.shipping_name }}<br>{% endif %}{{ order.shipping_line1 }}<br>{% if order.shipping_line2 %}{{ order.shipping_line2 }}<br>{% endif %}{{ order.shipping_city }}, {{ order.shipping_state }} {{ order.shipping_postal_code }}{% if order.shipping_country and order.shipping_country != 'US' %}<br>{{ order.shipping_country }}{% endif %}</p>
+{% else %}
+<p style="{{ S_MUTED }}">The address you gave Stripe at checkout.</p>
+{% endif %}
+{% endmacro %}
+
+{# Label/value rows for the internal notifications. Value is plain text. #}
+{% macro kv(label, value) %}
+<tr>
+<td width="120" style="padding:8px 12px 8px 0;font:600 13px/1.5 {{ FONT }};color:{{ MUTED }};vertical-align:top;white-space:nowrap;">{{ label }}</td>
+<td style="padding:8px 0;font:400 15px/1.5 {{ FONT }};color:{{ INK }};vertical-align:top;">{{ value if value else '—' }}</td>
+</tr>
+{% endmacro %}

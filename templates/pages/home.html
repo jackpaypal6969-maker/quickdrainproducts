@@ -29,7 +29,7 @@
       </div>
       <ul class="mt-8 flex flex-wrap gap-2 text-sm" aria-label="Order facts">
         <li class="badge">{{ icon('package', 14) }} Ships as an ordinary parcel</li>
-        <li class="badge">{{ icon('truck', 14) }} {{ settings.flat_shipping_cents|fmt_money }} flat · free over {{ settings.free_shipping_threshold_cents|fmt_money_short }}</li>
+        <li class="badge">{{ icon('truck', 14) }} {{ settings.flat_shipping_cents|fmt_money }} flat · free from {{ settings.free_shipping_threshold_cents|fmt_money_short }}</li>
         <li class="badge">{{ icon('shield', 14) }} Stripe-hosted checkout</li>
       </ul>
     </div>
@@ -89,7 +89,7 @@
       <div class="card card-pad" data-reveal>
         <span class="text-accent">{{ icon('refresh', 22) }}</span>
         <h3 class="h3 mt-4">Cleared last month, slow again</h3>
-        <p class="text-sm text-muted mt-2">Clearing opens a hole; cleaning restores the pipe wall. A line that was only cleared will keep coming back until it is jetted wall-to-wall.</p>
+        <p class="text-sm text-muted mt-2">Clearing opens a hole; cleaning restores the pipe wall. A line that was only cleared often slows again; wall-to-wall jetting is how the pipe wall gets cleaned.</p>
       </div>
       <div class="card card-pad" data-reveal>
         <span class="text-accent">{{ icon('droplet', 22) }}</span>
@@ -127,7 +127,7 @@
       <a href="{{ settings.parent_site_url }}" class="card card-pad hover:border-line-strong transition-colors" rel="noopener" data-reveal>
         <span class="text-accent">{{ icon('shield', 22) }}</span>
         <h3 class="font-display font-bold text-lg mt-4">Sewer &amp; septic inspection</h3>
-        <p class="text-sm text-muted mt-1">Buying, selling or managing property: camera, reports and video before it becomes a five-figure surprise.</p>
+        <p class="text-sm text-muted mt-1">Buying, selling or managing property: camera, reports and video before you commit.</p>
         <span class="link text-sm mt-3 inline-block">quickdrainny.com {{ icon('external', 12, 'inline') }}</span>
       </a>
     </div>

@@ -16,9 +16,38 @@ from .config import settings
 
 SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
 
-# Append-only. Each entry: (version, [sql, ...]). Never edit a shipped version.
-MIGRATIONS: list[tuple[int, list[str]]] = [
+def _add_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
+    cols = {r[1] for r in conn.execute(f"PRAGMA table_info({table})")}
+    if column not in cols:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
+
+
+def _v2_subscriptions(conn: sqlite3.Connection) -> None:
+    """Subscribe-and-save: interval, discount override, per-cycle lines."""
+    _add_column(conn, "variants", "subscription_discount_percent", "INTEGER")
+    for col, ddl in (
+        ("stripe_customer_id", "TEXT NOT NULL DEFAULT ''"),
+        ("interval_months", "INTEGER NOT NULL DEFAULT 1"),
+        ("lines", "TEXT NOT NULL DEFAULT '[]'"),
+        ("shipping_cents", "INTEGER NOT NULL DEFAULT 0"),
+        ("cancel_at_period_end", "INTEGER NOT NULL DEFAULT 0"),
+        ("next_renewal_at", "TEXT"),
+        ("last_order_id", "INTEGER"),
+        ("updated_at", "TEXT NOT NULL DEFAULT ''"),
+    ):
+        _add_column(conn, "subscriptions", col, ddl)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_subscriptions_customer ON subscriptions(customer_id)")
+
+
+# Append-only. Each entry: (version, [sql or callable, ...]). Never edit a shipped version.
+def _v3_checkout_lines(conn: sqlite3.Connection) -> None:
+    _add_column(conn, "carts", "checkout_lines", "TEXT NOT NULL DEFAULT ''")
+
+
+MIGRATIONS: list[tuple[int, list]] = [
     (1, []),  # initial schema is schema.sql itself
+    (2, [_v2_subscriptions]),
+    (3, [_v3_checkout_lines]),
 ]
 
 
@@ -41,8 +70,11 @@ def migrate(db_path: Path | None = None) -> None:
             if version in applied:
                 continue
             with transaction(conn):
-                for sql in statements:
-                    conn.execute(sql)
+                for step in statements:
+                    if callable(step):
+                        step(conn)
+                    else:
+                        conn.execute(step)
                 conn.execute("INSERT INTO schema_migrations(version) VALUES (?)", (version,))
     finally:
         conn.close()

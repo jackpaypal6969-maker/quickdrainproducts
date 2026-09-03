@@ -178,11 +178,41 @@
     const price = $('[data-price]'), compare = $('[data-compare]'), per = $('[data-per-unit]'), stock = $('[data-stock]');
     const hiddenVariant = $('[data-selected-variant]'), addBtn = $('[data-add-button-main]'), notify = $('[data-notify-form]'), notifyVariant = $('[data-notify-variant]');
     const qtyInput = $('[data-qty-input]');
+    const delivery = $('[data-delivery-selector]');
+    const subInput = $('[data-subscribe-input]'), intervalWrap = $('[data-interval-wrap]'), intervalSel = $('[data-interval-select]'), hint = $('[data-interval-hint]');
+    const oncePrice = $('[data-once-price]'), subPrice = $('[data-sub-price]'), subPct = $('[data-sub-percent]');
+    let intervalTouched = false;
+    let current = null;
+    function subscribing() { const r = delivery && delivery.querySelector('input[name=delivery]:checked'); return !!(r && r.value === 'sub'); }
+    function syncDelivery() {
+      if (!delivery || !current) return;
+      const on = subscribing();
+      const d = current.dataset;
+      if (intervalWrap) intervalWrap.hidden = !on;
+      if (on && intervalSel && !intervalTouched && d.subRec) intervalSel.value = d.subRec;
+      const months = on && intervalSel ? parseInt(intervalSel.value, 10) : 0;
+      if (subInput) subInput.value = String(months || 0);
+      if (hint && on) {
+        const rec = parseInt(d.subRec, 10);
+        hint.textContent = months === rec
+          ? 'A ' + d.name.toLowerCase() + ' every ' + months + (months === 1 ? ' month' : ' months') + ' keeps one drain dosed continuously. Billed each delivery; cancel any time.'
+          : 'Billed ' + money(+d.subPrice) + ' every ' + months + (months === 1 ? ' month' : ' months') + '. Cancel any time from your account.';
+      }
+      const shown = on ? +d.subPrice : +d.price;
+      if (price) price.textContent = money(shown);
+      if (per) per.textContent = (+d.units > 1) ? money(Math.round(shown / +d.units)) + ' per bottle' : 'per bottle';
+      if (compare) { const cmp = on ? +d.price : (d.compare ? +d.compare : 0); compare.textContent = cmp ? money(cmp) : ''; compare.hidden = !cmp; }
+    }
+    if (delivery) delivery.addEventListener('change', (e) => { if (e.target.matches('[data-interval-select]')) intervalTouched = true; syncDelivery(); });
     function apply(input) {
       const d = input.dataset;
+      current = input;
       if (price) price.textContent = money(+d.price);
       if (compare) { compare.textContent = d.compare ? money(+d.compare) : ''; compare.hidden = !d.compare; }
       if (per) per.textContent = (+d.units > 1) ? money(Math.round(+d.price / +d.units)) + ' per bottle' : 'per bottle';
+      if (oncePrice) oncePrice.textContent = money(+d.price);
+      if (subPrice && d.subPrice) subPrice.textContent = money(+d.subPrice);
+      if (subPct && d.subPercent) subPct.textContent = d.subPercent;
       if (hiddenVariant) hiddenVariant.value = d.id;
       if (notifyVariant) notifyVariant.value = d.id;
       const s = parseInt(d.stock, 10);
@@ -194,6 +224,7 @@
       if (notify) notify.hidden = s > 0;
       if (qtyInput) { qtyInput.max = Math.max(Math.min(s, 24), 1); if (+qtyInput.value > +qtyInput.max) qtyInput.value = qtyInput.max; }
       $$('[data-ledger-row]').forEach(r => r.classList.toggle('is-active', r.getAttribute('data-ledger-row') === d.id));
+      syncDelivery();
     }
     selector.addEventListener('change', (e) => { if (e.target.matches('input[type=radio]')) apply(e.target); });
     const checked = selector.querySelector('input[type=radio]:checked') || selector.querySelector('input[type=radio]');

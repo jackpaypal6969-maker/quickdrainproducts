@@ -1,0 +1,11 @@
+{% extends "emails/base.html" %}
+{% from "emails/_macros.html" import S_EYEBROW, S_H1, S_P, S_MUTED, button %}
+{% block title %}{{ notice.product_name }} {{ notice.variant_name }} is back in stock{% endblock %}
+{% block preheader %}You asked to hear when this pack was back. It is.{% endblock %}
+{% block body %}
+<p style="{{ S_EYEBROW }}">Back in stock</p>
+<h1 style="{{ S_H1 }}">{{ notice.product_name }} {{ notice.variant_name }} is back.</h1>
+<p style="{{ S_P }}">You asked us to tell you when this pack was available again. It is on the shelf now.</p>
+{{ button(product_url, 'See ' ~ notice.product_name) }}
+<p style="{{ S_MUTED }}">Stock on the product page is live. This is the one notice we send for it; if it sells through before you get there, you can ask again from the same page.</p>
+{% endblock %}

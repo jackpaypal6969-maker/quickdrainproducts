@@ -6,7 +6,7 @@ import json
 import sqlite3
 
 from ..config import settings
-from ..db import all_rows, one
+from ..db import all_rows, get_setting, one
 
 IMAGE_WIDTHS = (480, 768, 1200, 1600)
 
@@ -76,7 +76,44 @@ def _product_bundle(conn: sqlite3.Connection, row: sqlite3.Row) -> dict:
     p["sds_available"] = bool(p.get("sds_path")) and (settings.media_dir / p["sds_path"]).exists()
     p["label_available"] = bool(p.get("label_path")) and (settings.media_dir / p["label_path"]).exists()
     p["dose_rows"] = dose_rows(p)
+    attach_subscription_pricing(conn, p)
     return p
+
+
+def subscription_config(conn: sqlite3.Connection) -> dict:
+    """Admin-controlled subscribe-and-save settings (site-wide)."""
+    try:
+        percent = max(0, min(int(get_setting(conn, "subscription_discount_percent", "10") or 10), 90))
+    except ValueError:
+        percent = 10
+    intervals = []
+    for part in (get_setting(conn, "subscription_intervals", "1,2,3") or "1").split(","):
+        try:
+            m = int(part.strip())
+        except ValueError:
+            continue
+        if 1 <= m <= 12 and m not in intervals:
+            intervals.append(m)
+    return {"enabled": settings.subscriptions_enabled, "percent": percent, "intervals": sorted(intervals) or [1]}
+
+
+def subscription_price(price_cents: int, percent: int) -> int:
+    return max(0, round(price_cents * (100 - max(0, min(percent, 100))) / 100))
+
+
+def attach_subscription_pricing(conn: sqlite3.Connection, p: dict) -> None:
+    cfg = subscription_config(conn)
+    p["subscriptions"] = cfg
+    interval_days = int(p.get("dose_interval_days") or 30)
+    per_unit = max(int(p.get("drains_per_unit") or 1), 1)
+    for v in p.get("variants", []):
+        pct = v.get("subscription_discount_percent")
+        pct = cfg["percent"] if pct is None else int(pct)
+        v["sub_percent"] = pct
+        v["sub_price_cents"] = subscription_price(int(v["price_cents"]), pct)
+        # A 3-pack every 3 months keeps one drain dosed continuously.
+        ideal = max(1, round(int(v.get("units_per_pack") or 1) * per_unit * interval_days / 30))
+        v["sub_recommended_months"] = min(cfg["intervals"], key=lambda m: (abs(m - ideal), m))
 
 
 def dose_rows(p: dict) -> list[dict]:

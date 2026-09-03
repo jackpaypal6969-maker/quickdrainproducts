@@ -1,0 +1,27 @@
+{% extends "emails/base.html" %}
+{% from "emails/_macros.html" import S_EYEBROW, S_H1, S_H2, S_P, S_MUTED, S_LINK, button, items_table, order_totals, address %}
+{% block title %}Order {{ order.order_number }} confirmed{% endblock %}
+{% block preheader %}Order {{ order.order_number }} is in. Tracking follows when it ships.{% endblock %}
+{% block body %}
+{% set ns = namespace(months=0) %}
+{% for it in items %}{% set ns.months = ns.months + (it.qty or 0) * (it.units_per_pack or 1) %}{% endfor %}
+<p style="{{ S_EYEBROW }}">Order confirmed</p>
+<h1 style="{{ S_H1 }}">Thanks. Order {{ order.order_number }} is in.</h1>
+<p style="{{ S_P }}">{% if order.created_at %}Placed {{ order.created_at|est_date }}, receipt to {{ order.email }}.{% else %}Receipt to {{ order.email }}.{% endif %} We pack within one business day and email tracking when it ships.</p>
+
+<h2 style="{{ S_H2 }}">Items</h2>
+{{ items_table(items) }}
+{{ order_totals(order) }}
+
+<h2 style="{{ S_H2 }}">Dose calendar</h2>
+<p style="{{ S_P }}">This order covers <strong>{{ ns.months|plural('drain-month') }}</strong>: one bottle treats one drain for one month. Pour the first the day it arrives; the next is due 30 days later.</p>
+{% if order.stripe_subscription_id %}
+<p style="{{ S_MUTED }}">This is a monthly subscription. The next bottle ships on its own before the dose is due. Pause or cancel from <a href="{{ base_url }}/account" style="{{ S_LINK }}">your account</a>.</p>
+{% endif %}
+
+<h2 style="{{ S_H2 }}">Ships to</h2>
+{{ address(order) }}
+
+{{ button(base_url ~ '/orders/lookup', 'Find your order') }}
+<p style="{{ S_MUTED }}">Look it up any time with the order number and this email address. Reply to this email for anything else.</p>
+{% endblock %}

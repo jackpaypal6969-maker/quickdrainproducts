@@ -1,0 +1,21 @@
+# Quick Drain Products — cron TEMPLATE in /etc/cron.d format (minute hour dom mon dow USER command).
+# deploy.sh renders ${APP_DIR} and ${SERVICE_USER} with envsubst and installs the
+# result as /etc/cron.d/quick-drain. The log lives next to the checkout, never
+# under static/ (nothing in static/ may be writable by a cron job).
+#
+# run_lifecycle.py runs as the service user so the SQLite -wal/-shm files it
+# may create stay owned by the account the app runs under. backup.sh and
+# final_check.sh run as root (scp/rclone keys, /etc reads) and fix WAL/SHM
+# ownership after touching the database.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+MAILTO=""
+
+# hourly: abandoned carts, reorder reminders, review invites, back-in-stock, housekeeping
+7 * * * *   ${SERVICE_USER}  cd ${APP_DIR} && ${APP_DIR}/.venv/bin/python ${APP_DIR}/scripts/run_lifecycle.py >> ${APP_DIR}/../quick-drain-cron.log 2>&1
+
+# nightly 03:15: SQLite checkpoint copy + media + .env -> BACKUP_DIR (and BACKUP_REMOTE if set)
+15 3 * * *  root             ${APP_DIR}/backup.sh >> ${APP_DIR}/../quick-drain-cron.log 2>&1
+
+# weekly, Monday 06:30: health + security invariants (PASS/FAIL/WARN)
+30 6 * * 1  root             ${APP_DIR}/final_check.sh >> ${APP_DIR}/../quick-drain-cron.log 2>&1

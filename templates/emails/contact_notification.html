@@ -1,0 +1,29 @@
+{% extends "emails/base.html" %}
+{% from "emails/_macros.html" import S_EYEBROW, S_H1, S_H2, S_MUTED, S_PRE, S_LINK, FONT, INK, MUTED, WELL, LINE, kv %}
+{% block title %}Store contact: {{ subject or 'New message' }}{% endblock %}
+{% block preheader %}{{ name }} wrote via the store contact form.{% endblock %}
+{% block body %}
+<p style="{{ S_EYEBROW }}">Internal · store contact form</p>
+<h1 style="{{ S_H1 }}">{{ subject or 'New message' }}</h1>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+{{ kv('From', name) }}
+<tr>
+<td width="120" style="padding:8px 12px 8px 0;font:600 13px/1.5 {{ FONT }};color:{{ MUTED }};vertical-align:top;white-space:nowrap;">Email</td>
+<td style="padding:8px 0;font:400 15px/1.5 {{ FONT }};color:{{ INK }};vertical-align:top;"><a href="mailto:{{ email }}" style="{{ S_LINK }}">{{ email }}</a></td>
+</tr>
+{{ kv('Phone', phone) }}
+<tr>
+<td width="120" style="padding:8px 12px 8px 0;font:600 13px/1.5 {{ FONT }};color:{{ MUTED }};vertical-align:top;white-space:nowrap;">Order</td>
+<td style="padding:8px 0;font:400 15px/1.5 {{ FONT }};color:{{ INK }};vertical-align:top;">{% if order_number %}<a href="{{ base_url }}/admin/orders?q={{ order_number|urlencode }}" style="{{ S_LINK }}">{{ order_number }}</a>{% else %}—{% endif %}</td>
+</tr>
+</table>
+
+<h2 style="{{ S_H2 }}">Message</h2>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td bgcolor="{{ WELL }}" style="background:{{ WELL }};border:1px solid {{ LINE }};border-radius:12px;padding:16px 18px;">
+<p style="{{ S_PRE }}">{{ body }}</p>
+</td></tr>
+</table>
+
+<p style="{{ S_MUTED }}margin-top:20px;">Reply to this email and it goes straight to {{ name }}. The site promised an answer within one business day. The message is also logged in the admin under Contact.</p>
+{% endblock %}

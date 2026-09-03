@@ -7,6 +7,7 @@ from ..config import settings
 from ..db import all_rows, one, transaction
 from ..security import iso, new_token
 from . import discounts
+from .catalog import subscription_config, subscription_price
 
 
 def get_cart(conn: sqlite3.Connection, session: dict, create: bool = False) -> dict | None:
@@ -26,15 +27,27 @@ def touch(conn: sqlite3.Connection, cart_id: int) -> None:
     conn.execute("UPDATE carts SET updated_at = ? WHERE id = ?", (iso(), cart_id))
 
 
-def add_item(conn: sqlite3.Connection, cart: dict, variant_id: int, qty: int, subscribe: bool = False) -> tuple[bool, str]:
+def add_item(conn: sqlite3.Connection, cart: dict, variant_id: int, qty: int, subscribe: int = 0) -> tuple[bool, str]:
+    """`subscribe` is the delivery interval in months (0 = one-time purchase).
+    A cart carries at most one subscription interval because one Stripe
+    subscription bills every item on the same schedule."""
     qty = max(1, min(int(qty), 24))
     variant = one(conn, "SELECT v.*, p.is_active AS product_active FROM variants v JOIN products p ON p.id = v.product_id WHERE v.id = ? AND v.is_active = 1", (variant_id,))
     if not variant or not variant["product_active"]:
         return False, "That option is not available."
-    if subscribe and (not settings.subscriptions_enabled or not variant["stripe_subscription_price_id"]):
-        subscribe = False
-    existing = one(conn, "SELECT id, qty FROM cart_items WHERE cart_id = ? AND variant_id = ? AND subscribe = ?", (cart["id"], variant_id, int(subscribe)))
-    new_qty = qty + (existing["qty"] if existing else 0)
+    subscribe = int(subscribe or 0)
+    if subscribe:
+        cfg = subscription_config(conn)
+        if not cfg["enabled"]:
+            subscribe = 0
+        elif subscribe not in cfg["intervals"]:
+            return False, "That delivery interval is not offered."
+        else:
+            other = one(conn, "SELECT subscribe FROM cart_items WHERE cart_id = ? AND subscribe > 0 AND subscribe != ? LIMIT 1", (cart["id"], subscribe))
+            if other:
+                return False, f"Your cart already has a subscription every {other['subscribe']} {'month' if other['subscribe'] == 1 else 'months'}. Use the same interval, or check out that subscription first."
+    existing = one(conn, "SELECT id, qty FROM cart_items WHERE cart_id = ? AND variant_id = ? AND subscribe = ?", (cart["id"], variant_id, subscribe))
+    new_qty = min(qty + (existing["qty"] if existing else 0), 24)
     message = "Added to cart."
     if variant["stock"] < new_qty:
         if variant["stock"] <= 0:
@@ -47,8 +60,10 @@ def add_item(conn: sqlite3.Connection, cart: dict, variant_id: int, qty: int, su
         if existing:
             conn.execute("UPDATE cart_items SET qty = ? WHERE id = ?", (new_qty, existing["id"]))
         else:
-            conn.execute("INSERT INTO cart_items(cart_id, variant_id, qty, subscribe) VALUES (?, ?, ?, ?)", (cart["id"], variant_id, new_qty, int(subscribe)))
+            conn.execute("INSERT INTO cart_items(cart_id, variant_id, qty, subscribe) VALUES (?, ?, ?, ?)", (cart["id"], variant_id, new_qty, subscribe))
         touch(conn, cart["id"])
+    if subscribe:
+        message = f"Added — delivered every {subscribe} {'month' if subscribe == 1 else 'months'}, cancel any time."
     return True, message
 
 
@@ -58,10 +73,10 @@ def set_qty(conn: sqlite3.Connection, cart: dict, item_id: int, qty: int) -> Non
         return
     qty = int(qty)
     with transaction(conn):
-        if qty <= 0:
+        if qty <= 0 or item["stock"] <= 0:
             conn.execute("DELETE FROM cart_items WHERE id = ?", (item_id,))
         else:
-            conn.execute("UPDATE cart_items SET qty = ? WHERE id = ?", (min(qty, max(item["stock"], 1), 24), item_id))
+            conn.execute("UPDATE cart_items SET qty = ? WHERE id = ?", (min(qty, item["stock"], 24), item_id))
         touch(conn, cart["id"])
 
 
@@ -80,6 +95,7 @@ def lines(conn: sqlite3.Connection, cart_id: int) -> list[dict]:
         conn,
         """SELECT ci.id, ci.qty, ci.subscribe, v.id AS variant_id, v.sku, v.name AS variant_name, v.price_cents,
                   v.compare_at_cents, v.stock, v.units_per_pack, v.stripe_price_id, v.stripe_subscription_price_id,
+                  v.subscription_discount_percent,
                   p.id AS product_id, p.name AS product_name, p.slug AS product_slug, p.dose_interval_days,
                   p.drains_per_unit, p.hazmat, COALESCE(v.weight_oz, p.weight_oz) AS weight_oz,
                   (SELECT base FROM product_images WHERE product_id = p.id ORDER BY CASE kind WHEN 'hero' THEN 0 ELSE 1 END, sort LIMIT 1) AS image_base
@@ -90,9 +106,20 @@ def lines(conn: sqlite3.Connection, cart_id: int) -> list[dict]:
            ORDER BY ci.id""",
         (cart_id,),
     )
+    cfg = subscription_config(conn)
     out = []
     for r in rows:
         d = dict(r)
+        d["base_price_cents"] = d["price_cents"]
+        d["interval_months"] = int(d["subscribe"] or 0)
+        if d["interval_months"] and cfg["enabled"]:
+            pct = d["subscription_discount_percent"]
+            pct = cfg["percent"] if pct is None else int(pct)
+            d["sub_percent"] = pct
+            d["price_cents"] = subscription_price(d["base_price_cents"], pct)
+        else:
+            d["sub_percent"] = 0
+            d["interval_months"] = 0
         d["line_total_cents"] = d["price_cents"] * d["qty"]
         d["short_stock"] = d["qty"] > d["stock"]
         out.append(d)
@@ -142,7 +169,9 @@ def totals(conn: sqlite3.Connection, cart: dict, email: str = "") -> dict:
         "free_shipping_gap_cents": max(settings.free_shipping_threshold_cents - after, 0) if ship else 0,
         "total_estimate_cents": after + ship,
         "count": sum(i["qty"] for i in items),
-        "has_subscription": any(i["subscribe"] for i in items),
+        "has_subscription": any(i["interval_months"] for i in items),
+        "subscription_interval": next((i["interval_months"] for i in items if i["interval_months"]), 0),
+        "subscription_savings_cents": sum((i["base_price_cents"] - i["price_cents"]) * i["qty"] for i in items if i["interval_months"]),
     }
 
 
@@ -156,7 +185,9 @@ def merge_into_customer(conn: sqlite3.Connection, session: dict, customer_id: in
             if owned and owned["id"] != guest["id"]:
                 for item in all_rows(conn, "SELECT * FROM cart_items WHERE cart_id = ?", (guest["id"],)):
                     stock = one(conn, "SELECT stock FROM variants WHERE id = ?", (item["variant_id"],))
-                    cap = max(int(stock["stock"]) if stock else 0, 1)
+                    cap = int(stock["stock"]) if stock else 0
+                    if cap <= 0:
+                        continue  # sold out since it was added: drop the line rather than carry a phantom unit
                     existing = one(conn, "SELECT id, qty FROM cart_items WHERE cart_id = ? AND variant_id = ? AND subscribe = ?", (owned["id"], item["variant_id"], item["subscribe"]))
                     if existing:
                         conn.execute("UPDATE cart_items SET qty = ? WHERE id = ?", (min(existing["qty"] + item["qty"], cap, 24), existing["id"]))

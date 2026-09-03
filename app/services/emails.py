@@ -13,6 +13,7 @@ import time
 
 import httpx
 from itsdangerous import BadSignature, URLSafeSerializer
+from jinja2 import TemplateNotFound
 
 from ..config import settings
 from ..db import one
@@ -59,7 +60,10 @@ def render(template: str, context: dict) -> tuple[str, str]:
     html = env.get_template(f"emails/{template}.html").render(**context)
     try:
         text = env.get_template(f"emails/{template}.txt").render(**context)
-    except Exception:  # noqa: BLE001 - text part is optional
+    except TemplateNotFound:
+        text = ""  # the text twin is optional
+    except Exception:  # noqa: BLE001 - a broken twin must not block the HTML email
+        log.exception("text part failed for %s", template)
         text = ""
     return html, text
 
@@ -110,7 +114,8 @@ def send(
 
     if settings.email_dry_run or not settings.resend_api_key:
         conn.execute("UPDATE email_log SET status = 'dry_run', updated_at = ? WHERE id = ?", (iso(), log_id))
-        log.info("EMAIL DRY RUN -> %s [%s] %s", to_email, template, subject)
+        preview = " ".join((text or html).split())[:400]
+        log.info("EMAIL DRY RUN -> %s [%s] %s | %s", to_email, template, subject, preview)
         return log_id
 
     payload = {
@@ -118,9 +123,10 @@ def send(
         "to": [to_email],
         "subject": subject,
         "html": html,
-        "headers": {"List-Unsubscribe": f"<{ctx['unsubscribe_url']}>", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"},
         "tags": [{"name": "template", "value": template}, {"name": "category", "value": category}],
     }
+    if category == "marketing":
+        payload["headers"] = {"List-Unsubscribe": f"<{ctx['unsubscribe_url']}>", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"}
     if text:
         payload["text"] = text
     if reply_to or settings.email_reply_to:

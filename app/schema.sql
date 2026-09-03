@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS variants (
   compare_at_cents INTEGER,
   stripe_price_id TEXT NOT NULL DEFAULT '',
   stripe_subscription_price_id TEXT NOT NULL DEFAULT '',
+  subscription_discount_percent INTEGER,        -- NULL = use the site-wide setting
   stock INTEGER NOT NULL DEFAULT 0,
   low_stock_threshold INTEGER NOT NULL DEFAULT 5,
   weight_oz REAL,
@@ -165,6 +166,7 @@ CREATE TABLE IF NOT EXISTS carts (
   email TEXT NOT NULL DEFAULT '',      -- captured at checkout start for abandoned-cart email
   discount_code_id INTEGER REFERENCES discount_codes(id) ON DELETE SET NULL,
   stripe_checkout_session_id TEXT NOT NULL DEFAULT '',
+  checkout_lines TEXT NOT NULL DEFAULT '',   -- JSON snapshot of the lines sent to Stripe (metadata is capped at 500 chars)
   checkout_started_at TEXT,
   abandoned_email_sent_at TEXT,
   converted_order_id INTEGER,
@@ -298,11 +300,20 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   email TEXT NOT NULL,
   variant_id INTEGER REFERENCES variants(id) ON DELETE SET NULL,
   stripe_subscription_id TEXT NOT NULL UNIQUE,
-  status TEXT NOT NULL DEFAULT 'active',
+  stripe_customer_id TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'active',   -- active|past_due|canceling|canceled|paused|unpaid|incomplete
   interval_days INTEGER NOT NULL DEFAULT 30,
+  interval_months INTEGER NOT NULL DEFAULT 1,
+  lines TEXT NOT NULL DEFAULT '[]',        -- JSON [{v,q,p,name,variant}] charged every cycle
+  shipping_cents INTEGER NOT NULL DEFAULT 0,
+  cancel_at_period_end INTEGER NOT NULL DEFAULT 0,
+  next_renewal_at TEXT,
+  last_order_id INTEGER,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
   canceled_at TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_subscriptions_customer ON subscriptions(customer_id);
 
 CREATE TABLE IF NOT EXISTS rma_requests (
   id INTEGER PRIMARY KEY,

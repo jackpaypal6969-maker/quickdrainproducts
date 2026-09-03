@@ -1,0 +1,58 @@
+{% autoescape false %}
+{% set ns = namespace(months=0) %}
+{% for it in items %}{% set ns.months = ns.months + (it.qty or 0) * (it.units_per_pack or 1) %}{% endfor %}
+QUICK DRAIN PRODUCTS
+Order {{ order.order_number }} confirmed
+
+Thanks. Order {{ order.order_number }} is in.
+{% if order.created_at %}Placed {{ order.created_at|est_date }}, receipt to {{ order.email }}.{% else %}Receipt to {{ order.email }}.{% endif %}
+
+We pack within one business day and email tracking when it ships.
+
+ITEMS
+{% for it in items %}
+- {{ it.product_name }} — {{ it.variant_name }}{% if it.units_per_pack %} ({{ it.units_per_pack }} x 4 fl oz){% endif %}{% if it.is_subscription %}, monthly subscription{% endif %}
+  Qty {{ it.qty }}  {{ it.line_total_cents|fmt_money }}
+{% endfor %}
+
+Subtotal      {{ order.subtotal_cents|fmt_money }}
+{% if order.discount_cents %}Discount{% if order.discount_code %} {{ order.discount_code }}{% endif %}  -{{ order.discount_cents|fmt_money }}
+{% endif %}
+{% if order.credit_cents %}Store credit  -{{ order.credit_cents|fmt_money }}
+{% endif %}
+Shipping      {% if order.shipping_cents %}{{ order.shipping_cents|fmt_money }}{% else %}Free{% endif %}
+
+Tax           {{ order.tax_cents|fmt_money }}
+Total         {{ order.total_cents|fmt_money }}
+{% if order.refunded_cents %}Refunded      -{{ order.refunded_cents|fmt_money }}
+{% endif %}
+
+DOSE CALENDAR
+This order covers {{ ns.months|plural('drain-month') }}: one bottle treats one
+drain for one month. Pour the first the day it arrives; the next is due
+30 days later.
+{% if order.stripe_subscription_id %}
+This is a monthly subscription. The next bottle ships on its own before
+the dose is due. Pause or cancel at {{ base_url }}/account
+{% endif %}
+
+SHIPS TO
+{% if order.shipping_line1 %}
+{% if order.shipping_name %}{{ order.shipping_name }}
+{% endif %}
+{{ order.shipping_line1 }}
+{% if order.shipping_line2 %}{{ order.shipping_line2 }}
+{% endif %}
+{{ order.shipping_city }}, {{ order.shipping_state }} {{ order.shipping_postal_code }}
+{% if order.shipping_country and order.shipping_country != 'US' %}{{ order.shipping_country }}
+{% endif %}
+{% else %}
+The address you gave Stripe at checkout.
+{% endif %}
+
+Find your order any time with the order number and this email address:
+{{ base_url }}/orders/lookup
+
+Reply to this email for anything else.
+{% include "emails/_footer.txt" %}
+{% endautoescape %}

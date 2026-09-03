@@ -1,0 +1,30 @@
+{% extends "emails/base.html" %}
+{% from "emails/_macros.html" import S_EYEBROW, S_H1, S_H2, S_MUTED, S_PRE, S_LINK, FONT, INK, MUTED, WELL, LINE, kv, button %}
+{% block title %}Return request on {{ order.order_number }}{% endblock %}
+{% block preheader %}{{ order.email }} asked to return order {{ order.order_number }}.{% endblock %}
+{% block body %}
+<p style="{{ S_EYEBROW }}">Internal · return request</p>
+<h1 style="{{ S_H1 }}">Return request on {{ order.order_number }}.</h1>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+<tr>
+<td width="120" style="padding:8px 12px 8px 0;font:600 13px/1.5 {{ FONT }};color:{{ MUTED }};vertical-align:top;white-space:nowrap;">Customer</td>
+<td style="padding:8px 0;font:400 15px/1.5 {{ FONT }};color:{{ INK }};vertical-align:top;"><a href="mailto:{{ order.email }}" style="{{ S_LINK }}">{{ order.email }}</a></td>
+</tr>
+{{ kv('Placed', order.created_at|est_date if order.created_at else '') }}
+{{ kv('Status', (order.status or '')|replace('_', ' ')) }}
+{{ kv('Shipped', order.shipped_at|est_date if order.shipped_at else 'not yet') }}
+{{ kv('Order total', order.total_cents|fmt_money) }}
+{% if order.refunded_cents %}{{ kv('Already refunded', order.refunded_cents|fmt_money) }}{% endif %}
+{{ kv('Reason', reason or 'Return requested') }}
+</table>
+
+<h2 style="{{ S_H2 }}">Details from the customer</h2>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td bgcolor="{{ WELL }}" style="background:{{ WELL }};border:1px solid {{ LINE }};border-radius:12px;padding:16px 18px;">
+<p style="{{ S_PRE }}">{{ details if details else 'No details given.' }}</p>
+</td></tr>
+</table>
+
+{{ button(base_url ~ '/admin/orders/' ~ order.id, 'Open the order in admin') }}
+<p style="{{ S_MUTED }}">The site promised a reply within one business day. Refunds go through Stripe from the order page; the RMA row is under the order.</p>
+{% endblock %}

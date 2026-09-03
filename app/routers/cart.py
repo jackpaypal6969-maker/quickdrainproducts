@@ -67,9 +67,13 @@ async def cart_add(request: Request, conn: sqlite3.Connection = Depends(get_db))
         qty = int(data.get("qty") or 1)
     except (TypeError, ValueError):
         raise HTTPException(400, "Choose an option first.")
-    subscribe = str(data.get("subscribe") or "") in {"1", "true", "on"}
+    raw_sub = str(data.get("subscribe") or "0").strip().lower()
+    try:
+        interval = int(raw_sub) if raw_sub not in {"true", "on"} else int(data.get("interval") or 1)
+    except ValueError:
+        interval = 0
     cart = cart_service.get_cart(conn, request.state.session, create=True)
-    ok, message = cart_service.add_item(conn, cart, variant_id, qty, subscribe)
+    ok, message = cart_service.add_item(conn, cart, variant_id, qty, interval)
     if ok:
         variant = one(conn, "SELECT v.sku, v.price_cents, p.slug FROM variants v JOIN products p ON p.id = v.product_id WHERE v.id = ?", (variant_id,))
         analytics.capture(conn, "add_to_cart", request.state.session.get("cart", ""), {"sku": variant["sku"] if variant else "", "qty": qty, "value_cents": (variant["price_cents"] * qty) if variant else 0})
@@ -209,7 +213,7 @@ def reorder_link(number: str, token: str, request: Request, conn: sqlite3.Connec
     cart = cart_service.get_cart(conn, request.state.session, create=True)
     added = 0
     for it in all_rows(conn, "SELECT variant_id, qty FROM order_items WHERE order_id = ? AND variant_id IS NOT NULL", (order["id"],)):
-        ok, _ = cart_service.add_item(conn, cart, int(it["variant_id"]), int(it["qty"]))
+        ok, _ = cart_service.add_item(conn, cart, int(it["variant_id"]), int(it["qty"]), 0)
         added += int(ok)
     flash(request, "Your last order is in the cart." if added else "Those items are not available right now.", "ok" if added else "error")
     return redirect("/cart")

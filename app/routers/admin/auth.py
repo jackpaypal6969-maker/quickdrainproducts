@@ -107,7 +107,7 @@ def totp_setup_confirm(request: Request, code: str = Form(""), conn: sqlite3.Con
         conn.execute("UPDATE admin_users SET totp_enabled = 1, backup_codes = ? WHERE id = ?", (hashes_json, admin["id"]))
         audit.log(conn, "admin.totp_enrolled", actor_type="admin", actor_id=admin["id"], actor_name=admin["username"], target_type="admin", target_id=admin["id"], ip=ip(request))
         request.state.session["a_totp"] = True
-        _send_email_code(conn, admin)
+    _send_email_code(conn, admin)
     return render(request, "admin/backup_codes.html", {"codes": codes, "meta_title": "Backup codes", "no_index": True}, conn=conn)
 
 
@@ -147,12 +147,13 @@ def totp_verify(request: Request, code: str = Form(""), conn: sqlite3.Connection
             return redirect("/admin/2fa")
         request.state.session["a_totp"] = True
         if settings.admin_2fa_required:
-            _send_email_code(conn, admin)
+            pass  # emailed below, after the transaction commits
         else:
             request.state.session["a2"] = True
             record_admin_success(conn, admin["id"])
             audit.log(conn, "admin.login", actor_type="admin", actor_id=admin["id"], actor_name=admin["username"], ip=ip(request), after={"factors": "password+totp"})
             return redirect("/admin/")
+    _send_email_code(conn, admin)
     return redirect("/admin/2fa/email")
 
 
@@ -172,8 +173,7 @@ def email_resend(request: Request, conn: sqlite3.Connection = Depends(get_db)):
     if not check_rate_limit(conn, "admin-email-resend", str(admin["id"]), limit=3, window_seconds=600):
         flash(request, "Wait a few minutes before requesting another code.", "error")
         return redirect("/admin/2fa/email")
-    with transaction(conn):
-        _send_email_code(conn, admin)
+    _send_email_code(conn, admin)
     flash(request, "A new code was sent.")
     return redirect("/admin/2fa/email")
 

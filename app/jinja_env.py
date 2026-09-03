@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
 from .config import settings
@@ -127,7 +127,8 @@ def asset(path: str) -> str:
 def build_env(templates_dir: Path | None = None) -> Environment:
     env = Environment(
         loader=FileSystemLoader(str(templates_dir or settings.templates_dir)),
-        autoescape=True,
+        # HTML always escaped; plain-text email twins (.txt) are not HTML and must not be.
+        autoescape=select_autoescape(enabled_extensions=("html", "htm", "xml"), disabled_extensions=("txt",), default_for_string=True, default=True),
         trim_blocks=True,
         lstrip_blocks=True,
     )

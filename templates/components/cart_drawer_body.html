@@ -15,7 +15,7 @@
     </div>
     <div class="flex-1 min-w-0">
       <p class="font-semibold leading-tight">{{ it.product_name }}</p>
-      <p class="text-sm text-muted">{{ it.variant_name }}{% if it.subscribe %} · monthly{% endif %}</p>
+      <p class="text-sm text-muted">{{ it.variant_name }}{% if it.interval_months %} · every {{ it.interval_months }} {{ 'month' if it.interval_months == 1 else 'months' }}{% endif %}</p>
       <div class="mt-2 flex items-center justify-between gap-3">
         <div class="inline-flex items-center rounded-pill border border-line" role="group" aria-label="Quantity for {{ it.variant_name }}">
           <button type="button" class="icon-btn !w-10 !h-10" data-cart-qty="{{ it.id }}" data-delta="-1" aria-label="Decrease quantity">{{ icon('minus', 16) }}</button>

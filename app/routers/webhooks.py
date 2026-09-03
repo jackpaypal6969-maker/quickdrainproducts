@@ -25,7 +25,7 @@ async def stripe_webhook(request: Request, conn: sqlite3.Connection = Depends(ge
         return PlainTextResponse("webhook secret not configured", status_code=503)
     try:
         event = stripe_service.construct_event(payload, signature)
-    except (stripe.error.SignatureVerificationError, ValueError) as exc:
+    except (stripe.SignatureVerificationError, ValueError) as exc:
         log.warning("stripe webhook rejected: %s", exc)
         return PlainTextResponse("invalid signature", status_code=400)
     try:
