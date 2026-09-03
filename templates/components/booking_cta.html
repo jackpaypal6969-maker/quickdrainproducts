@@ -1,0 +1,17 @@
+{# Cross-sell to the service business: the store feeds Quick Drain and vice versa. #}
+{% from "components/icons.html" import icon %}
+<section class="section-tight">
+  <div class="container-x">
+    <div class="card card-pad md:flex md:items-center md:justify-between gap-8 glow-bottom">
+      <div class="max-w-xl">
+        <p class="eyebrow">Drain backing up right now?</p>
+        <h2 class="h3 mt-2">That is a diagnostic visit, not a bottle.</h2>
+        <p class="text-muted mt-2 text-sm">A camera inspection with 512 Hz locating shows what is actually in the line before anyone quotes a fix. Quick Shot is for keeping a clean line clean afterwards.</p>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-3 mt-5 md:mt-0 shrink-0">
+        <a href="{{ settings.booking_url }}" class="btn btn-primary" rel="noopener">Book a diagnostic {{ icon('arrow', 16) }}</a>
+        <a href="tel:{{ settings.phone_tel }}" class="btn btn-secondary">{{ icon('phone', 16) }} {{ settings.phone_display }}</a>
+      </div>
+    </div>
+  </div>
+</section>

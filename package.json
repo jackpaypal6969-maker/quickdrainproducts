@@ -1,0 +1,10 @@
+{
+  "name": "quick-drain-products-devtools",
+  "private": true,
+  "description": "Dev-only tooling: Tailwind v4 CLI for build_css.sh and Playwright for mobile QA. Nothing here runs in production.",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3",
+    "playwright": "1.56.1"
+  }
+}

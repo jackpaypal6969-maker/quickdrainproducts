@@ -1,0 +1,39 @@
+{# The signature element: one row per pack, twelve month cells, the dosed months lit.
+   Pure arithmetic on the label (one bottle = one drain-month). #}
+{% macro ledger(product, with_buttons=True, csrf_token="") -%}
+<div class="space-y-3" data-ledger>
+  {% for row in product.dose_rows %}
+  {% set v = row.variant %}
+  <div class="ledger-row card px-4 py-4 sm:px-5 grid gap-3 sm:grid-cols-[9rem_1fr_auto] sm:items-center" data-ledger-row="{{ v.id }}">
+    <div>
+      <p class="font-display font-bold text-lg leading-tight">{{ v.name }}</p>
+      <p class="text-sm text-muted">{{ row.units }} {{ 'bottle' if row.units == 1 else 'bottles' }} · {{ row.per_unit_cents|fmt_money }} each</p>
+    </div>
+    <div>
+      <div class="ledger" role="img" aria-label="{{ row.one_drain_months }} of 12 months covered for one drain">
+        {% for m in range(12) %}<span class="ledger-cell {{ 'is-dosed' if m < row.one_drain_months else '' }}"></span>{% endfor %}
+      </div>
+      <p class="text-xs text-faint mt-1.5">One drain for {{ row.one_drain_months }} {{ 'month' if row.one_drain_months == 1 else 'months' }}, or {{ row.drains_one_month }} {{ 'drain' if row.drains_one_month == 1 else 'drains' }} for one month.</p>
+    </div>
+    <div class="flex items-center justify-between sm:justify-end gap-3">
+      <div class="text-right">
+        <p class="font-display font-extrabold text-xl tabular-nums leading-none">{{ v.price_cents|fmt_money }}</p>
+        {% if v.compare_at_cents and v.compare_at_cents > v.price_cents %}<p class="text-xs text-faint line-through tabular-nums">{{ v.compare_at_cents|fmt_money }}</p>{% endif %}
+      </div>
+      {% if with_buttons %}
+      {% if v.stock > 0 %}
+      <form action="/cart/add" method="post" data-add-form class="shrink-0">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="variant_id" value="{{ v.id }}">
+        <input type="hidden" name="qty" value="1">
+        <button type="submit" class="btn btn-primary btn-sm" data-add-button>Add</button>
+      </form>
+      {% else %}
+      <span class="badge badge-danger">Sold out</span>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{%- endmacro %}

@@ -1,0 +1,24 @@
+{# Source: shadcn/ui "dialog", MIT. Opens once per browser after a delay or half-page scroll; app.js handles focus + Escape. #}
+{% from "components/icons.html" import icon %}
+<div class="overlay" data-overlay-for="newsletter-dialog" hidden></div>
+<div id="newsletter-dialog" class="dialog" role="dialog" aria-modal="true" aria-labelledby="nl-title" data-dialog hidden>
+  <div class="dialog-panel card-pad">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <p class="eyebrow">Welcome code</p>
+        <h2 id="nl-title" class="h3 mt-2">{{ site.get('newsletter_discount_percent', '10') }}% off your first order.</h2>
+      </div>
+      <button type="button" class="icon-btn -mr-2 -mt-2" data-close-dialog aria-label="Close">{{ icon('x', 20) }}</button>
+    </div>
+    <p class="text-sm text-muted mt-2">One email with the code, then the occasional plain-English note on drain maintenance. Unsubscribe in one click.</p>
+    <form action="/newsletter" method="post" class="mt-4 space-y-3" data-ajax-form data-success-close>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="source" value="modal">
+      <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
+      <label class="label" for="nl-email">Email</label>
+      <input id="nl-email" class="input" type="email" name="email" required autocomplete="email" inputmode="email" placeholder="you@example.com">
+      <button type="submit" class="btn btn-primary btn-block">Send my code</button>
+      <p class="text-xs text-faint" data-form-message aria-live="polite"></p>
+    </form>
+  </div>
+</div>

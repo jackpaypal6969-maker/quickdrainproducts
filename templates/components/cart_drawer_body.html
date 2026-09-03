@@ -1,0 +1,41 @@
+{# Rendered server-side on first paint and re-rendered by /cart/drawer after every change. #}
+{% from "components/icons.html" import icon %}
+{% set t = totals if totals is defined and totals else None %}
+{% if not t or not t['items'] %}
+<div class="p-6 text-center text-muted">
+  <p class="text-base">Your cart is empty.</p>
+  <a href="/products/quick-shot" class="btn btn-secondary mt-4" data-close-sheet>See Quick Shot</a>
+</div>
+{% else %}
+<ul class="divide-y divide-line-soft px-5" data-cart-lines>
+  {% for it in t['items'] %}
+  <li class="py-4 flex gap-4" data-line-id="{{ it.id }}">
+    <div class="w-16 h-16 rounded-md bg-bg-deep border border-line-soft shrink-0 overflow-hidden">
+      {% if it.image_base %}<img src="/static/img/products/{{ it.image_base }}-480.jpg" width="64" height="64" alt="" class="w-full h-full object-cover" loading="lazy">{% endif %}
+    </div>
+    <div class="flex-1 min-w-0">
+      <p class="font-semibold leading-tight">{{ it.product_name }}</p>
+      <p class="text-sm text-muted">{{ it.variant_name }}{% if it.subscribe %} · monthly{% endif %}</p>
+      <div class="mt-2 flex items-center justify-between gap-3">
+        <div class="inline-flex items-center rounded-pill border border-line" role="group" aria-label="Quantity for {{ it.variant_name }}">
+          <button type="button" class="icon-btn !w-10 !h-10" data-cart-qty="{{ it.id }}" data-delta="-1" aria-label="Decrease quantity">{{ icon('minus', 16) }}</button>
+          <span class="w-6 text-center text-sm font-bold tabular-nums" aria-live="polite">{{ it.qty }}</span>
+          <button type="button" class="icon-btn !w-10 !h-10" data-cart-qty="{{ it.id }}" data-delta="1" aria-label="Increase quantity" {% if it.qty >= it.stock %}disabled{% endif %}>{{ icon('plus', 16) }}</button>
+        </div>
+        <span class="font-bold tabular-nums">{{ it.line_total_cents|fmt_money }}</span>
+      </div>
+      {% if it.short_stock %}<p class="text-xs text-danger mt-1">Only {{ it.stock }} left — quantity will be reduced at checkout.</p>{% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+<div class="px-5 py-4 border-t border-line-soft space-y-2 text-sm" data-cart-totals>
+  <div class="flex justify-between"><span class="text-muted">Subtotal</span><span class="tabular-nums">{{ t['subtotal_cents']|fmt_money }}</span></div>
+  {% if t['discount_cents'] %}<div class="flex justify-between text-success"><span>Discount {{ t['discount'].code if t['discount'] else '' }}</span><span class="tabular-nums">−{{ t['discount_cents']|fmt_money }}</span></div>{% endif %}
+  <div class="flex justify-between"><span class="text-muted">Shipping</span><span class="tabular-nums">{% if t['shipping_cents'] == 0 %}Free{% else %}{{ t['shipping_cents']|fmt_money }}{% endif %}</span></div>
+  {% if t['free_shipping_gap_cents'] > 0 %}<p class="text-xs text-faint">Add {{ t['free_shipping_gap_cents']|fmt_money }} more for free shipping.</p>{% endif %}
+  <div class="flex justify-between text-base font-bold pt-2 border-t border-line-soft"><span>Estimated total</span><span class="tabular-nums">{{ t['total_estimate_cents']|fmt_money }}</span></div>
+  <p class="text-xs text-faint">Tax is calculated at checkout.</p>
+  <a href="/cart" class="btn btn-primary btn-block btn-lg mt-3">Review &amp; check out</a>
+</div>
+{% endif %}

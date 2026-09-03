@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{ meta_title if meta_title else settings.app_name }}</title>
+{% if meta_description %}<meta name="description" content="{{ meta_description }}">{% endif %}
+<link rel="canonical" href="{{ canonical }}">
+{% if no_index %}<meta name="robots" content="noindex, nofollow">{% endif %}
+<meta name="theme-color" content="#140B33">
+<meta name="color-scheme" content="dark">
+<meta property="og:site_name" content="{{ settings.app_name }}">
+<meta property="og:type" content="{{ og_type if og_type else 'website' }}">
+<meta property="og:title" content="{{ meta_title if meta_title else settings.app_name }}">
+{% if meta_description %}<meta property="og:description" content="{{ meta_description }}">{% endif %}
+<meta property="og:url" content="{{ canonical }}">
+<meta property="og:image" content="{{ settings.base_url }}{{ og_image if og_image else '/static/img/og-default.jpg' }}">
+<meta name="twitter:card" content="summary_large_image">
+{% if settings.google_site_verification %}<meta name="google-site-verification" content="{{ settings.google_site_verification }}">{% endif %}
+<link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png">
+<link rel="preload" href="/static/fonts/geist-variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/static/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{ asset('css/app.css') }}">
+{% for block in jsonld or [] %}
+<script type="application/ld+json">{{ render_jsonld(block) }}</script>
+{% endfor %}
+{% block head %}{% endblock %}
+</head>
+<body class="bg-bg text-ink antialiased">
+<a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] btn btn-primary btn-sm">Skip to content</a>
+<script type="application/json" id="qd-config">{{ render_jsonld({"csrf": csrf_token, "posthogKey": settings.posthog_key, "posthogHost": settings.posthog_host, "freeShippingCents": settings.free_shipping_threshold_cents, "subscriptions": settings.subscriptions_enabled, "path": path}) }}</script>
+
+{% if promo_banner %}
+<div class="bg-accent text-on-accent text-center text-sm font-bold py-2 px-4" role="status">{{ promo_banner }}</div>
+{% endif %}
+
+{% include "components/header.html" %}
+
+{% if flash %}
+<div class="container-x pt-4" id="flash-root">
+  <div class="alert {{ 'alert-error' if flash.kind == 'error' else 'alert-ok' }}" role="{{ 'alert' if flash.kind == 'error' else 'status' }}">{{ flash.message }}</div>
+</div>
+{% endif %}
+
+<main id="main" tabindex="-1">
+{% block content %}{% endblock %}
+</main>
+
+{% include "components/footer.html" %}
+{% include "components/cart_drawer.html" %}
+{% include "components/mobile_nav.html" %}
+{% if site.get('newsletter_enabled', '1') == '1' and not hide_newsletter %}{% include "components/newsletter_modal.html" %}{% endif %}
+<div id="toast-root" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:w-96 z-[80] space-y-2 pointer-events-none" aria-live="polite"></div>
+<script src="{{ asset('js/app.js') }}" defer></script>
+{% if settings.posthog_key %}<script src="{{ settings.posthog_host }}/static/array.js" defer></script>{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

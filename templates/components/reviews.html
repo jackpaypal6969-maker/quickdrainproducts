@@ -1,0 +1,54 @@
+{# Source: shadcn/ui "card" + "progress" (MIT) for the rating breakdown. Review text renders escaped — never |safe. #}
+{% from "components/icons.html" import icon, stars %}
+{% macro review_block(product, reviews, breakdown, csrf_token, customer) -%}
+<div class="grid gap-8 lg:grid-cols-[1fr_1.6fr]">
+  <div>
+    {% if product.review_count %}
+    <p class="font-display font-extrabold text-5xl tabular-nums leading-none">{{ product.rating_avg }}</p>
+    <div class="mt-2 flex items-center gap-2">{{ stars(product.rating_avg|round|int, 18) }}<span class="text-sm text-muted">{{ product.review_count|plural('review') }}</span></div>
+    <dl class="mt-5 space-y-2">
+      {% for star in [5, 4, 3, 2, 1] %}
+      {% set n = breakdown.get(star, 0) %}
+      <div class="flex items-center gap-3 text-sm">
+        <dt class="w-12 text-faint">{{ star }} star</dt>
+        <dd class="flex-1 h-1.5 rounded-pill bg-raised overflow-hidden"><span class="block h-full bg-accent" style="width: {{ ((n / product.review_count) * 100)|round|int if product.review_count else 0 }}%"></span></dd>
+        <dd class="w-6 text-right tabular-nums text-faint">{{ n }}</dd>
+      </div>
+      {% endfor %}
+    </dl>
+    {% else %}
+    <p class="text-muted">No reviews yet. Buyers are invited by email after delivery; only real orders carry the verified mark.</p>
+    {% endif %}
+    <details class="mt-6 group">
+      <summary class="btn btn-secondary btn-sm list-none">Write a review</summary>
+      <form action="/reviews" method="post" class="mt-4 space-y-3 card card-pad">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="product_id" value="{{ product.id }}">
+        <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
+        <fieldset>
+          <legend class="label">Rating</legend>
+          <div class="flex gap-2">
+            {% for i in range(1, 6) %}<label class="choice !w-11"><input type="radio" name="rating" value="{{ i }}" required aria-label="{{ i }} star{{ 's' if i > 1 else '' }}"><span class="choice-body !justify-center !px-0 !min-h-11 !py-0 text-sm font-bold">{{ i }}</span></label>{% endfor %}
+          </div>
+        </fieldset>
+        <div class="field"><label class="label" for="rv-name">Name</label><input id="rv-name" class="input" name="author_name" required maxlength="60" value="{{ customer.first_name if customer else '' }}"></div>
+        {% if not customer %}<div class="field"><label class="label" for="rv-email">Email (not shown)</label><input id="rv-email" class="input" type="email" name="email" required></div>{% endif %}
+        <div class="field"><label class="label" for="rv-title">Title</label><input id="rv-title" class="input" name="title" maxlength="120"></div>
+        <div class="field"><label class="label" for="rv-body">Review</label><textarea id="rv-body" class="input" name="body" required maxlength="3000"></textarea></div>
+        <button type="submit" class="btn btn-primary">Submit for moderation</button>
+        <p class="help">Reviews are checked by a person before they appear.</p>
+      </form>
+    </details>
+  </div>
+  <div class="space-y-4">
+    {% for r in reviews %}
+    <article class="card card-pad">
+      <div class="flex items-center justify-between gap-3">{{ stars(r.rating, 16) }}{% if r.is_verified %}<span class="badge badge-accent">Verified purchase</span>{% endif %}</div>
+      {% if r.title %}<h3 class="font-display font-bold text-lg mt-3">{{ r.title }}</h3>{% endif %}
+      <p class="text-sm text-muted mt-2">{{ r.body }}</p>
+      <p class="text-xs text-faint mt-4">{{ r.author_name }} · {{ r.created_at|est_date }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</div>
+{%- endmacro %}

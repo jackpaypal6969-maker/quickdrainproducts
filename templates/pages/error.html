@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container-x py-24 max-w-xl">
+  <p class="eyebrow">{{ status_code }}</p>
+  <h1 class="h2 mt-3">{% if status_code == 403 %}That request could not be verified.{% elif status_code == 429 %}Slow down a little.{% else %}That did not work.{% endif %}</h1>
+  <p class="text-muted mt-4">{{ detail }}</p>
+  <div class="mt-6 flex gap-3"><a href="javascript:history.back()" class="btn btn-secondary">Go back</a><a href="/" class="btn btn-primary">Home</a></div>
+</section>
+{% endblock %}

@@ -1,0 +1,12 @@
+{# Source: shadcn/ui "sheet" (side="right"), MIT. Radix Dialog behaviour (focus trap, Escape, aria-expanded, focus restore) is in static/js/app.js. #}
+{% from "components/icons.html" import icon %}
+<div class="overlay" data-overlay-for="cart-drawer" hidden></div>
+<aside id="cart-drawer" class="sheet" role="dialog" aria-modal="true" aria-labelledby="cart-drawer-title" data-sheet hidden>
+  <div class="flex items-center justify-between px-5 h-[var(--header-h)] border-b border-line-soft shrink-0">
+    <h2 id="cart-drawer-title" class="h3 !text-xl">Your cart</h2>
+    <button type="button" class="icon-btn" data-close-sheet aria-label="Close cart">{{ icon('x', 22) }}</button>
+  </div>
+  <div class="flex-1 overflow-y-auto" data-cart-drawer-body>
+    {% include "components/cart_drawer_body.html" with context %}
+  </div>
+</aside>

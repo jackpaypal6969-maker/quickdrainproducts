@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon, stars %}
+{% from "components/picture.html" import picture %}
+{% from "components/dose_ledger.html" import ledger %}
+{% from "components/faq.html" import faq %}
+{% block content %}
+{% if product %}
+{% set hero = product.hero_image %}
+{% set single = product.variants[0] if product.variants else None %}
+
+<section class="glow-top">
+  <div class="container-x pt-8 pb-14 lg:pt-14 lg:pb-24 grid gap-10 lg:grid-cols-[1.05fr_1fr] lg:items-center">
+    <div>
+      <p class="eyebrow">Quick Drain · maintenance products</p>
+      <h1 class="h1 mt-4">One bottle.<br>One drain.<br>One month.</h1>
+      <p class="lede mt-6">{{ product.name }} is a natural drain enzyme, dosed for monthly use on any drain. 4 fl oz per bottle. It is the maintenance step between service visits — not an emergency fix.</p>
+      <div class="mt-8 flex flex-col sm:flex-row gap-3">
+        {% if single and single.stock > 0 %}
+        <form action="/cart/add" method="post" data-add-form>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="variant_id" value="{{ single.id }}">
+          <input type="hidden" name="qty" value="1">
+          <button type="submit" class="btn btn-primary btn-lg w-full sm:w-auto" data-add-button>Add to cart — {{ single.price_cents|fmt_money }}</button>
+        </form>
+        {% else %}
+        <a href="/products/{{ product.slug }}" class="btn btn-primary btn-lg">See Quick Shot</a>
+        {% endif %}
+        <a href="/products/{{ product.slug }}#packs" class="btn btn-secondary btn-lg">Compare packs</a>
+      </div>
+      <ul class="mt-8 flex flex-wrap gap-2 text-sm" aria-label="Order facts">
+        <li class="badge">{{ icon('package', 14) }} Ships as an ordinary parcel</li>
+        <li class="badge">{{ icon('truck', 14) }} {{ settings.flat_shipping_cents|fmt_money }} flat · free over {{ settings.free_shipping_threshold_cents|fmt_money_short }}</li>
+        <li class="badge">{{ icon('shield', 14) }} Stripe-hosted checkout</li>
+      </ul>
+    </div>
+    <div class="stage">
+      {{ picture(hero, sizes="(min-width: 1024px) 48vw, 100vw", loading="eager", fetchpriority="high") }}
+      <div class="stage-sweep" aria-hidden="true"></div>
+    </div>
+  </div>
+</section>
+
+<section class="section bg-bg-alt border-y border-line-soft">
+  <div class="container-x grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:items-start">
+    <div data-reveal>
+      <p class="eyebrow">What the label says</p>
+      <h2 class="h2 mt-3">Nothing on this page claims more than the bottle does.</h2>
+      <p class="text-muted mt-4 max-w-md">Quick Drain sells service on evidence — camera footage, pressure data, plain-English explanation. The store keeps the same rule. Four statements are printed on the front label. They are the four you will find here.</p>
+      <p class="mt-5 text-sm">
+        {% if product.sds_available %}<a href="/products/{{ product.slug }}/sds" class="link">{{ icon('file', 14, 'inline -mt-0.5') }} Download the safety data sheet (PDF)</a>
+        {% else %}<span class="text-faint">{{ icon('file', 14, 'inline -mt-0.5') }} Safety data sheet: not yet published here. <a href="/contact" class="link tap-inline">Ask for it</a>.</span>{% endif %}
+      </p>
+    </div>
+    <dl class="grid sm:grid-cols-2 gap-3" data-reveal data-reveal-stagger>
+      {% for claim in product.claims %}
+      <div class="card card-pad" data-reveal>
+        <dt class="eyebrow !text-faint">Label line {{ loop.index }}</dt>
+        <dd class="font-display font-bold text-xl mt-2 leading-tight">{{ claim }}</dd>
+      </div>
+      {% endfor %}
+    </dl>
+  </div>
+</section>
+
+<section class="section" id="packs">
+  <div class="container-x">
+    <div class="max-w-2xl" data-reveal>
+      <p class="eyebrow">Coverage, not marketing</p>
+      <h2 class="h2 mt-3">How far each pack goes.</h2>
+      <p class="text-muted mt-4">The label sets the dose: one bottle, one drain, one month. Everything below is that sentence multiplied. Kitchen, both bathrooms and the laundry line is four drains a month.</p>
+    </div>
+    <div class="mt-8" data-reveal>{{ ledger(product, True, csrf_token) }}</div>
+  </div>
+</section>
+
+<section class="section bg-bg-deep border-y border-line-soft">
+  <div class="container-x">
+    <div class="max-w-2xl" data-reveal>
+      <p class="eyebrow">Read this before you buy</p>
+      <h2 class="h2 mt-3">When a bottle is the wrong answer.</h2>
+      <p class="text-muted mt-4">A maintainer keeps a clean line clean. It does not diagnose, and it does not fix these. If one of them is happening now, book the visit and use Quick Shot afterwards.</p>
+    </div>
+    <div class="mt-8 grid gap-4 md:grid-cols-3" data-reveal data-reveal-stagger>
+      <div class="card card-pad" data-reveal>
+        <span class="text-accent">{{ icon('alert', 22) }}</span>
+        <h3 class="h3 mt-4">Water standing or backing up</h3>
+        <p class="text-sm text-muted mt-2">Something is physically in the line: grease, roots, scale or a broken pipe. A camera inspection shows which, before anyone quotes a fix.</p>
+      </div>
+      <div class="card card-pad" data-reveal>
+        <span class="text-accent">{{ icon('refresh', 22) }}</span>
+        <h3 class="h3 mt-4">Cleared last month, slow again</h3>
+        <p class="text-sm text-muted mt-2">Clearing opens a hole; cleaning restores the pipe wall. A line that was only cleared will keep coming back until it is jetted wall-to-wall.</p>
+      </div>
+      <div class="card card-pad" data-reveal>
+        <span class="text-accent">{{ icon('droplet', 22) }}</span>
+        <h3 class="h3 mt-4">Gurgling, smells, more than one fixture</h3>
+        <p class="text-sm text-muted mt-2">Several drains acting up together points past the trap — main line, vent or cesspool. That is a diagnostic, not a dose.</p>
+      </div>
+    </div>
+    <div class="mt-8 flex flex-col sm:flex-row gap-3" data-reveal>
+      <a href="{{ settings.booking_url }}" class="btn btn-primary" rel="noopener">Book a diagnostic visit {{ icon('arrow', 16) }}</a>
+      <a href="tel:{{ settings.phone_tel }}" class="btn btn-secondary">{{ icon('phone', 16) }} {{ settings.phone_display }}</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container-x grid gap-10 lg:grid-cols-[1fr_1.4fr]">
+    <div data-reveal>
+      <p class="eyebrow">Same company, same rules</p>
+      <h2 class="h2 mt-3">Backed by real field work.</h2>
+      <p class="text-muted mt-4">Quick Drain's diagnostic platform is built on cameras, jetting equipment and Long Island pipe knowledge. The service pages explain what each tool does and when it is the right call.</p>
+    </div>
+    <div class="grid sm:grid-cols-3 gap-3" data-reveal data-reveal-stagger>
+      <a href="{{ settings.parent_site_url }}" class="card card-pad hover:border-line-strong transition-colors" rel="noopener" data-reveal>
+        <span class="text-accent">{{ icon('camera', 22) }}</span>
+        <h3 class="font-display font-bold text-lg mt-4">Sewer camera inspection</h3>
+        <p class="text-sm text-muted mt-1">HD footage, 512 Hz locating, plain explanations of roots, offsets, bellies and scale.</p>
+        <span class="link text-sm mt-3 inline-block">quickdrainny.com {{ icon('external', 12, 'inline') }}</span>
+      </a>
+      <a href="{{ settings.parent_site_url }}" class="card card-pad hover:border-line-strong transition-colors" rel="noopener" data-reveal>
+        <span class="text-accent">{{ icon('droplet', 22) }}</span>
+        <h3 class="font-display font-bold text-lg mt-4">High pressure water jetting</h3>
+        <p class="text-sm text-muted mt-1">4000 PSI, 9 GPM, root cutting and grease removal that restores the pipe's diameter.</p>
+        <span class="link text-sm mt-3 inline-block">quickdrainny.com {{ icon('external', 12, 'inline') }}</span>
+      </a>
+      <a href="{{ settings.parent_site_url }}" class="card card-pad hover:border-line-strong transition-colors" rel="noopener" data-reveal>
+        <span class="text-accent">{{ icon('shield', 22) }}</span>
+        <h3 class="font-display font-bold text-lg mt-4">Sewer &amp; septic inspection</h3>
+        <p class="text-sm text-muted mt-1">Buying, selling or managing property: camera, reports and video before it becomes a five-figure surprise.</p>
+        <span class="link text-sm mt-3 inline-block">quickdrainny.com {{ icon('external', 12, 'inline') }}</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="section bg-bg-alt border-y border-line-soft" id="reviews">
+  <div class="container-x">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4" data-reveal>
+      <div>
+        <p class="eyebrow">Verified buyers</p>
+        <h2 class="h2 mt-3">Reviews</h2>
+      </div>
+      {% if product.review_count %}
+      <div class="flex items-center gap-3">{{ stars(product.rating_avg|round|int, 18) }}<span class="text-sm text-muted">{{ product.rating_avg }} from {{ product.review_count|plural('review') }}</span></div>
+      {% endif %}
+    </div>
+    {% if reviews %}
+    <div class="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-reveal data-reveal-stagger>
+      {% for r in reviews %}
+      <article class="card card-pad" data-reveal>
+        <div class="flex items-center justify-between gap-3">{{ stars(r.rating, 16) }}{% if r.is_verified %}<span class="badge badge-accent">Verified purchase</span>{% endif %}</div>
+        {% if r.title %}<h3 class="font-display font-bold text-lg mt-3">{{ r.title }}</h3>{% endif %}
+        <p class="text-sm text-muted mt-2">{{ r.body }}</p>
+        <p class="text-xs text-faint mt-4">{{ r.author_name }} · {{ r.created_at|est_date }}</p>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted mt-6 max-w-lg" data-reveal>No reviews yet. Every buyer is invited to review after delivery, and only real orders get the verified mark — we would rather show an empty section than a borrowed one.</p>
+    {% endif %}
+  </div>
+</section>
+
+{% if product.faqs %}
+<section class="section">
+  <div class="container-x grid gap-10 lg:grid-cols-[1fr_1.6fr]">
+    <div data-reveal>
+      <p class="eyebrow">Straight answers</p>
+      <h2 class="h2 mt-3">Questions people ask before ordering.</h2>
+    </div>
+    <div data-reveal>{{ faq(product.faqs, "home-faq") }}</div>
+  </div>
+</section>
+{% endif %}
+
+{% if posts %}
+<section class="section bg-bg-deep border-t border-line-soft">
+  <div class="container-x">
+    <div class="flex items-end justify-between gap-4" data-reveal>
+      <div><p class="eyebrow">Notes</p><h2 class="h2 mt-3">Plain-English drain maintenance.</h2></div>
+      <a href="/blog" class="link text-sm shrink-0 tap-inline">All notes</a>
+    </div>
+    <div class="mt-8 grid gap-4 md:grid-cols-3" data-reveal data-reveal-stagger>
+      {% for p in posts %}
+      <a href="/blog/{{ p.slug }}" class="card card-pad hover:border-line-strong transition-colors" data-reveal>
+        <p class="text-xs text-faint">{{ p.published_at|est_date }}</p>
+        <h3 class="font-display font-bold text-xl mt-2 leading-tight">{{ p.title }}</h3>
+        <p class="text-sm text-muted mt-2">{{ p.excerpt }}</p>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% include "components/booking_cta.html" %}
+{% else %}
+<section class="section"><div class="container-x"><h1 class="h1">Quick Drain Products</h1><p class="lede mt-4">The catalog is being set up. Check back shortly.</p></div></section>
+{% endif %}
+{% endblock %}

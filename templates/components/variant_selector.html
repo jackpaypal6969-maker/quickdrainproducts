@@ -1,0 +1,24 @@
+{# Source: shadcn/ui "radio-group" rendered as bordered tiles (MIT). Selection state → app.js updates price/stock/ledger. #}
+{% macro variant_selector(product) -%}
+<fieldset data-variant-selector>
+  <legend class="label">Pack size</legend>
+  <div class="grid gap-2" role="radiogroup">
+    {% for v in product.variants %}
+    <label class="choice">
+      <input type="radio" name="variant" value="{{ v.id }}" {% if loop.first %}checked{% endif %}
+             data-id="{{ v.id }}" data-price="{{ v.price_cents }}" data-compare="{{ v.compare_at_cents or '' }}" data-units="{{ v.units_per_pack }}" data-stock="{{ v.stock }}" data-low="{{ v.low_stock_threshold }}">
+      <span class="choice-body">
+        <span>
+          <span class="block font-semibold">{{ v.name }}</span>
+          <span class="block text-xs text-muted">{{ v.units_per_pack }} × 4 fl oz · {{ (v.price_cents / v.units_per_pack)|round|int|fmt_money }} per bottle</span>
+        </span>
+        <span class="text-right">
+          <span class="block font-display font-bold tabular-nums">{{ v.price_cents|fmt_money }}</span>
+          {% if v.stock <= 0 %}<span class="block text-xs text-danger">Sold out</span>{% elif v.compare_at_cents and v.compare_at_cents > v.price_cents %}<span class="block text-xs text-faint line-through tabular-nums">{{ v.compare_at_cents|fmt_money }}</span>{% endif %}
+        </span>
+      </span>
+    </label>
+    {% endfor %}
+  </div>
+</fieldset>
+{%- endmacro %}

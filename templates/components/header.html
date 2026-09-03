@@ -1,0 +1,24 @@
+{# Source: shadcn/ui "navigation-menu" + "sheet" block layout (MIT). Radix menu behaviour replaced by static/js/app.js. #}
+{% from "components/icons.html" import icon %}
+<header class="site-header" id="site-header" data-header>
+  <div class="container-x h-full flex items-center justify-between gap-4">
+    <a href="/" class="flex items-baseline gap-2 shrink-0 min-h-11 py-2" aria-label="{{ settings.app_name }} home">
+      <span class="font-display font-extrabold tracking-[-0.04em] text-[1.35rem] leading-none">Quick Drain</span>
+      <span class="eyebrow !text-[0.75rem] hidden sm:inline">Products</span>
+    </a>
+    <nav class="hidden md:flex items-center gap-1" aria-label="Primary">
+      <a href="/products/quick-shot" class="nav-link" {% if path.startswith('/products') %}aria-current="page"{% endif %}>Quick Shot</a>
+      <a href="/blog" class="nav-link" {% if path.startswith('/blog') %}aria-current="page"{% endif %}>Notes</a>
+      <a href="/shipping-and-safety" class="nav-link" {% if path == '/shipping-and-safety' %}aria-current="page"{% endif %}>Shipping &amp; safety</a>
+      <a href="{{ settings.booking_url }}" class="nav-link text-accent hover:text-accent-tint" rel="noopener">Book service {{ icon('external', 14, 'inline-block ml-0.5 -mt-0.5') }}</a>
+    </nav>
+    <div class="flex items-center gap-1">
+      <a href="{{ '/account' if customer else '/account/login' }}" class="icon-btn hidden sm:inline-grid" aria-label="{{ 'Your account' if customer else 'Sign in' }}">{{ icon('user', 20) }}</a>
+      <button type="button" class="icon-btn relative" data-open-cart aria-controls="cart-drawer" aria-expanded="false" aria-label="Open cart">
+        {{ icon('cart', 20) }}
+        <span class="cart-badge" data-cart-count data-count="{{ cart_count }}">{{ cart_count }}</span>
+      </button>
+      <button type="button" class="icon-btn md:hidden" data-open-nav aria-controls="mobile-nav" aria-expanded="false" aria-label="Open menu">{{ icon('menu', 22) }}</button>
+    </div>
+  </div>
+</header>

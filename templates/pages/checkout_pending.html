@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% set hide_newsletter = True %}
+{% block content %}
+<section class="container-x py-20 max-w-xl">
+  <p class="eyebrow">Almost there</p>
+  <h1 class="h2 mt-3">Confirming your payment.</h1>
+  {% if retry %}
+  <p class="text-muted mt-4">Stripe has your payment; our confirmation is a few seconds behind. This page refreshes itself.</p>
+  <div class="mt-6 skeleton h-24 rounded-lg" data-pending-refresh="/checkout/success?session_id={{ session_id }}&n={{ attempts + 1 }}"><span>loading</span></div>
+  <noscript><p class="mt-4"><a href="/checkout/success?session_id={{ session_id }}&n={{ attempts + 1 }}" class="link">Refresh</a></p></noscript>
+  {% else %}
+  <p class="text-muted mt-4">Your payment went through but the confirmation is taking longer than usual. You will get an email the moment the order is recorded — usually within a minute. Nothing else to do.</p>
+  <div class="mt-6 flex gap-3"><a href="/orders/lookup" class="btn btn-secondary">Find your order</a><a href="/contact" class="btn btn-ghost">Contact us</a></div>
+  {% endif %}
+</section>
+{% endblock %}

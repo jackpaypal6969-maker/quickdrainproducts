@@ -1,0 +1,42 @@
+{% from "components/icons.html" import icon %}
+<footer class="mt-16 border-t border-line-soft bg-bg-deep">
+  <div class="container-x py-12 grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+    <div>
+      <p class="font-display font-extrabold tracking-[-0.04em] text-xl">Quick Drain <span class="eyebrow !text-[0.75rem]">Products</span></p>
+      <p class="mt-3 text-sm text-muted max-w-xs">The retail arm of Quick Drain, Long Island's diagnostics-first sewer, drain, septic and wastewater service. Maintenance products, sold with the same restraint.</p>
+      <p class="mt-3 text-sm flex flex-wrap items-center gap-x-3"><a href="tel:{{ settings.phone_tel }}" class="link tap-inline">{{ settings.phone_display }}</a> <a href="{{ settings.parent_site_url }}" class="link tap-inline" rel="noopener">quickdrainny.com</a></p>
+    </div>
+    <div>
+      <p class="eyebrow mb-3">Shop</p>
+      <ul class="text-sm text-nav">
+        <li><a href="/products/quick-shot" class="tap-row">Quick Shot</a></li>
+        <li><a href="/products" class="tap-row">All products</a></li>
+        <li><a href="/shipping-and-safety" class="tap-row">Shipping &amp; safety</a></li>
+        <li><a href="/blog" class="tap-row">Drain maintenance notes</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="eyebrow mb-3">Help</p>
+      <ul class="text-sm text-nav">
+        <li><a href="/orders/lookup" class="tap-row">Find your order</a></li>
+        <li><a href="/contact" class="tap-row">Contact</a></li>
+        <li><a href="{{ '/account' if customer else '/account/login' }}" class="tap-row">{{ 'Your account' if customer else 'Sign in' }}</a></li>
+        <li><a href="{{ settings.booking_url }}" class="tap-row" rel="noopener">Book a service visit</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="eyebrow mb-3">Legal</p>
+      <ul class="text-sm text-nav">
+        <li><a href="/legal/terms" class="tap-row">Terms of sale</a></li>
+        <li><a href="/legal/privacy" class="tap-row">Privacy</a></li>
+        <li><a href="/legal/refunds" class="tap-row">Refunds &amp; returns</a></li>
+        <li><a href="/legal/shipping" class="tap-row">Shipping policy</a></li>
+        <li><a href="/legal/accessibility" class="tap-row">Accessibility</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="container-x pb-8 flex flex-col sm:flex-row gap-2 justify-between text-xs text-faint">
+    <p>© {{ current_year() }} Quick Drain. Every product claim on this site comes from the product label or its safety data sheet.</p>
+    <p>Stripe-hosted checkout · Cards never touch this server</p>
+  </div>
+</footer>

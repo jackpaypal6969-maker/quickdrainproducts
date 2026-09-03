@@ -1,0 +1,23 @@
+# secrets and local state
+.env
+*.db
+*.db-wal
+*.db-shm
+data/
+.venv/
+backups/
+media/uploads/
+__pycache__/
+*.pyc
+.pytest_cache/
+# built assets (build_css.sh / build_images.py regenerate these)
+static/css/app.*.css
+static/css/app.css
+static/css/manifest.json
+# dev tooling
+node_modules/
+.tools/
+qa-report/
+qa-report-*/
+*.tgz
+.DS_Store

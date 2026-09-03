@@ -1,0 +1,19 @@
+{# Source: shadcn/ui "accordion" (Radix Accordion markup + ARIA), MIT. Height animates with grid-template-rows in app.css; toggling is in app.js. #}
+{% from "components/icons.html" import icon %}
+{% macro faq(faqs, id_prefix="faq") -%}
+<div class="acc" data-accordion>
+  {% for f in faqs %}
+  <div class="acc-item">
+    <h3 class="m-0 font-body">
+      <button type="button" class="acc-trigger" id="{{ id_prefix }}-t-{{ loop.index }}" aria-expanded="false" aria-controls="{{ id_prefix }}-p-{{ loop.index }}" data-acc-trigger>
+        <span>{{ f.question }}</span>
+        {{ icon('chevron', 18) }}
+      </button>
+    </h3>
+    <div class="acc-panel" id="{{ id_prefix }}-p-{{ loop.index }}" role="region" aria-labelledby="{{ id_prefix }}-t-{{ loop.index }}" data-open="false" data-acc-panel>
+      <div><div class="acc-content">{{ f.answer }}</div></div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{%- endmacro %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+{% set hide_newsletter = True %}
+{% block content %}
+<section class="container-x py-12 grid gap-10 lg:grid-cols-[1.2fr_1fr]">
+  <div>
+    <p class="eyebrow">Order {{ order.order_number }}</p>
+    <h1 class="h2 mt-3">Thanks. The dose is on its way.</h1>
+    <p class="text-muted mt-4">A confirmation is going to <strong class="text-ink">{{ order.email }}</strong>. We will email again with tracking when it ships.</p>
+    <div class="card mt-8">
+      <ul class="divide-y divide-line-soft">
+        {% for it in items %}
+        <li class="p-4 flex justify-between gap-4 text-sm"><span>{{ it.product_name }} — {{ it.variant_name }} × {{ it.qty }}</span><span class="tabular-nums">{{ it.line_total_cents|fmt_money }}</span></li>
+        {% endfor %}
+      </ul>
+      <dl class="p-4 border-t border-line-soft text-sm space-y-1">
+        <div class="flex justify-between"><dt class="text-muted">Subtotal</dt><dd class="tabular-nums">{{ order.subtotal_cents|fmt_money }}</dd></div>
+        {% if order.discount_cents %}<div class="flex justify-between text-success"><dt>Discount {{ order.discount_code }}</dt><dd class="tabular-nums">−{{ order.discount_cents|fmt_money }}</dd></div>{% endif %}
+        {% if order.credit_cents %}<div class="flex justify-between text-success"><dt>Store credit</dt><dd class="tabular-nums">−{{ order.credit_cents|fmt_money }}</dd></div>{% endif %}
+        <div class="flex justify-between"><dt class="text-muted">Shipping</dt><dd class="tabular-nums">{{ order.shipping_cents|fmt_money if order.shipping_cents else 'Free' }}</dd></div>
+        <div class="flex justify-between"><dt class="text-muted">Tax</dt><dd class="tabular-nums">{{ order.tax_cents|fmt_money }}</dd></div>
+        <div class="flex justify-between font-bold text-base pt-2 border-t border-line-soft"><dt>Total</dt><dd class="tabular-nums">{{ order.total_cents|fmt_money }}</dd></div>
+      </dl>
+    </div>
+    {% if order.shipping_line1 %}
+    <div class="mt-6 text-sm"><p class="eyebrow !text-faint">Shipping to</p><p class="mt-2">{{ order.shipping_name }}<br>{{ order.shipping_line1 }}{% if order.shipping_line2 %}, {{ order.shipping_line2 }}{% endif %}<br>{{ order.shipping_city }}, {{ order.shipping_state }} {{ order.shipping_postal_code }}</p></div>
+    {% endif %}
+  </div>
+  <aside class="space-y-4">
+    <div class="card card-pad">
+      <h2 class="h3">Your dose calendar</h2>
+      {% set ns = namespace(months=0) %}
+      {% for it in items %}{% set ns.months = ns.months + it.qty * it.units_per_pack %}{% endfor %}
+      <p class="text-sm text-muted mt-2">This order covers <strong class="text-ink">{{ ns.months|plural('drain-month') }}</strong> — one drain for {{ ns.months }} {{ 'month' if ns.months == 1 else 'months' }}, or more drains for fewer months. We will send one reminder a few days before you run out.</p>
+    </div>
+    <div class="card card-pad">
+      <h2 class="h3">Keep this handy</h2>
+      <p class="text-sm text-muted mt-2">Order number <strong class="text-ink">{{ order.order_number }}</strong>. Look it up any time with your email at <a href="/orders/lookup" class="link">Find your order</a>.</p>
+      {% if not customer %}<p class="text-sm text-muted mt-3">Want order history and one-click reorders? <a href="/account/reset" class="link">Set a password</a> for {{ order.email }} — no separate sign-up.</p>{% endif %}
+    </div>
+    <a href="/" class="btn btn-secondary btn-block">Back to the store</a>
+  </aside>
+</section>
+{% endblock %}

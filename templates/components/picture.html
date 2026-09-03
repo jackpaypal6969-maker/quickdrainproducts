@@ -1,0 +1,15 @@
+{# <picture> pipeline: AVIF → WebP → JPEG with explicit width/height so nothing shifts.
+   `img` is the dict from catalog.image_sources(). Missing assets render the poster box. #}
+{% macro picture(img, sizes="(min-width: 1024px) 50vw, 100vw", cls="", loading="lazy", fetchpriority="auto", id="") -%}
+{% if img and not img.missing %}
+<picture{% if id %} id="{{ id }}"{% endif %}>
+  {% if img.avif %}<source type="image/avif" srcset="{{ img.avif }}" sizes="{{ sizes }}">{% endif %}
+  {% if img.webp %}<source type="image/webp" srcset="{{ img.webp }}" sizes="{{ sizes }}">{% endif %}
+  <img src="{{ img.src }}"{% if img.jpg %} srcset="{{ img.jpg }}" sizes="{{ sizes }}"{% endif %} width="{{ img.width }}" height="{{ img.height }}" alt="{{ img.alt }}" loading="{{ loading }}" decoding="async" fetchpriority="{{ fetchpriority }}" class="{{ cls }}">
+</picture>
+{% else %}
+<div{% if id %} id="{{ id }}"{% endif %} class="poster {{ cls }}" role="img" aria-label="{{ (img.alt if img else 'Product image') }}" style="aspect-ratio: {{ (img.width if img else 4) }} / {{ (img.height if img else 5) }};">
+  <div class="absolute inset-0 grid place-items-center text-faint text-sm">Image coming soon</div>
+</div>
+{% endif %}
+{%- endmacro %}

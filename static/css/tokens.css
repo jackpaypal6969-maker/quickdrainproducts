@@ -1,0 +1,154 @@
+/*
+  Quick Drain Products — design tokens.
+
+  Sampled from https://www.quickdrainny.com on 2026-09-03 (rendered HTML, computed
+  styles). The store must read as the same company as the service site, so every
+  colour, radius and type step below is the parent site's value or a step on the
+  same ramp. Notes on what was measured:
+
+    body background            rgb(20, 11, 51)   #140B33
+    alternate section          rgb(18, 10, 46)   #120A2E
+    deepest section            rgb(13, 7, 36)    #0D0724
+    card surfaces              rgb(30, 20, 64)   #1E1440   / rgb(36, 19, 86) #241356
+    text                       #F7FBFF
+    muted text                 rgba(224, 239, 255, 0.72)
+    nav text                   rgba(229, 244, 255, 0.78)
+    faint label                rgba(224, 239, 255, 0.55)
+    accent (only one)          #31F3E6, tint rgb(158, 255, 248), on-accent rgb(3, 16, 16)
+    hero glow                  radial-gradient(50% 50% at 20% 0, rgba(49,243,230,.32) 0%, transparent 32%)
+    hairline borders           rgba(169, 232, 255, 0.16) / rgba(255, 255, 255, 0.11)
+    raised surface             rgba(255, 255, 255, 0.06)
+    danger                     rgb(255, 96, 112)
+    radii                      12px controls · 20px cards · 999px pills
+    display type               Geist 800, tracking -0.04em … -0.07em, line-height 0.94–1.0
+    body type                  Inter 400/500, 15–19px, line-height 1.5–1.55
+    eyebrow                    12px 700–800 uppercase, accent colour
+    section rhythm             96px vertical padding, 34–42px internal gap
+    type steps measured        76 52 44 42 36 34 28 26 24 22 20 19 17 15 14 13 12
+
+  The parent site also uses a violet secondary (#A99BFF) for its emergency CTA.
+  The store does not: one accent, everything else on the indigo ramp.
+*/
+
+:root {
+  /* ---- primitive: indigo ramp (dark is the only mode) ---- */
+  --qd-indigo-950: #0D0724;
+  --qd-indigo-925: #120A2E;
+  --qd-indigo-900: #140B33;
+  --qd-indigo-850: #1B1140;
+  --qd-indigo-800: #1E1440;
+  --qd-indigo-750: #241A52;
+  --qd-indigo-700: #2B2160;
+  --qd-ice-100: #F7FBFF;
+
+  /* ---- primitive: accent ---- */
+  --qd-cyan-400: #31F3E6;
+  --qd-cyan-200: #9EFFF8;
+  --qd-cyan-ink: #031010;
+
+  /* ---- primitive: status ---- */
+  --qd-red-400: #FF6070;
+  --qd-red-200: #FFA6B2;
+  --qd-amber-400: #FFC069;
+  --qd-green-400: #5EEAA0;
+
+  /* ---- semantic: surfaces ---- */
+  --color-bg: var(--qd-indigo-900);
+  --color-bg-alt: var(--qd-indigo-925);
+  --color-bg-deep: var(--qd-indigo-950);
+  --color-surface: var(--qd-indigo-800);
+  --color-surface-2: var(--qd-indigo-750);
+  --color-raised: rgba(255, 255, 255, 0.06);
+  --color-raised-hover: rgba(255, 255, 255, 0.09);
+  --color-overlay: rgba(13, 7, 36, 0.72);
+
+  /* ---- semantic: text ---- */
+  --color-text: var(--qd-ice-100);
+  --color-text-muted: rgba(224, 239, 255, 0.72);
+  --color-text-nav: rgba(229, 244, 255, 0.78);
+  --color-text-faint: rgba(224, 239, 255, 0.55);
+  --color-text-on-accent: var(--qd-cyan-ink);
+
+  /* ---- semantic: accent ---- */
+  --color-accent: var(--qd-cyan-400);
+  --color-accent-tint: var(--qd-cyan-200);
+  --color-accent-soft: rgba(49, 243, 230, 0.12);
+  --color-accent-glow: rgba(49, 243, 230, 0.32);
+  --color-accent-hover: #4FF6EB;
+
+  /* ---- semantic: lines ---- */
+  --color-border: rgba(169, 232, 255, 0.16);
+  --color-border-soft: rgba(255, 255, 255, 0.11);
+  --color-border-strong: rgba(169, 232, 255, 0.32);
+  --color-ring: var(--qd-cyan-400);
+
+  /* ---- semantic: status ---- */
+  --color-danger: var(--qd-red-400);
+  --color-danger-soft: rgba(255, 96, 112, 0.14);
+  --color-warning: var(--qd-amber-400);
+  --color-success: var(--qd-green-400);
+  --color-success-soft: rgba(94, 234, 160, 0.14);
+
+  /* ---- typography ---- */
+  --font-display: "Geist", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --text-xs: 0.75rem;     /* 12 */
+  --text-sm: 0.8125rem;   /* 13 */
+  --text-base: 0.9375rem; /* 15 — parent body */
+  --text-md: 1.0625rem;   /* 17 */
+  --text-lg: 1.1875rem;   /* 19 — parent lede */
+  --text-xl: 1.375rem;    /* 22 */
+  --text-2xl: 1.5rem;     /* 24 — h3 */
+  --text-3xl: 1.75rem;    /* 28 */
+  --text-4xl: 2.125rem;   /* 34 */
+  --text-5xl: 2.75rem;    /* 44 — h2 */
+  --text-6xl: 3.25rem;    /* 52 */
+  --text-7xl: 4.75rem;    /* 76 — h1 */
+
+  --leading-display: 0.96;
+  --leading-tight: 1.1;
+  --leading-body: 1.55;
+  --tracking-display: -0.045em;
+  --tracking-hero: -0.07em;
+  --tracking-eyebrow: 0.12em;
+
+  /* ---- spacing rhythm (4px base, parent uses 96px section padding) ---- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;   /* 96 — section padding */
+  --gutter: clamp(1.25rem, 4vw, 2.5rem);
+  --container: 74rem; /* 1184 — parent content width 1180 */
+
+  /* ---- radii ---- */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;   /* 12 — controls */
+  --radius-lg: 1.25rem;   /* 20 — cards */
+  --radius-pill: 999px;
+
+  /* ---- elevation (sharp, not soft) ---- */
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 20px 60px -30px rgba(0, 0, 0, 0.7);
+  --shadow-drawer: -24px 0 80px -30px rgba(0, 0, 0, 0.8);
+  --glow-accent: 0 0 0 1px rgba(49, 243, 230, 0.35), 0 12px 40px -18px rgba(49, 243, 230, 0.55);
+
+  /* ---- motion ---- */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 240ms;
+
+  /* ---- layout ---- */
+  --header-h: 4.5rem;
+  --header-h-condensed: 3.5rem;
+
+  color-scheme: dark;
+}
