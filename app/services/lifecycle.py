@@ -36,7 +36,7 @@ def abandoned_carts(conn: sqlite3.Connection, limit: int = 100) -> int:
             tot = cart_service.totals(conn, cart, cart["email"])
             conn.execute("UPDATE carts SET abandoned_email_sent_at = ? WHERE id = ?", (iso(), cart["id"]))
         emails.send(
-            conn, cart["email"], "abandoned_cart", "You left Quick Shot in your cart",
+            conn, cart["email"], "abandoned_cart", "You left Drain Shot in your cart",
             {"cart": cart, "totals": tot, "code": code, "resume_url": f"{settings.base_url}/cart/resume/{cart['token']}"},
             category="marketing", related_type="cart", related_id=cart["id"],
         )
@@ -80,7 +80,7 @@ def reorder_reminders(conn: sqlite3.Connection, limit: int = 200) -> int:
         with transaction(conn):
             conn.execute("UPDATE orders SET reorder_reminder_sent_at = ? WHERE id = ?", (iso(), order["id"]))
         emails.send(
-            conn, order["email"], "reorder_reminder", "Time for the next Quick Shot dose",
+            conn, order["email"], "reorder_reminder", "Time for the next Drain Shot dose",
             {"order": order, "items": items, "coverage_days": days, "reorder_url": f"{settings.base_url}/reorder/{order['order_number']}/{_reorder_token(order)}"},
             category="marketing", related_type="order", related_id=order["id"],
         )
@@ -114,7 +114,7 @@ def review_invites(conn: sqlite3.Connection, limit: int = 200) -> int:
         with transaction(conn):
             conn.execute("UPDATE orders SET review_invite_sent_at = ? WHERE id = ?", (iso(), order["id"]))
         emails.send(
-            conn, order["email"], "review_invite", "How is Quick Shot working for you?",
+            conn, order["email"], "review_invite", "How is Drain Shot working for you?",
             {"order": order, "items": items, "review_url": f"{settings.base_url}/reviews/new/{order['order_number']}/{_reorder_token(order)}"},
             category="marketing", related_type="order", related_id=order["id"],
         )

@@ -5,7 +5,7 @@ import sqlite3
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from starlette.responses import FileResponse
+from starlette.responses import FileResponse, RedirectResponse
 
 from ..config import settings
 from ..db import all_rows, one
@@ -34,8 +34,8 @@ def home(request: Request, conn: sqlite3.Connection = Depends(get_db)):
         "reviews": reviews,
         "posts": _posts(conn),
         "jsonld": jsonld,
-        "meta_title": f"Quick Shot — monthly enzyme drain maintenance | {settings.app_name}",
-        "meta_description": "Quick Shot is a natural drain enzyme dosed for monthly use on any drain. 4 fl oz per bottle. From Quick Drain, Long Island's diagnostics-first sewer and drain company.",
+        "meta_title": f"Drain Shot — monthly enzyme drain maintenance | {settings.app_name}",
+        "meta_description": "Drain Shot is a natural drain enzyme dosed for monthly use on any drain. 4 fl oz per bottle. From Quick Drain, Long Island's diagnostics-first sewer and drain company.",
         "og_image": product["hero_image"]["src"] if product and product.get("hero_image") and product["hero_image"]["src"] else "",
     }, conn=conn)
 
@@ -51,8 +51,13 @@ def product_list(request: Request, conn: sqlite3.Connection = Depends(get_db)):
     }, conn=conn)
 
 
+LEGACY_SLUGS = {"quick-shot": "drain-shot"}
+
+
 @router.get("/products/{slug}")
 def product_detail(slug: str, request: Request, conn: sqlite3.Connection = Depends(get_db)):
+    if slug in LEGACY_SLUGS:
+        return RedirectResponse(f"/products/{LEGACY_SLUGS[slug]}", status_code=301)
     product = catalog.get_product(conn, slug)
     if not product:
         raise HTTPException(404)
@@ -116,5 +121,5 @@ def shipping_and_safety(request: Request, conn: sqlite3.Connection = Depends(get
         "products": products,
         "any_hazmat": any(p["hazmat"] for p in products),
         "meta_title": f"Shipping & safety | {settings.app_name}",
-        "meta_description": "How Quick Shot ships, why it ships as an ordinary parcel, and where the safety data sheet lives.",
+        "meta_description": "How Drain Shot ships, why it ships as an ordinary parcel, and where the safety data sheet lives.",
     }, conn=conn)

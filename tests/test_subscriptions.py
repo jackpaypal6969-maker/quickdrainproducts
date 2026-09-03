@@ -7,7 +7,7 @@ import json
 from app.db import one, transaction
 from app.services import cart as cart_service
 from app.services import catalog, orders, subscriptions
-from tests.conftest import add_to_cart, create_customer, get_csrf, login, new_client, variant_id  # noqa: F401
+from tests.conftest import create_customer, extra_variant, get_csrf, login, new_client, variant_id  # noqa: F401  # noqa: F401
 
 
 def _fake_checkout(session_id: str, lines: list[dict], email: str, interval: int, shipping: int = 695, sub_id: str = "sub_test_1"):
@@ -26,29 +26,38 @@ def test_subscription_pricing_uses_admin_percent(conn):
     with transaction(conn):
         conn.execute("UPDATE settings SET value = '15' WHERE key = 'subscription_discount_percent'")
         conn.execute("UPDATE settings SET value = '1,2,3' WHERE key = 'subscription_intervals'")
-    p = catalog.get_product(conn, "quick-shot")
+    p = catalog.get_product(conn, "drain-shot")
     v = p["variants"][0]
     assert v["sub_percent"] == 15
     assert v["sub_price_cents"] == round(v["price_cents"] * 0.85)
     assert p["subscriptions"]["intervals"] == [1, 2, 3]
-    three = next(x for x in p["variants"] if x["units_per_pack"] == 3)
-    assert three["sub_recommended_months"] == 3
+    twelve = next(x for x in p["variants"] if x["units_per_pack"] == 12)
+    assert twelve["sub_recommended_months"] == 3  # nearest offered interval to a 12-month box
+    with transaction(conn):
+        conn.execute("UPDATE settings SET value = '12' WHERE key = 'subscription_intervals'")
+    p = catalog.get_product(conn, "drain-shot")
+    assert p["variants"][0]["sub_recommended_months"] == 12 and p["subscriptions"]["intervals"] == [12]
+    with transaction(conn):
+        conn.execute("UPDATE settings SET value = '1,2,3' WHERE key = 'subscription_intervals'")
     with transaction(conn):
         conn.execute("UPDATE variants SET subscription_discount_percent = 25 WHERE id = ?", (v["id"],))
-    p = catalog.get_product(conn, "quick-shot")
+    p = catalog.get_product(conn, "drain-shot")
     assert p["variants"][0]["sub_percent"] == 25
     with transaction(conn):
         conn.execute("UPDATE variants SET subscription_discount_percent = NULL WHERE id = ?", (v["id"],))
         conn.execute("UPDATE settings SET value = '10' WHERE key = 'subscription_discount_percent'")
+        conn.execute("UPDATE settings SET value = '12' WHERE key = 'subscription_intervals'")
 
 
 def test_cart_keeps_one_interval_and_discounts_lines(conn):
+    with transaction(conn):
+        conn.execute("UPDATE settings SET value = '1,2,3' WHERE key = 'subscription_intervals'")
     session = {}
     cart = cart_service.get_cart(conn, session, create=True)
-    vid = variant_id(conn, "QS-1")
+    vid = variant_id(conn, "DS-12")
     ok, msg = cart_service.add_item(conn, cart, vid, 1, 3)
     assert ok and "every 3 months" in msg
-    ok, msg = cart_service.add_item(conn, cart, variant_id(conn, "QS-3"), 1, 2)
+    ok, msg = cart_service.add_item(conn, cart, extra_variant(conn), 1, 2)
     assert not ok and "already has a subscription every 3 months" in msg
     ok, _ = cart_service.add_item(conn, cart, vid, 1, 7)
     assert not ok
@@ -58,10 +67,12 @@ def test_cart_keeps_one_interval_and_discounts_lines(conn):
     assert line["price_cents"] == round(line["base_price_cents"] * 0.9)
     assert tot["has_subscription"] and tot["subscription_interval"] == 3
     assert tot["subscription_savings_cents"] == line["base_price_cents"] - line["price_cents"]
+    with transaction(conn):
+        conn.execute("UPDATE settings SET value = '12' WHERE key = 'subscription_intervals'")
 
 
 def test_checkout_registers_subscription_and_renewal_creates_order(conn):
-    vid = variant_id(conn, "QS-3")
+    vid = variant_id(conn, "DS-12")
     stock0 = one(conn, "SELECT stock FROM variants WHERE id = ?", (vid,))["stock"]
     price = one(conn, "SELECT price_cents FROM variants WHERE id = ?", (vid,))["price_cents"]
     sub_price = round(price * 0.9)
@@ -108,7 +119,7 @@ def test_account_shows_subscription_and_cancel_is_owner_only(conn):
     owner = owner["id"] if isinstance(owner, dict) else owner
     other = other["id"] if isinstance(other, dict) else other
     with transaction(conn):
-        conn.execute("INSERT INTO subscriptions(customer_id, email, stripe_subscription_id, stripe_customer_id, status, interval_months, lines) VALUES (?, 'subowner@gmail.com', 'sub_acct_1', 'cus_x', 'active', 2, ?)", (owner, json.dumps([{"v": 1, "q": 1, "p": 1440, "name": "Quick Shot", "variant": "Single bottle"}])))
+        conn.execute("INSERT INTO subscriptions(customer_id, email, stripe_subscription_id, stripe_customer_id, status, interval_months, lines) VALUES (?, 'subowner@gmail.com', 'sub_acct_1', 'cus_x', 'active', 2, ?)", (owner, json.dumps([{"v": 1, "q": 1, "p": 1440, "name": "Drain Shot", "variant": "Single bottle"}])))
     sid = one(conn, "SELECT id FROM subscriptions WHERE stripe_subscription_id = 'sub_acct_1'")["id"]
     c = new_client()
     login(c, "subowner@gmail.com", "correct-horse-1")
@@ -126,7 +137,7 @@ def test_account_shows_subscription_and_cancel_is_owner_only(conn):
 
 
 def test_product_page_offers_subscription(client):
-    r = client.get("/products/quick-shot")
+    r = client.get("/products/drain-shot")
     assert r.status_code == 200
     assert 'name="delivery"' in r.text and "data-subscribe-input" in r.text and 'data-sub-price' in r.text
     assert "Subscribe &amp; save" in r.text or "Subscribe & save" in r.text

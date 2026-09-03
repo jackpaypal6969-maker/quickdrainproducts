@@ -99,7 +99,7 @@ def _seed_defaults() -> None:
             "store_notice": "",
             "email_blocklist_extra": "",
             "subscription_discount_percent": "10",
-            "subscription_intervals": "1,2,3",
+            "subscription_intervals": "12",
         }
         for k, v in defaults.items():
             conn.execute("INSERT OR IGNORE INTO settings(key, value) VALUES (?, ?)", (k, v))

@@ -234,7 +234,7 @@
       }
       if (addBtn) { addBtn.disabled = s <= 0; addBtn.textContent = s <= 0 ? 'Sold out' : 'Add to cart'; }
       if (notify) notify.hidden = s > 0;
-      if (qtyInput) { qtyInput.max = Math.max(Math.min(s, 24), 1); if (+qtyInput.value > +qtyInput.max) qtyInput.value = qtyInput.max; }
+      if (qtyInput) { qtyInput.max = Math.max(Math.min(s, 50), 1); if (+qtyInput.value > +qtyInput.max) qtyInput.value = qtyInput.max; }
       $$('[data-ledger-row]').forEach(r => r.classList.toggle('is-active', r.getAttribute('data-ledger-row') === d.id));
       syncDelivery();
     }
@@ -242,7 +242,7 @@
     const checked = selector.querySelector('input[type=radio]:checked') || selector.querySelector('input[type=radio]');
     if (checked) apply(checked);
     $$('[data-qty-step]').forEach(b => b.addEventListener('click', () => {
-      const v = Math.min(Math.max((+qtyInput.value || 1) + (+b.getAttribute('data-qty-step')), 1), +qtyInput.max || 24);
+      const v = Math.min(Math.max((+qtyInput.value || 1) + (+b.getAttribute('data-qty-step')), 1), +qtyInput.max || 50);
       qtyInput.value = v;
     }));
   }
@@ -300,6 +300,26 @@
       window.addEventListener('scroll', () => { if (window.scrollY > document.body.scrollHeight * 0.5) fire(); }, { passive: true });
     }
   }
+
+
+  /* ------------------------------------------------------------ label reader (tabs) */
+  $$('[data-label-reader]').forEach(root => {
+    const tabs = $$('[data-label-tab]', root);
+    const panels = $$('[data-label-panel]', root);
+    function select(tab) {
+      tabs.forEach(t => { const on = t === tab; t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1; });
+      panels.forEach(p => { p.hidden = p.id !== tab.getAttribute('aria-controls'); });
+    }
+    tabs.forEach(t => {
+      t.addEventListener('click', () => select(t));
+      t.addEventListener('mouseenter', () => { if (window.matchMedia('(hover: hover)').matches) select(t); });
+      t.addEventListener('keydown', (e) => {
+        const i = tabs.indexOf(t);
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); const n = tabs[(i + 1) % tabs.length]; select(n); n.focus(); }
+        if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); const n = tabs[(i - 1 + tabs.length) % tabs.length]; select(n); n.focus(); }
+      });
+    });
+  });
 
   /* ------------------------------------------------------ pending checkout */
   const pending = $('[data-pending-refresh]');

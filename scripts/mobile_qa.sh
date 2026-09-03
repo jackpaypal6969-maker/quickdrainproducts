@@ -14,7 +14,7 @@ AUDIT="${MOBILE_QA_AUDIT:-$SKILL/scripts/audit.js}"
 [ -f "$AUDIT" ] || { echo "audit.js not found; set MOBILE_QA_AUDIT=/path/to/audit.js" >&2; exit 2; }
 mkdir -p "$OUT" "$APP_DIR/docs/qa"
 fail=0
-for page in "/" "/products/quick-shot" "/cart" "/checkout/success?session_id=demo"; do
+for page in "/" "/products/drain-shot" "/cart" "/checkout/success?session_id=demo"; do
   name="$(echo "$page" | sed -E 's#[/?=]+#-#g; s#^-##; s#-$##')"; name="${name:-home}"
   case "$page" in /checkout/success*) name="checkout-pending" ;; esac
   echo "== $page"

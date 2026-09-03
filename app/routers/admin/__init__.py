@@ -9,6 +9,8 @@ from . import auth, catalog, content, customers, logs, marketing, orders, report
 
 router = APIRouter(prefix="/admin")
 router.include_router(auth.router)
+# /admin without the trailing slash: served directly, no framework redirect (which would drop the port behind nginx)
+router.add_api_route("", auth.admin_home, methods=["GET"], include_in_schema=False)
 
 protected = APIRouter(dependencies=[Depends(csrf_protect), Depends(require_admin)])
 for sub in (catalog, orders, customers, marketing, content, reviews, support, reports, logs):

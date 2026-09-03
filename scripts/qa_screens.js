@@ -7,7 +7,7 @@ const base = process.argv[2] || 'http://127.0.0.1:8006';
 const out = process.argv[3] || path.join(__dirname, '..', 'docs', 'qa');
 const PAGES = [
   ['home', '/'],
-  ['product', '/products/quick-shot'],
+  ['product', '/products/drain-shot'],
   ['cart-empty', '/cart'],
   ['checkout-pending', '/checkout/success?session_id=demo'],
   ['contact', '/contact'],
@@ -28,7 +28,7 @@ const PAGES = [
     console.log(`${name}: ${url} scrollWidth=${width}${width > 390 ? ' HORIZONTAL OVERFLOW' : ''}`);
   }
   // cart with a subscription line, then the drawer
-  await page.goto(base + '/products/quick-shot', { waitUntil: 'networkidle' });
+  await page.goto(base + '/products/drain-shot', { waitUntil: 'networkidle' });
   const sub = await page.$('input[name=delivery][value=sub]');
   if (sub) { await sub.click(); await page.click('input[name=variant_id][value="2"]'); }
   await page.click('[data-add-button-main]');

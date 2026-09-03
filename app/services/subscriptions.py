@@ -222,7 +222,7 @@ def create_renewal_order(conn: sqlite3.Connection, invoice: dict, stripe_subscri
         audit.log(conn, "order.created", actor_type="webhook", target_type="order", target_id=order_id, after={"number": number, "total_cents": total, "renewal_of": stripe_subscription_id, "event": event_id})
         order = dict(one(conn, "SELECT * FROM orders WHERE id = ?", (order_id,)))
     try:
-        emails.send(conn, order["email"], "order_confirmation", f"Your Quick Shot renewal is on the way — order {order['order_number']}", {"order": order, "items": orders.items(conn, order["id"]), "renewal": True}, related_type="order", related_id=order["id"])
+        emails.send(conn, order["email"], "order_confirmation", f"Your Drain Shot renewal is on the way — order {order['order_number']}", {"order": order, "items": orders.items(conn, order["id"]), "renewal": True}, related_type="order", related_id=order["id"])
     except Exception:  # noqa: BLE001
         log.exception("renewal confirmation failed for %s", order["id"])
     analytics.capture(conn, "checkout_completed", order["email"], {"order_number": order["order_number"], "value_cents": order["total_cents"], "renewal": True, "utm_source": "subscription"})

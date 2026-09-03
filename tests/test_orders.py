@@ -7,7 +7,7 @@ import uuid
 
 import pytest
 
-from conftest import unique_email, variant_id
+from conftest import extra_variant, unique_email, variant_id
 from app.services import orders
 from app.services.orders import AlreadyProcessed
 
@@ -48,7 +48,7 @@ def make_discount(conn, *, max_uses: int | None, **extra) -> dict:
 
 
 def new_variant(conn, stock: int) -> int:
-    pid = conn.execute("SELECT id FROM products WHERE slug = 'quick-shot'").fetchone()["id"]
+    pid = conn.execute("SELECT id FROM products WHERE slug = 'drain-shot'").fetchone()["id"]
     sku = f"QS-T-{uuid.uuid4().hex[:6].upper()}"
     cur = conn.execute("INSERT INTO variants(product_id, sku, name, units_per_pack, price_cents, stock, sort) VALUES (?, ?, 'test pack', 1, 1600, ?, 99)", (pid, sku, stock))
     return int(cur.lastrowid)
@@ -56,7 +56,7 @@ def new_variant(conn, stock: int) -> int:
 
 # ------------------------------------------------------------ idempotency
 def test_same_event_twice_creates_one_order_and_decrements_stock_once(conn):
-    vid = variant_id(conn, "QS-1")
+    vid = variant_id(conn, "DS-12")
     before = stock_of(conn, vid)
     session = fake_session([{"v": vid, "q": 2, "p": 1600}])
     event_id = f"evt_{uuid.uuid4().hex}"
@@ -76,7 +76,7 @@ def test_same_event_twice_creates_one_order_and_decrements_stock_once(conn):
 
 def test_same_session_under_a_new_event_id_returns_existing_order(conn):
     """Stripe can retry with a fresh event id; the session id is the second guard."""
-    vid = variant_id(conn, "QS-1")
+    vid = variant_id(conn, "DS-12")
     before = stock_of(conn, vid)
     session = fake_session([{"v": vid, "q": 1, "p": 1600}])
     first = orders.create_from_checkout_session(conn, session, f"evt_{uuid.uuid4().hex}", "checkout.session.completed")
@@ -86,8 +86,8 @@ def test_same_session_under_a_new_event_id_returns_existing_order(conn):
 
 
 def test_zero_price_line_is_inserted(conn):
-    vid = variant_id(conn, "QS-1")
-    vid3 = variant_id(conn, "QS-3")
+    vid = variant_id(conn, "DS-12")
+    vid3 = extra_variant(conn)
     session = fake_session([{"v": vid, "q": 1, "p": 1600}, {"v": vid3, "q": 1, "p": 0}])
     order = orders.create_from_checkout_session(conn, session, f"evt_{uuid.uuid4().hex}", "checkout.session.completed")
     items = orders.items(conn, order["id"])

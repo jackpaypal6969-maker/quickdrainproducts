@@ -5,6 +5,7 @@
 {% from "components/faq.html" import faq %}
 {% from "components/variant_selector.html" import variant_selector %}
 {% from "components/reviews.html" import review_block %}
+{% from "components/label_reader.html" import label_reader %}
 {% block content %}
 <div class="container-x pt-6">
   <nav aria-label="Breadcrumb" class="text-xs text-faint flex items-center gap-1"><a href="/" class="tap-inline">Home</a> <span aria-hidden="true">/</span> <a href="/products" class="tap-inline">Products</a> <span aria-hidden="true">/</span> <span class="text-nav">{{ product.name }}</span></nav>
@@ -64,16 +65,22 @@
           <label class="choice">
             <input type="radio" name="delivery" value="sub">
             <span class="choice-body">
-              <span><span class="block font-semibold">Subscribe &amp; save <span data-sub-percent>{{ product.variants[0].sub_percent }}</span>%</span><span class="block text-xs text-muted">Auto-delivered and billed on your schedule. Cancel any time from your account.</span></span>
+              <span><span class="block font-semibold">Subscribe &amp; save <span data-sub-percent>{{ product.variants[0].sub_percent }}</span>%</span><span class="block text-xs text-muted">A fresh year's supply ships and bills automatically. Cancel any time from your account.</span></span>
               <span class="font-display font-bold tabular-nums text-accent" data-sub-price>{{ product.variants[0].sub_price_cents|fmt_money }}</span>
             </span>
           </label>
         </div>
         <div class="mt-3 panel p-3 flex flex-wrap items-center gap-3" data-interval-wrap hidden>
+          {% if product.subscriptions.intervals|length > 1 %}
           <label class="label !mb-0" for="interval">Deliver every</label>
           <select id="interval" name="interval" class="input !w-auto !min-h-[2.75rem]" data-interval-select>
             {% for m in product.subscriptions.intervals %}<option value="{{ m }}">{{ m }} {{ 'month' if m == 1 else 'months' }}</option>{% endfor %}
           </select>
+          {% else %}
+          {% set only = product.subscriptions.intervals[0] %}
+          <select id="interval" name="interval" class="hidden" data-interval-select aria-hidden="true" tabindex="-1"><option value="{{ only }}" selected>{{ only }}</option></select>
+          <p class="text-sm font-semibold">Renews every {{ only }} {{ 'month' if only == 1 else 'months' }}</p>
+          {% endif %}
           <p class="text-xs text-muted basis-full" data-interval-hint aria-live="polite"></p>
         </div>
       </fieldset>
@@ -83,7 +90,7 @@
           <label class="label" for="qty">Quantity</label>
           <div class="inline-flex items-center rounded-pill border border-line">
             <button type="button" class="icon-btn" data-qty-step="-1" aria-label="Decrease quantity">{{ icon('minus', 16) }}</button>
-            <input id="qty" class="w-12 h-11 text-center bg-transparent font-bold tabular-nums border-0 focus:outline-none" type="number" name="qty" value="1" min="1" max="24" inputmode="numeric" data-qty-input>
+            <input id="qty" class="w-12 h-11 text-center bg-transparent font-bold tabular-nums border-0 focus:outline-none" type="number" name="qty" value="1" min="1" max="50" inputmode="numeric" data-qty-input>
             <button type="button" class="icon-btn" data-qty-step="1" aria-label="Increase quantity">{{ icon('plus', 16) }}</button>
           </div>
         </div>
@@ -113,18 +120,14 @@
   <div class="container-x grid gap-10 lg:grid-cols-[1fr_1.2fr]">
     <div data-reveal>
       <p class="eyebrow">What the label says</p>
-      <h2 class="h2 mt-3">Four lines. That is the whole claim.</h2>
+      <h2 class="h2 mt-3">Four lines. Tap each one.</h2>
       <div class="prose mt-4">{{ product.description|md }}</div>
       <div class="mt-5 flex flex-wrap gap-2 text-sm">
         {% if product.sds_available %}<a href="/products/{{ product.slug }}/sds" class="btn btn-secondary btn-sm">{{ icon('file', 14) }} Safety data sheet (PDF)</a>{% else %}<a href="/contact" class="btn btn-secondary btn-sm">SDS not yet published — request it</a>{% endif %}
         {% if product.label_available %}<a href="/products/{{ product.slug }}/label" class="btn btn-secondary btn-sm">{{ icon('file', 14) }} Label</a>{% endif %}
       </div>
     </div>
-    <dl class="grid sm:grid-cols-2 gap-3" data-reveal data-reveal-stagger>
-      {% for claim in product.claims %}
-      <div class="card card-pad" data-reveal><dt class="eyebrow !text-faint">Label line {{ loop.index }}</dt><dd class="font-display font-bold text-xl mt-2 leading-tight">{{ claim }}</dd></div>
-      {% endfor %}
-    </dl>
+    <div data-reveal>{{ label_reader(product, "pd-lbl") }}</div>
   </div>
 </section>
 

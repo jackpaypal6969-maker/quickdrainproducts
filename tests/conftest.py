@@ -107,7 +107,7 @@ def create_customer(conn, email: str | None = None, password: str | None = "corr
     return {"id": int(cur.lastrowid), "email": norm, "password": password}
 
 
-def create_order(conn, *, customer_id: int | None, email: str, variant_sku: str | None = "QS-1", qty: int = 1, status: str = "paid", **extra) -> dict:
+def create_order(conn, *, customer_id: int | None, email: str, variant_sku: str | None = "DS-12", qty: int = 1, status: str = "paid", **extra) -> dict:
     """Insert an order (and optionally one line) without going through Stripe."""
     number = f"QD-TEST-{uuid.uuid4().hex[:6].upper()}"
     session_id = f"cs_test_{uuid.uuid4().hex}"
@@ -140,7 +140,17 @@ def create_admin(conn, *, password: str = "admin-pass-word-1", totp_enabled: boo
     return {"id": int(cur.lastrowid), "username": username, "email": email, "password": password, "totp_secret": totp_secret}
 
 
-def variant_id(conn, sku: str = "QS-1") -> int:
+def extra_variant(conn, sku: str = "TST-3", name: str = "3-pack (test)", units: int = 3, price: int = 4200, stock: int = 60) -> int:
+    """A second active pack for tests that need two SKUs (the launch catalog has one)."""
+    row = conn.execute("SELECT id FROM variants WHERE sku = ?", (sku,)).fetchone()
+    if row:
+        return int(row[0])
+    pid = conn.execute("SELECT id FROM products WHERE slug = 'drain-shot'").fetchone()[0]
+    cur = conn.execute("INSERT INTO variants(product_id, sku, name, units_per_pack, price_cents, stock, sort) VALUES (?, ?, ?, ?, ?, ?, 9)", (pid, sku, name, units, price, stock))
+    return int(cur.lastrowid)
+
+
+def variant_id(conn, sku: str = "DS-12") -> int:
     return int(conn.execute("SELECT id FROM variants WHERE sku = ?", (sku,)).fetchone()["id"])
 
 

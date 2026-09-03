@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-"""Seed the catalog with Quick Shot. Idempotent: re-running adds only what is
+"""Seed the catalog with Drain Shot. Idempotent: re-running adds only what is
 missing and never touches anything an admin has edited (prices, stock, copy,
 specs, FAQs). Pass --force to rewrite the label facts, specs and FAQs.
 
 Everything below about the product comes from the label photo:
-  DRAIN MAINTAINER / QUICK SHOT / NATURAL DRAIN ENZYME /
+  DRAIN MAINTAINER / DRAIN SHOT / NATURAL DRAIN ENZYME /
   DOSED FOR MONTHLY USE ON ANY DRAIN / NET CONTENTS 4 FL OZ (118 mL)
 
 Prices are placeholders (the intake block left them blank) and are flagged as
@@ -40,10 +40,10 @@ SPECS = [
 FAQS = [
     ("Is one bottle one dose?", "Yes. The label reads “dosed for monthly use on any drain” and the bottle holds 4 fl oz (118 mL). Use one bottle per drain, once a month."),
     ("What is in it?", "The label describes it as a natural drain enzyme and does not list ingredients. When the safety data sheet is on file we publish it here unchanged; until then we do not list ingredients we cannot show you."),
-    ("Will it clear a drain that is already backed up?", "It is a maintainer, not an emergency product. If water is standing or backing up right now, that needs a diagnosis — a camera inspection tells you whether it is grease, roots, scale or a broken line. Book that with Quick Drain and use Quick Shot afterwards to keep the line clean."),
+    ("Will it clear a drain that is already backed up?", "It is a maintainer, not an emergency product. If water is standing or backing up right now, that needs a diagnosis — a camera inspection tells you whether it is grease, roots, scale or a broken line. Book that with Quick Drain and use Drain Shot afterwards to keep the line clean."),
     ("Is it safe for septic systems and cesspools?", "The label says “any drain” and does not make a specific septic claim. Until the SDS is published here we will not claim more than the label does. If you are on a cesspool, ask us before use."),
     ("How does it ship?", "As an ordinary parcel at a flat rate, free from the threshold shown in the cart. Enzymatic products are not classed as corrosives for shipping; the safety data sheet, once published here, is the document that confirms the classification."),
-    ("How do the packs work?", "A 3-pack is three monthly doses for one drain, or one month for three drains. A 6-pack is six. The coverage table above does the arithmetic for you."),
+    ("Why a 12-pack?", "Twelve monthly doses is one drain for one year — or twelve drains for one month. The coverage table above does the arithmetic. Subscribers get a fresh box each year at 10% off and can cancel any time."),
 ]
 
 POSTS = [
@@ -90,12 +90,13 @@ def main() -> None:
                 conn.execute("INSERT INTO collections(slug, name, description, sort) VALUES ('drain-maintenance', 'Drain maintenance', 'Products that keep a clean line clean between service visits.', 0)")
                 coll = one(conn, "SELECT id FROM collections WHERE slug = 'drain-maintenance'")
 
-            product = one(conn, "SELECT id FROM products WHERE slug = 'quick-shot'")
+            product = one(conn, "SELECT id FROM products WHERE slug = 'drain-shot'")
             label_fields = {
-                "name": "Quick Shot",
-                "tagline": "A natural drain enzyme, dosed for monthly use on any drain.",
+                "name": "Drain Shot",
+                "tagline": "A natural drain enzyme, dosed for monthly use on any drain. Sold as a one-year supply.",
                 "description": (
-                    "Quick Shot is the maintenance step between service visits. The label reads “dosed for monthly use on any drain”, 4 fl oz per bottle. We read that as one bottle, one drain, one month — and this page will not say more than the label does.\n\n"
+                    "Drain Shot is the maintenance step between service visits. The label reads “dosed for monthly use on any drain”, 4 fl oz per bottle. We read that as one bottle, one drain, one month — and this page will not say more than the label does.\n\n"
+                    "It comes as a 12-pack: a year of monthly doses for one drain, or a month for twelve.\n\n"
                     "It comes from Quick Drain, the Long Island sewer and drain company that diagnoses before it quotes. The same posture applies here: if your drain is backing up today, that is a diagnostic visit, not a bottle."
                 ),
                 "formulation_type": "enzymatic",
@@ -113,8 +114,8 @@ def main() -> None:
                 "weight_oz": 5.5,
                 "collection_id": coll["id"],
                 "is_featured": 1,
-                "seo_title": "Quick Shot — natural drain enzyme, monthly dose | Quick Drain Products",
-                "seo_description": "Quick Shot is a natural drain enzyme dosed for monthly use on any drain. 4 fl oz per bottle. Ships as an ordinary parcel. From Quick Drain, Long Island.",
+                "seo_title": "Drain Shot — natural drain enzyme, monthly dose | Quick Drain Products",
+                "seo_description": "Drain Shot is a natural drain enzyme dosed for monthly use on any drain. 4 fl oz per bottle. Ships as an ordinary parcel. From Quick Drain, Long Island.",
             }
             force = "--force" in sys.argv
             if product:
@@ -125,13 +126,12 @@ def main() -> None:
             else:
                 cols = ", ".join(["slug", *label_fields])
                 marks = ", ".join("?" for _ in range(len(label_fields) + 1))
-                conn.execute(f"INSERT INTO products ({cols}) VALUES ({marks})", ("quick-shot", *label_fields.values()))
-                pid = one(conn, "SELECT id FROM products WHERE slug = 'quick-shot'")["id"]
+                conn.execute(f"INSERT INTO products ({cols}) VALUES ({marks})", ("drain-shot", *label_fields.values()))
+                pid = one(conn, "SELECT id FROM products WHERE slug = 'drain-shot'")["id"]
 
+            # One SKU at launch: twelve monthly doses = one drain for one year.
             variants = [
-                ("QS-1", "Single bottle", 1, 1600, None, 120, 0),
-                ("QS-3", "3-pack", 3, 4200, 4800, 60, 1),
-                ("QS-6", "6-pack", 6, 7800, 9600, 40, 2),
+                ("DS-12", "12-pack · one-year supply", 12, 12000, None, 50, 0),
             ]
             fresh_product = product is None
             for sku, name, units, price, compare, stock, sort in variants:
@@ -149,9 +149,9 @@ def main() -> None:
                     conn.execute("INSERT INTO product_faqs(product_id, question, answer, sort) VALUES (?, ?, ?, ?)", (pid, q, a, i))
 
             images = [
-                ("quick-shot-hero", "Quick Shot 4 fl oz bottle on a dark surface", 1200, 1500, "hero", 0),
-                ("quick-shot-label", "Quick Shot label: natural drain enzyme, dosed for monthly use on any drain", 1200, 1500, "gallery", 1),
-                ("quick-shot-counter", "Quick Shot bottle beside a kitchen sink", 1200, 1500, "gallery", 2),
+                ("drain-shot-hero", "Drain Shot 4 fl oz bottle on a dark surface", 1200, 1500, "hero", 0),
+                ("drain-shot-label", "Drain Shot label: natural drain enzyme, dosed for monthly use on any drain", 1200, 1500, "gallery", 1),
+                ("drain-shot-counter", "Drain Shot bottle beside a kitchen sink", 1200, 1500, "gallery", 2),
             ]
             for base, alt, w, h, kind, sort in images:
                 if not one(conn, "SELECT id FROM product_images WHERE product_id = ? AND base = ?", (pid, base)):
@@ -169,7 +169,7 @@ def main() -> None:
 
             if not one(conn, "SELECT 1 FROM settings WHERE key = 'prices_are_placeholders'"):
                 set_setting(conn, "prices_are_placeholders", "1")
-        print("seeded: product quick-shot with", one(conn, "SELECT COUNT(*) AS n FROM variants")["n"], "variants")
+        print("seeded: product drain-shot with", one(conn, "SELECT COUNT(*) AS n FROM variants")["n"], "variants")
     finally:
         conn.close()
 

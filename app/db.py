@@ -45,10 +45,42 @@ def _v3_checkout_lines(conn: sqlite3.Connection) -> None:
     _add_column(conn, "carts", "checkout_lines", "TEXT NOT NULL DEFAULT ''")
 
 
+def _v4_drain_shot(conn: sqlite3.Connection) -> None:
+    """Launch catalog change: the product is Drain Shot (as on the label) and is
+    sold as a 12-pack only. Old packs are deactivated, never deleted, so any
+    order history that references them survives."""
+    row = conn.execute("SELECT id FROM products WHERE slug = 'quick-shot'").fetchone()
+    if not row:
+        return
+    pid = row[0]
+    conn.execute(
+        "UPDATE products SET slug = 'drain-shot', name = 'Drain Shot', tagline = ?, seo_title = ?, seo_description = ?, description = replace(description, 'Quick Shot', 'Drain Shot'), updated_at = strftime('%Y-%m-%dT%H:%M:%SZ','now') WHERE id = ?",
+        (
+            "A natural drain enzyme, dosed for monthly use on any drain. Sold as a one-year supply.",
+            "Drain Shot — natural drain enzyme, one-year supply | Quick Drain Products",
+            "Drain Shot is a natural drain enzyme dosed for monthly use on any drain. Twelve 4 fl oz bottles: a year for one drain. Ships as an ordinary parcel. From Quick Drain, Long Island.",
+            pid,
+        ),
+    )
+    conn.execute("UPDATE variants SET is_active = 0 WHERE product_id = ? AND sku IN ('QS-1', 'QS-3', 'QS-6')", (pid,))
+    if not conn.execute("SELECT 1 FROM variants WHERE sku = 'DS-12'").fetchone():
+        conn.execute("INSERT INTO variants(product_id, sku, name, units_per_pack, price_cents, stock, sort) VALUES (?, 'DS-12', '12-pack · one-year supply', 12, 12000, 50, 0)", (pid,))
+        conn.execute("INSERT INTO inventory_movements(variant_id, delta, reason, note) VALUES ((SELECT id FROM variants WHERE sku = 'DS-12'), 50, 'restock', 'launch catalog')")
+    conn.execute("UPDATE product_images SET base = replace(base, 'quick-shot', 'drain-shot'), alt = replace(alt, 'Quick Shot', 'Drain Shot') WHERE product_id = ?", (pid,))
+    conn.execute("UPDATE product_faqs SET question = replace(question, 'Quick Shot', 'Drain Shot'), answer = replace(answer, 'Quick Shot', 'Drain Shot') WHERE product_id = ?", (pid,))
+    conn.execute(
+        "UPDATE product_faqs SET question = 'Why a 12-pack?', answer = 'Twelve monthly doses is one drain for one year — or twelve drains for one month. The coverage table above does the arithmetic. Subscribers get a fresh box each year at 10% off and can cancel any time.' WHERE product_id = ? AND question = 'How do the packs work?'",
+        (pid,),
+    )
+    conn.execute("UPDATE posts SET title = replace(title, 'Quick Shot', 'Drain Shot'), body = replace(body, 'Quick Shot', 'Drain Shot'), excerpt = replace(excerpt, 'Quick Shot', 'Drain Shot')")
+    conn.execute("UPDATE settings SET value = '12' WHERE key = 'subscription_intervals' AND value = '1,2,3'")
+
+
 MIGRATIONS: list[tuple[int, list]] = [
     (1, []),  # initial schema is schema.sql itself
     (2, [_v2_subscriptions]),
     (3, [_v3_checkout_lines]),
+    (4, [_v4_drain_shot]),
 ]
 
 

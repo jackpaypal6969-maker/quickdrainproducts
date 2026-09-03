@@ -7,7 +7,7 @@
       <span class="eyebrow !text-[0.75rem] hidden sm:inline">Products</span>
     </a>
     <nav class="hidden md:flex items-center gap-1" aria-label="Primary">
-      <a href="/products/quick-shot" class="nav-link" {% if path.startswith('/products') %}aria-current="page"{% endif %}>Quick Shot</a>
+      <a href="/products/drain-shot" class="nav-link" {% if path.startswith('/products') %}aria-current="page"{% endif %}>Drain Shot</a>
       <a href="/blog" class="nav-link" {% if path.startswith('/blog') %}aria-current="page"{% endif %}>Notes</a>
       <a href="/shipping-and-safety" class="nav-link" {% if path == '/shipping-and-safety' %}aria-current="page"{% endif %}>Shipping &amp; safety</a>
       <a href="{{ settings.booking_url }}" class="nav-link text-accent hover:text-accent-tint" rel="noopener">Book service {{ icon('external', 14, 'inline-block ml-0.5 -mt-0.5') }}</a>

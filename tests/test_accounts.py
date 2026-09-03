@@ -110,7 +110,7 @@ def test_customer_cannot_post_on_another_customers_order(client, conn):
 
 # ------------------------------------------------------------- cart merge
 def test_cart_merges_guest_lines_into_owned_cart_on_login(client, conn):
-    vid = variant_id(conn, "QS-1")
+    vid = variant_id(conn, "DS-12")
     email = unique_email("merge")
     assert register(client, email, PASSWORD).status_code == 303
     token = get_csrf(client)

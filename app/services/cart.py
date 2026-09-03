@@ -31,7 +31,7 @@ def add_item(conn: sqlite3.Connection, cart: dict, variant_id: int, qty: int, su
     """`subscribe` is the delivery interval in months (0 = one-time purchase).
     A cart carries at most one subscription interval because one Stripe
     subscription bills every item on the same schedule."""
-    qty = max(1, min(int(qty), 24))
+    qty = max(1, min(int(qty), 50))
     variant = one(conn, "SELECT v.*, p.is_active AS product_active FROM variants v JOIN products p ON p.id = v.product_id WHERE v.id = ? AND v.is_active = 1", (variant_id,))
     if not variant or not variant["product_active"]:
         return False, "That option is not available."
@@ -47,7 +47,7 @@ def add_item(conn: sqlite3.Connection, cart: dict, variant_id: int, qty: int, su
             if other:
                 return False, f"Your cart already has a subscription every {other['subscribe']} {'month' if other['subscribe'] == 1 else 'months'}. Use the same interval, or check out that subscription first."
     existing = one(conn, "SELECT id, qty FROM cart_items WHERE cart_id = ? AND variant_id = ? AND subscribe = ?", (cart["id"], variant_id, subscribe))
-    new_qty = min(qty + (existing["qty"] if existing else 0), 24)
+    new_qty = min(qty + (existing["qty"] if existing else 0), 50)
     message = "Added to cart."
     if variant["stock"] < new_qty:
         if variant["stock"] <= 0:
@@ -76,7 +76,7 @@ def set_qty(conn: sqlite3.Connection, cart: dict, item_id: int, qty: int) -> Non
         if qty <= 0 or item["stock"] <= 0:
             conn.execute("DELETE FROM cart_items WHERE id = ?", (item_id,))
         else:
-            conn.execute("UPDATE cart_items SET qty = ? WHERE id = ?", (min(qty, item["stock"], 24), item_id))
+            conn.execute("UPDATE cart_items SET qty = ? WHERE id = ?", (min(qty, item["stock"], 50), item_id))
         touch(conn, cart["id"])
 
 
@@ -192,9 +192,9 @@ def merge_into_customer(conn: sqlite3.Connection, session: dict, customer_id: in
                         continue  # sold out since it was added: drop the line rather than carry a phantom unit
                     existing = one(conn, "SELECT id, qty FROM cart_items WHERE cart_id = ? AND variant_id = ? AND subscribe = ?", (owned["id"], item["variant_id"], item["subscribe"]))
                     if existing:
-                        conn.execute("UPDATE cart_items SET qty = ? WHERE id = ?", (min(existing["qty"] + item["qty"], cap, 24), existing["id"]))
+                        conn.execute("UPDATE cart_items SET qty = ? WHERE id = ?", (min(existing["qty"] + item["qty"], cap, 50), existing["id"]))
                     else:
-                        conn.execute("INSERT INTO cart_items(cart_id, variant_id, qty, subscribe) VALUES (?, ?, ?, ?)", (owned["id"], item["variant_id"], min(item["qty"], cap, 24), item["subscribe"]))
+                        conn.execute("INSERT INTO cart_items(cart_id, variant_id, qty, subscribe) VALUES (?, ?, ?, ?)", (owned["id"], item["variant_id"], min(item["qty"], cap, 50), item["subscribe"]))
                 conn.execute("DELETE FROM carts WHERE id = ?", (guest["id"],))
                 session["cart"] = owned["token"]
             else:

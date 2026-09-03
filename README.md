@@ -1,6 +1,6 @@
 # Quick Drain Products
 
-The online store for **Quick Shot**, Quick Drain's monthly drain maintainer
+The online store for **Drain Shot**, Quick Drain's monthly drain maintainer
 (natural drain enzyme, 4 fl oz / 118 mL, one bottle = one drain-month). It is
 the retail arm of the Long Island sewer and drain company at quickdrainny.com:
 the store sells the maintainer, the parent site handles the diagnostic visit.

@@ -1,0 +1,36 @@
+{# The four printed label lines, read one at a time. Source: shadcn/ui "tabs" ARIA pattern (MIT); behaviour in app.js. #}
+{% macro label_reader(product, id_prefix="lbl") -%}
+{% set readings = [
+  ("Drain maintainer", "A maintainer keeps a clean line clean between service visits. It is not a drain opener: if water is standing or backing up today, that is a diagnostic visit, not a bottle."),
+  ("Natural drain enzyme", "An enzymatic formulation, which is why it ships as an ordinary parcel. The ingredient statement lives on the safety data sheet; we publish it here unchanged once it is on file and do not list what we cannot show you."),
+  ("Dosed for monthly use on any drain", "One bottle, one drain, once a month. Kitchen, bathroom sinks, showers, tubs, toilets, laundry: count them and the box builder does the arithmetic for your home."),
+  ("Net contents 4 fl oz (118 mL)", "One bottle is one monthly dose. Twelve bottles is one drain for a year, which is why the box is twelve."),
+] %}
+<div class="label-reader grid gap-6 lg:grid-cols-[minmax(0,22rem)_1fr] lg:items-start" data-label-reader>
+  <div class="label-card" aria-hidden="false">
+    <p class="label-card-eyebrow">Drain maintainer</p>
+    <p class="label-card-mark">Drain<br>Shot</p>
+    <div role="tablist" aria-label="Lines printed on the label" class="label-card-lines">
+      {% for line, _ in readings %}
+      {% set n = loop.index %}
+      {% if n > 1 %}
+      <button type="button" role="tab" id="{{ id_prefix }}-tab-{{ n }}" aria-selected="{{ 'true' if n == 2 else 'false' }}" aria-controls="{{ id_prefix }}-panel-{{ n }}" tabindex="{{ '0' if n == 2 else '-1' }}" class="label-card-line" data-label-tab>{{ line }}</button>
+      {% endif %}
+      {% endfor %}
+    </div>
+    <button type="button" role="tab" id="{{ id_prefix }}-tab-1" aria-selected="false" aria-controls="{{ id_prefix }}-panel-1" tabindex="-1" class="label-card-line label-card-line-top" data-label-tab>Drain maintainer</button>
+  </div>
+  <div class="space-y-3">
+    {% for line, reading in readings %}
+    {% set n = loop.index %}
+    <div role="tabpanel" id="{{ id_prefix }}-panel-{{ n }}" aria-labelledby="{{ id_prefix }}-tab-{{ n }}" class="label-panel card card-pad" data-label-panel {% if n != 2 %}hidden{% endif %}>
+      <p class="eyebrow">Printed on the label</p>
+      <p class="font-display font-bold text-2xl mt-2 leading-tight">“{{ line }}”</p>
+      <p class="eyebrow !text-faint mt-5">What it means for you</p>
+      <p class="text-muted mt-2">{{ reading }}</p>
+    </div>
+    {% endfor %}
+    <p class="text-xs text-faint">Tap a line on the label. Everything above is either printed on the bottle or explained as a store reading of it.</p>
+  </div>
+</div>
+{%- endmacro %}

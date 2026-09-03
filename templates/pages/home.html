@@ -3,6 +3,7 @@
 {% from "components/picture.html" import picture %}
 {% from "components/dose_ledger.html" import ledger %}
 {% from "components/faq.html" import faq %}
+{% from "components/label_reader.html" import label_reader %}
 {% block content %}
 {% if product %}
 {% set hero = product.hero_image %}
@@ -12,8 +13,8 @@
   <div class="container-x pt-8 pb-14 lg:pt-14 lg:pb-24 grid gap-10 lg:grid-cols-[1.05fr_1fr] lg:items-center">
     <div>
       <p class="eyebrow">Quick Drain · maintenance products</p>
-      <h1 class="h1 mt-4">One bottle.<br>One drain.<br>One month.</h1>
-      <p class="lede mt-6">{{ product.name }} is a natural drain enzyme, dosed for monthly use on any drain. 4 fl oz per bottle. It is the maintenance step between service visits — not an emergency fix.</p>
+      <h1 class="h1 mt-4">One drain.<br>Twelve months.<br>One box.</h1>
+      <p class="lede mt-6">{{ product.name }} is a natural drain enzyme, dosed for monthly use on any drain. Twelve 4 fl oz bottles: a one-year supply for one drain. It is the maintenance step between service visits — not an emergency fix.</p>
       <div class="mt-8 flex flex-col sm:flex-row gap-3">
         {% if single and single.stock > 0 %}
         <form action="/cart/add" method="post" data-add-form>
@@ -23,9 +24,9 @@
           <button type="submit" class="btn btn-primary btn-lg w-full sm:w-auto" data-add-button>Add to cart — {{ single.price_cents|fmt_money }}</button>
         </form>
         {% else %}
-        <a href="/products/{{ product.slug }}" class="btn btn-primary btn-lg">See Quick Shot</a>
+        <a href="/products/{{ product.slug }}" class="btn btn-primary btn-lg">See Drain Shot</a>
         {% endif %}
-        <a href="/products/{{ product.slug }}#packs" class="btn btn-secondary btn-lg">Compare packs</a>
+        <a href="/products/{{ product.slug }}" class="btn btn-secondary btn-lg">Subscribe &amp; save 10%</a>
       </div>
       <ul class="mt-8 flex flex-wrap gap-2 text-sm" aria-label="Order facts">
         <li class="badge">{{ icon('package', 14) }} Ships as an ordinary parcel</li>
@@ -45,20 +46,13 @@
     <div data-reveal>
       <p class="eyebrow">What the label says</p>
       <h2 class="h2 mt-3">Nothing on this page claims more than the bottle does.</h2>
-      <p class="text-muted mt-4 max-w-md">Quick Drain sells service on evidence — camera footage, pressure data, plain-English explanation. The store keeps the same rule. Four statements are printed on the front label. They are the four you will find here.</p>
+      <p class="text-muted mt-4 max-w-md">Quick Drain sells service on evidence — camera footage, pressure data, plain-English explanation. The store keeps the same rule. Four statements are printed on the label. Tap each one to see what it means for your house.</p>
       <p class="mt-5 text-sm">
         {% if product.sds_available %}<a href="/products/{{ product.slug }}/sds" class="link">{{ icon('file', 14, 'inline -mt-0.5') }} Download the safety data sheet (PDF)</a>
         {% else %}<span class="text-faint">{{ icon('file', 14, 'inline -mt-0.5') }} Safety data sheet: not yet published here. <a href="/contact" class="link tap-inline">Ask for it</a>.</span>{% endif %}
       </p>
     </div>
-    <dl class="grid sm:grid-cols-2 gap-3" data-reveal data-reveal-stagger>
-      {% for claim in product.claims %}
-      <div class="card card-pad" data-reveal>
-        <dt class="eyebrow !text-faint">Label line {{ loop.index }}</dt>
-        <dd class="font-display font-bold text-xl mt-2 leading-tight">{{ claim }}</dd>
-      </div>
-      {% endfor %}
-    </dl>
+    <div data-reveal>{{ label_reader(product, "home-lbl") }}</div>
   </div>
 </section>
 
@@ -66,8 +60,8 @@
   <div class="container-x">
     <div class="max-w-2xl" data-reveal>
       <p class="eyebrow">Coverage, not marketing</p>
-      <h2 class="h2 mt-3">How far each pack goes.</h2>
-      <p class="text-muted mt-4">The label sets the dose: one bottle, one drain, one month. Everything below is that sentence multiplied. Kitchen, both bathrooms and the laundry line is four drains a month.</p>
+      <h2 class="h2 mt-3">How far a box goes.</h2>
+      <p class="text-muted mt-4">The label sets the dose: one bottle, one drain, one month. Twelve bottles is that sentence for a year, or four drains (kitchen, two bathrooms, laundry) for three months.</p>
     </div>
     <div class="mt-8" data-reveal>{{ ledger(product, True, csrf_token) }}</div>
   </div>
@@ -78,7 +72,7 @@
     <div class="max-w-2xl" data-reveal>
       <p class="eyebrow">Read this before you buy</p>
       <h2 class="h2 mt-3">When a bottle is the wrong answer.</h2>
-      <p class="text-muted mt-4">A maintainer keeps a clean line clean. It does not diagnose, and it does not fix these. If one of them is happening now, book the visit and use Quick Shot afterwards.</p>
+      <p class="text-muted mt-4">A maintainer keeps a clean line clean. It does not diagnose, and it does not fix these. If one of them is happening now, book the visit and use Drain Shot afterwards.</p>
     </div>
     <div class="mt-8 grid gap-4 md:grid-cols-3" data-reveal data-reveal-stagger>
       <div class="card card-pad" data-reveal>

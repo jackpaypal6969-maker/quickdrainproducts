@@ -148,11 +148,15 @@
   .table th { text-align: left; font-weight: 600; color: var(--color-text-faint); font-size: var(--text-xs); letter-spacing: .06em; text-transform: uppercase; padding: .75rem .75rem; border-bottom: 1px solid var(--color-border); }
   .table td { padding: .8rem .75rem; border-bottom: 1px solid var(--color-border-soft); vertical-align: top; }
   .table tr:last-child td { border-bottom: 0; }
-  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+  .table-wrap > .table { min-width: 40rem; }
+  .table-wrap > .table th, .table-wrap > .table td { white-space: nowrap; }
+  .table-wrap > .table td.wrap { white-space: normal; min-width: 16rem; }
   .num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 
   /* Alert / flash — shadcn/ui alert */
-  .alert { display: flex; gap: .75rem; align-items: flex-start; padding: .875rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-raised); font-size: var(--text-sm); }
+  .alert { display: block; padding: .875rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-raised); font-size: var(--text-sm); line-height: 1.5; }
+  .alert > svg { display: inline-block; vertical-align: -3px; margin-right: .4rem; }
   .alert-ok { border-color: rgba(94,234,160,.35); background: var(--color-success-soft); color: var(--color-text); }
   .alert-error { border-color: rgba(255,96,112,.4); background: var(--color-danger-soft); color: var(--color-text); }
   .alert-warn { border-color: rgba(255,192,105,.4); background: rgba(255,192,105,.12); }
@@ -247,6 +251,18 @@
   .tap-row:hover { color: var(--color-text); }
   .tap-inline { display: inline-flex; align-items: center; min-height: 2.75rem; }
   @media (pointer: coarse) { .btn-sm { min-height: 2.75rem; } }
+  /* Label reader: the bottle label as a tappable surface */
+  .label-card { position: relative; border-radius: var(--radius-lg); padding: 1.5rem 1.25rem 1.25rem; background: linear-gradient(180deg, #1d47c7 0%, #16389f 55%, #12307f 100%); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.18), inset -14px 0 30px -20px rgba(0,0,0,.5), inset 14px 0 30px -20px rgba(255,255,255,.18), var(--shadow-card); overflow: hidden; }
+  .label-card::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.10) 48%, transparent 60%); }
+  .label-card-eyebrow { font-family: var(--font-display); font-size: .7rem; letter-spacing: .28em; text-transform: uppercase; text-align: center; opacity: .9; }
+  .label-card-mark { font-family: var(--font-display); font-weight: 800; font-size: 3rem; line-height: .9; letter-spacing: -0.05em; text-transform: uppercase; text-align: center; font-style: italic; margin: .75rem auto 1rem; padding: .6rem 1rem; border: 3px solid rgba(255,255,255,.9); border-radius: 999px; width: max-content; max-width: 100%; }
+  .label-card-lines { display: grid; gap: .4rem; }
+  .label-card-line { position: relative; z-index: 1; display: block; width: 100%; min-height: 2.75rem; padding: .55rem .75rem; border-radius: var(--radius-sm); border: 1px solid transparent; background: transparent; color: #fff; font-family: var(--font-display); font-weight: 800; font-size: .95rem; letter-spacing: .06em; text-transform: uppercase; text-align: center; line-height: 1.2; transition: background-color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard); }
+  .label-card-line:hover { background: rgba(255,255,255,.08); }
+  .label-card-line[aria-selected="true"] { background: rgba(49,243,230,.16); border-color: var(--color-accent); color: var(--color-accent-tint); }
+  .label-card-line-top { position: absolute; top: .9rem; left: 1.25rem; right: 1.25rem; width: auto; min-height: 2.5rem; font-size: .7rem; letter-spacing: .28em; opacity: .95; }
+  .label-card-eyebrow { visibility: hidden; }
+  .label-panel { transition: opacity var(--dur-base) var(--ease-standard); }
   .kbd { font-family: var(--font-mono); font-size: .75rem; padding: .1rem .4rem; border: 1px solid var(--color-border); border-radius: 4px; }
 }
 

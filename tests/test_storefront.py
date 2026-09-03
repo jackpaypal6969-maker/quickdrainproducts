@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from conftest import create_order, unique_email, variant_id
+from conftest import create_order, extra_variant, unique_email
 from app.security import iso, new_token, utcnow
 from app.services import lifecycle
 
@@ -12,12 +12,12 @@ XSS_BODY = "</script><script>alert(1)</script>"
 
 # ------------------------------------------------------------- json-ld
 def test_review_body_cannot_close_the_jsonld_script(client, conn):
-    pid = conn.execute("SELECT id FROM products WHERE slug = 'quick-shot'").fetchone()["id"]
+    pid = conn.execute("SELECT id FROM products WHERE slug = 'drain-shot'").fetchone()["id"]
     conn.execute(
         "INSERT INTO reviews(product_id, author_name, rating, title, body, status, is_verified) VALUES (?, 'Mallory', 5, 'nice', ?, 'approved', 1)",
         (pid, XSS_BODY),
     )
-    resp = client.get("/products/quick-shot")
+    resp = client.get("/products/drain-shot")
     assert resp.status_code == 200
     html = resp.text
     assert "</script><script>" not in html
@@ -31,7 +31,7 @@ def test_review_body_cannot_close_the_jsonld_script(client, conn):
 
 
 def test_home_page_jsonld_is_escaped_too(client, conn):
-    pid = conn.execute("SELECT id FROM products WHERE slug = 'quick-shot'").fetchone()["id"]
+    pid = conn.execute("SELECT id FROM products WHERE slug = 'drain-shot'").fetchone()["id"]
     conn.execute("INSERT INTO reviews(product_id, author_name, rating, body, status) VALUES (?, '<b>Bob</b>', 4, ?, 'approved')", (pid, XSS_BODY))
     html = client.get("/").text
     assert "</script><script>" not in html
@@ -43,7 +43,7 @@ def test_sitemap_lists_product(client):
     resp = client.get("/sitemap.xml")
     assert resp.status_code == 200
     assert resp.headers["content-type"].startswith("application/xml")
-    assert "/products/quick-shot</loc>" in resp.text
+    assert "/products/drain-shot</loc>" in resp.text
     assert "<loc>http://testserver/</loc>" in resp.text
 
 
@@ -58,7 +58,7 @@ def test_robots_disallows_admin(client):
 
 # --------------------------------------------------------------- reorder
 def test_reorder_link_with_valid_token_fills_cart(client, conn):
-    order = create_order(conn, customer_id=None, email=unique_email("reorder"), variant_sku="QS-1", qty=2)
+    order = create_order(conn, customer_id=None, email=unique_email("reorder"), variant_sku="DS-12", qty=2)
     token = lifecycle._reorder_token(order)
     assert lifecycle.reorder_token_valid(order, token)
 
@@ -100,8 +100,8 @@ def test_lifecycle_run_all_sends_nothing_the_second_time(conn):
         (cart_token, cart_email, iso(utcnow() - timedelta(hours=10))),
     )
     cart_id = conn.execute("SELECT id FROM carts WHERE token = ?", (cart_token,)).fetchone()["id"]
-    conn.execute("INSERT INTO cart_items(cart_id, variant_id, qty) VALUES (?, ?, 1)", (cart_id, variant_id(conn, "QS-3")))
-    conn.execute("INSERT INTO stock_notifications(email, variant_id) VALUES (?, ?)", (unique_email("lc-stock"), variant_id(conn, "QS-6")))
+    conn.execute("INSERT INTO cart_items(cart_id, variant_id, qty) VALUES (?, ?, 1)", (cart_id, extra_variant(conn)))
+    conn.execute("INSERT INTO stock_notifications(email, variant_id) VALUES (?, ?)", (unique_email("lc-stock"), extra_variant(conn, "TST-6", "6-pack (test)", 6, 7800, 40)))
 
     before = email_log_count(conn)
     first = lifecycle.run_all(conn)
@@ -123,9 +123,10 @@ def test_lifecycle_run_all_sends_nothing_the_second_time(conn):
 
 def test_reorder_reminder_waits_for_the_dose_interval(conn):
     """A 30-day bottle bought today is not due; one bought 26 days ago is."""
-    fresh = create_order(conn, customer_id=None, email=unique_email("lc-fresh"))
+    extra_variant(conn, "TST-1", "single bottle (test)", 1, 1000, 100)
+    fresh = create_order(conn, customer_id=None, email=unique_email("lc-fresh"), variant_sku="TST-1")
     old_email = unique_email("lc-old")
-    old = create_order(conn, customer_id=None, email=old_email, created_at=iso(utcnow() - timedelta(days=26)))
+    old = create_order(conn, customer_id=None, email=old_email, variant_sku="TST-1", created_at=iso(utcnow() - timedelta(days=26)))
     lifecycle.reorder_reminders(conn)
     assert conn.execute("SELECT reorder_reminder_sent_at FROM orders WHERE id = ?", (fresh["id"],)).fetchone()["reorder_reminder_sent_at"] is None
     assert conn.execute("SELECT reorder_reminder_sent_at FROM orders WHERE id = ?", (old["id"],)).fetchone()["reorder_reminder_sent_at"] is not None

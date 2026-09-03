@@ -4,9 +4,9 @@
     cd /path/to/quick-drain-products && .venv/bin/python scripts/build_images.py
 
 Outputs (all under static/img/):
-  products/quick-shot-bottle.svg          deterministic vector bottle, transparent, 1200x1500
-  src/quick-shot-{hero,label,counter}.png 1600x2000 Chromium renders (rendition sources)
-  products/quick-shot-<name>-<w>.{avif,webp,jpg}  via app.services.images.make_renditions
+  products/drain-shot-bottle.svg          deterministic vector bottle, transparent, 1200x1500
+  src/drain-shot-{hero,label,counter}.png 1600x2000 Chromium renders (rendition sources)
+  products/drain-shot-<name>-<w>.{avif,webp,jpg}  via app.services.images.make_renditions
   og-default.jpg                          1200x630 Open Graph card
   favicon.svg, apple-touch-icon.png       cyan droplet-in-circle mark on indigo
 
@@ -67,7 +67,7 @@ def bottle_svg() -> str:
     )
     fam = "Geist, Inter, system-ui, sans-serif"
     return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1500" width="1200" height="1500" role="img" aria-labelledby="qs-title">
-<title id="qs-title">Quick Shot 4 fl oz bottle — natural drain enzyme, dosed for monthly use on any drain</title>
+<title id="qs-title">Drain Shot 4 fl oz bottle — natural drain enzyme, dosed for monthly use on any drain</title>
 <defs>
 <style>{font_face_css()}
 .t{{font-family:{fam};fill:#FFFFFF;text-anchor:middle;}}</style>
@@ -125,7 +125,7 @@ def bottle_svg() -> str:
 <!-- label copy -->
 <text class="t" x="600" y="626" font-size="28" font-weight="600" letter-spacing="9">DRAIN MAINTAINER</text>
 <rect x="382" y="662" width="436" height="262" rx="131" fill="none" stroke="#FFFFFF" stroke-width="9"/>
-<text class="t" font-size="118" font-weight="800" letter-spacing="-2" transform="translate(600 775) skewX(-12) scale(0.84 1)">QUICK</text>
+<text class="t" font-size="118" font-weight="800" letter-spacing="-2" transform="translate(600 775) skewX(-12) scale(0.84 1)">DRAIN</text>
 <text class="t" font-size="118" font-weight="800" letter-spacing="-2" transform="translate(600 885) skewX(-12) scale(0.84 1)">SHOT</text>
 <text class="t" x="600" y="1005" font-size="37" font-weight="700" letter-spacing="1.5" fill="#BFF3FF">NATURAL DRAIN ENZYME</text>
 <text class="t" x="600" y="1076" font-size="27" font-weight="600" letter-spacing="1">DOSED FOR MONTHLY USE</text>
@@ -226,7 +226,7 @@ p{{font-family:Inter,sans-serif;font-weight:500;font-size:30px;line-height:1.3;c
     body = (
         "<div class='hero-glow'></div>"
         f"<div class='bottle'>{bottle}</div>"
-        "<div class='copy'><div class='eyebrow'>Quick Shot &middot; drain maintainer</div>"
+        "<div class='copy'><div class='eyebrow'>Drain Shot &middot; drain maintainer</div>"
         "<h1>Quick Drain Products</h1><p>One bottle. One drain. One month.</p><div class='rule'></div></div>"
     )
     return page(body, css, 1200, 630)
@@ -316,9 +316,9 @@ def render(jobs: list[dict]) -> bool:
 # --------------------------------------------------------------------------- #
 
 def _outputs_present() -> bool:
-    names = ("quick-shot-hero", "quick-shot-label", "quick-shot-counter")
+    names = ("drain-shot-hero", "drain-shot-label", "drain-shot-counter")
     expected = [PRODUCTS / f"{n}-{w}.{ext}" for n in names for w in (480, 768, 1200, 1600) for ext in ("jpg", "webp")]
-    expected += [IMG / "og-default.jpg", IMG / "favicon.svg", IMG / "apple-touch-icon.png", PRODUCTS / "quick-shot-bottle.svg"]
+    expected += [IMG / "og-default.jpg", IMG / "favicon.svg", IMG / "apple-touch-icon.png", PRODUCTS / "drain-shot-bottle.svg"]
     return all(p.exists() for p in expected)
 
 
@@ -331,14 +331,14 @@ def main() -> int:
         return 0
 
     svg = bottle_svg()
-    (PRODUCTS / "quick-shot-bottle.svg").write_text(svg, encoding="utf-8")
+    (PRODUCTS / "drain-shot-bottle.svg").write_text(svg, encoding="utf-8")
     (IMG / "favicon.svg").write_text(mark_svg(64, rounded=True), encoding="utf-8")
-    print("wrote products/quick-shot-bottle.svg, favicon.svg")
+    print("wrote products/drain-shot-bottle.svg, favicon.svg")
 
     heroes = {
-        "quick-shot-hero": hero_html(svg),
-        "quick-shot-label": label_html(svg),
-        "quick-shot-counter": counter_html(svg),
+        "drain-shot-hero": hero_html(svg),
+        "drain-shot-label": label_html(svg),
+        "drain-shot-counter": counter_html(svg),
     }
     jobs = [{"name": n, "html": h, "out": SRC / f"{n}.png", "width": 1600, "height": 2000} for n, h in heroes.items()]
     jobs.append({"name": "og-default", "html": og_html(svg), "out": SRC / "og-default.png", "width": 1200, "height": 630})
