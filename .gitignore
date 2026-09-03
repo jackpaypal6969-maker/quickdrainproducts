@@ -4,6 +4,7 @@
 *.db-wal
 *.db-shm
 data/
+.venv
 .venv/
 backups/
 media/uploads/
@@ -16,6 +17,7 @@ static/css/app.*.css
 static/css/app.css
 static/css/manifest.json
 # dev tooling
+node_modules
 node_modules/
 .tools/
 qa-report/
