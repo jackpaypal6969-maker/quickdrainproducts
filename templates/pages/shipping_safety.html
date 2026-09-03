@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+{% set countries = settings.ship_to_countries %}
+{% block content %}
+<div class="container-x pt-6">
+  <nav aria-label="Breadcrumb" class="text-xs text-faint flex items-center gap-1"><a href="/" class="tap-inline">Home</a> <span aria-hidden="true">/</span> <span class="text-nav">Shipping &amp; safety</span></nav>
+</div>
+
+<section class="container-x pt-6 pb-12 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-end">
+  <div data-reveal>
+    <p class="eyebrow">Shipping &amp; safety</p>
+    <h1 class="h1 mt-4">Ordinary parcel. Plain label.</h1>
+    <p class="lede mt-6">How an order gets to you, what it costs, and exactly what the label and safety data sheet say. Nothing on this page goes beyond those two documents.</p>
+  </div>
+  <ul class="grid sm:grid-cols-2 gap-3" aria-label="Shipping facts" data-reveal data-reveal-stagger>
+    <li class="card card-pad" data-reveal>
+      <span class="text-accent">{{ icon('truck', 22) }}</span>
+      <p class="font-display font-bold text-xl mt-3">{{ settings.flat_shipping_cents|fmt_money }} flat rate</p>
+      <p class="text-sm text-muted mt-1">Free on orders over {{ settings.free_shipping_threshold_cents|fmt_money_short }}.</p>
+    </li>
+    <li class="card card-pad" data-reveal>
+      <span class="text-accent">{{ icon('package', 22) }}</span>
+      <p class="font-display font-bold text-xl mt-3">Ordinary parcel</p>
+      <p class="text-sm text-muted mt-1">No hazmat surcharge, no ground-only rule, no carrier refusal.</p>
+    </li>
+    <li class="card card-pad" data-reveal>
+      <span class="text-accent">{{ icon('shield', 22) }}</span>
+      <p class="font-display font-bold text-xl mt-3">{% if countries|length == 1 and countries[0] == 'US' %}United States only{% else %}Ships to {{ countries|join(', ') }}{% endif %}</p>
+      <p class="text-sm text-muted mt-1">Stripe collects the address at checkout; anything outside that list is declined before payment.</p>
+    </li>
+    <li class="card card-pad" data-reveal>
+      <span class="text-accent">{{ icon('lock', 22) }}</span>
+      <p class="font-display font-bold text-xl mt-3">Tax at checkout</p>
+      <p class="text-sm text-muted mt-1">{% if settings.stripe_tax_enabled %}Sales tax is computed by Stripe from the shipping address and shown before you pay.{% else %}Any tax due is shown at checkout before you pay.{% endif %}</p>
+    </li>
+  </ul>
+</section>
+
+<section class="section bg-bg-alt border-y border-line-soft">
+  <div class="container-x grid gap-10 lg:grid-cols-[1fr_1.4fr] lg:items-start">
+    <div data-reveal>
+      <p class="eyebrow">Shipping regime</p>
+      <h2 class="h2 mt-3">Why there is no hazmat line on the receipt.</h2>
+      <p class="text-muted mt-4">Enzymatic and bacterial drain products are not DOT-regulated corrosives. Carriers treat them as ordinary parcels: no hazmat surcharge, no ground-only restriction, no carrier refusal. Caustic and acid drain openers are the opposite{% if not any_hazmat %}, which is one reason there is none in this catalog{% endif %}.</p>
+      <p class="text-muted mt-4">Each product's class is listed in the table, straight from its formulation type. If that ever changes for a product, this page changes with it.</p>
+    </div>
+    <div class="card overflow-hidden" data-reveal>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th scope="col">Product</th><th scope="col">Formulation</th><th scope="col">Hazmat</th><th scope="col">Shipping class</th><th scope="col">SDS</th></tr>
+          </thead>
+          <tbody>
+            {% for p in products %}
+            <tr>
+              <td><a href="/products/{{ p.slug }}" class="font-semibold hover:underline">{{ p.name }}</a></td>
+              <td class="text-muted">{{ p.formulation_type|capitalize }}</td>
+              <td>{% if p.hazmat %}<span class="badge badge-warning">Yes</span>{% else %}<span class="text-muted">No</span>{% endif %}</td>
+              <td class="text-muted whitespace-nowrap">{% if p.hazmat %}Ground only · DOT corrosive{% else %}Ordinary parcel{% endif %}</td>
+              <td>{% if p.sds_available %}<a href="/products/{{ p.slug }}/sds" class="link whitespace-nowrap">PDF</a>{% else %}<span class="text-faint whitespace-nowrap">Not yet published</span>{% endif %}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-muted">No products listed yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% if any_hazmat %}
+<section class="section bg-bg-deep border-b border-line-soft" id="corrosive-products">
+  <div class="container-x grid gap-10 lg:grid-cols-[1fr_1.4fr] lg:items-start">
+    <div data-reveal>
+      <p class="eyebrow !text-warning">Corrosive products</p>
+      <h2 class="h2 mt-3">Different rules for the products marked hazmat.</h2>
+      <p class="text-muted mt-4">Anything marked <strong class="text-ink">Yes</strong> in the hazmat column is a DOT-regulated corrosive. The ordinary-parcel terms above do not apply to it.</p>
+    </div>
+    <div class="alert alert-warn !items-start" data-reveal>
+      {{ icon('alert', 20, 'text-warning shrink-0 mt-0.5') }}
+      <div class="space-y-3 text-sm">
+        <p class="font-semibold text-ink">Ground-only and carrier restrictions apply.</p>
+        <ul class="list-disc pl-5 space-y-1 text-muted">
+          <li>Ground service only: no air, so delivery takes longer and some destinations cannot be served.</li>
+          <li>Carrier rules limit where and how these parcels travel. PO boxes and some address types are not available.</li>
+          <li>Shipping for an order that includes one of these products may differ from the flat rate. The checkout total is final.</li>
+        </ul>
+        <p class="text-muted">Unsure whether we can ship one to your address? <a href="/contact" class="link">Contact us before ordering</a> and we will check.</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="section">
+  <div class="container-x grid gap-10 lg:grid-cols-[1fr_1.4fr] lg:items-start">
+    <div data-reveal>
+      <p class="eyebrow">Safety data sheets</p>
+      <h2 class="h2 mt-3">The SDS is the second document we quote.</h2>
+      <p class="text-muted mt-4">The label is the first. When a manufacturer's SDS is on file it is linked here and on the product page as a PDF, unchanged. Until then we say it is not published rather than paraphrase it.</p>
+    </div>
+    <ul class="space-y-3" data-reveal data-reveal-stagger>
+      {% for p in products %}
+      <li class="card card-pad flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" data-reveal>
+        <div>
+          <p class="font-display font-bold text-lg">{{ p.name }}</p>
+          <p class="text-sm text-muted">{{ p.formulation_type|capitalize }}{% if p.net_volume_oz %} · {{ '%g'|format(p.net_volume_oz) }} fl oz{% endif %}</p>
+        </div>
+        {% if p.sds_available %}
+        <a href="/products/{{ p.slug }}/sds" class="btn btn-secondary btn-sm shrink-0">{{ icon('file', 14) }} Safety data sheet (PDF)</a>
+        {% else %}
+        <p class="text-sm text-faint sm:text-right shrink-0">Not yet published · <a href="/contact" class="link">request it</a></p>
+        {% endif %}
+      </li>
+      {% else %}
+      <li class="text-muted text-sm">No products listed yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+
+<section class="section bg-bg-alt border-y border-line-soft">
+  <div class="container-x grid gap-10 lg:grid-cols-[1fr_1.4fr] lg:items-start">
+    <div data-reveal>
+      <p class="eyebrow">Safety</p>
+      <h2 class="h2 mt-3">What the label says. Only that.</h2>
+      <p class="text-muted mt-4">Dose and net contents below are copied from each label. Full directions are printed on the bottle and appear on the product page once the back panel is on file. The label and the SDS are the complete safety instructions; nothing here replaces them.</p>
+    </div>
+    <div class="space-y-3" data-reveal data-reveal-stagger>
+      {% for p in products %}
+      <div class="card card-pad" data-reveal>
+        <h3 class="font-display font-bold text-lg">{{ p.name }}</h3>
+        <dl class="mt-3 grid sm:grid-cols-[8rem_1fr] gap-x-4 gap-y-2 text-sm">
+          <dt class="text-faint">Dose</dt>
+          <dd>{{ p.dose_text or 'As directed on the label' }}</dd>
+          <dt class="text-faint">Net contents</dt>
+          <dd>{% if p.net_volume_oz %}{{ '%g'|format(p.net_volume_oz) }} fl oz{% if p.net_volume_ml %} ({{ '%g'|format(p.net_volume_ml) }} mL){% endif %}{% else %}See label{% endif %}</dd>
+          <dt class="text-faint">Keep</dt>
+          <dd>Out of reach of children.</dd>
+          {% if p.prop65_warning %}
+          <dt class="text-warning">Warning</dt>
+          <dd class="text-warning">{{ p.prop65_warning }}</dd>
+          {% endif %}
+        </dl>
+      </div>
+      {% else %}
+      <p class="text-muted text-sm">No products listed yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section-tight">
+  <div class="container-x">
+    <div class="card card-pad md:flex md:items-center md:justify-between gap-8">
+      <div class="max-w-xl">
+        <p class="eyebrow">Still a question?</p>
+        <h2 class="h3 mt-2">Ask before you order, not after.</h2>
+        <p class="text-muted mt-2 text-sm">Shipping to an unusual address, a label line you want explained, an SDS you need before purchase. A person answers within one business day.</p>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-3 mt-5 md:mt-0 shrink-0">
+        <a href="/contact" class="btn btn-primary">Contact us {{ icon('arrow', 16) }}</a>
+        <a href="tel:{{ settings.phone_tel }}" class="btn btn-secondary">{{ icon('phone', 16) }} {{ settings.phone_display }}</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

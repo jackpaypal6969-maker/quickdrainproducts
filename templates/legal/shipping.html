@@ -1,0 +1,32 @@
+{# Default shipping policy. Shown when the admin has not written a body for the `shipping` page. #}
+<div class="prose">
+<p>Short version: {{ settings.flat_shipping_cents|fmt_money }} flat to any US address, free once the order reaches {{ settings.free_shipping_threshold_cents|fmt_money_short }}, shipped from Long Island as an ordinary parcel.</p>
+
+<h2>Where we ship</h2>
+<p>We ship to addresses in the United States. Stripe's checkout page only accepts a ship-to address we can serve, so if it will not take yours, we cannot deliver there. We do not ship internationally.</p>
+
+<h2>Cost</h2>
+<ul>
+<li><strong>{{ settings.flat_shipping_cents|fmt_money }} flat rate</strong> per order, whatever the pack size or quantity.</li>
+<li><strong>Free shipping</strong> when the order subtotal, after any discount, is {{ settings.free_shipping_threshold_cents|fmt_money_short }} or more. The cart shows how far you are from it.</li>
+<li>Sales tax, where it applies, is calculated on Stripe's checkout page from the ship-to address.</li>
+</ul>
+
+<h2>Why it ships as an ordinary parcel</h2>
+<p>Quick Shot is an enzymatic formulation, not a caustic or acid drain opener. It is not a DOT-regulated corrosive, so there is no hazmat surcharge, no ground-only restriction and no signature requirement. Bottles are packed upright. Where a formulation requires it, a California Proposition 65 warning is shown on the product page; see <a href="/shipping-and-safety">Shipping &amp; safety</a> for what that means for each product.</p>
+
+<h2>When it ships</h2>
+<p>Orders leave Long Island within one to two business days, Monday to Friday, excluding federal holidays. Orders placed over a weekend go out the next business day. We email tracking as soon as the label is printed, and it also appears on your order page and in <a href="/orders/lookup">Find your order</a>.</p>
+
+<h2>How long it takes</h2>
+<p>Most parcels arrive 2 to 5 business days after shipping within the Northeast and 3 to 7 business days elsewhere in the country. Those are the carrier's estimates, not a guarantee. If tracking has not moved for 5 business days, <a href="/contact">tell us</a> and we chase it or replace it.</p>
+
+<h2>Address changes</h2>
+<p>We ship to the address entered on Stripe's checkout page exactly as entered, so check it before you pay. If you spot a mistake, <a href="/contact">contact us</a> or call {{ settings.phone_display }} straight away; we can change it until the label prints. After that the carrier decides whether a redirect is possible. A parcel returned to us as undeliverable is refunded less the outbound shipping charge, or sent again once shipping is paid a second time.</p>
+
+<h2>Lost, damaged or stolen</h2>
+<p>A parcel damaged in transit or lost by the carrier is replaced at our cost; the <a href="/legal/refunds">refunds and returns policy</a> has the details. If tracking shows delivered and you cannot find it, check with neighbours and any mail room, then let us know within 7 days and we work through it with the carrier.</p>
+
+<h2>Reorder reminders</h2>
+<p>Because one bottle is one drain-month, we know roughly when an order runs out. A few days before, we send one reminder email with a reorder link. It is sent once per order and can be ignored.</p>
+</div>

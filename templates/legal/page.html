@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container-x pt-8 pb-16 grid gap-10 lg:grid-cols-[14rem_1fr] lg:items-start">
+  <nav class="lg:sticky lg:top-24 flex lg:flex-col gap-1 overflow-x-auto -mx-1 px-1" aria-label="Policies">
+    {% for slug, title in [('terms', 'Terms of sale'), ('privacy', 'Privacy policy'), ('refunds', 'Refunds & returns'), ('shipping', 'Shipping policy'), ('accessibility', 'Accessibility')] %}
+    <a href="/legal/{{ slug }}" class="nav-link whitespace-nowrap"{% if page.slug == slug %} aria-current="page"{% endif %}>{{ title }}</a>
+    {% endfor %}
+  </nav>
+
+  <div class="min-w-0">
+    <p class="eyebrow">Legal</p>
+    <h1 class="h2 mt-3">{{ page.title }}</h1>
+    {% if page.updated_at %}<p class="text-sm text-faint mt-3">Last updated {{ page.updated_at|est_date }}</p>{% endif %}
+
+    <div class="mt-8">
+      {% if page.body %}
+      <div class="prose">{{ page.body|md }}</div>
+      {% else %}
+      {% include default_template %}
+      {% endif %}
+    </div>
+
+    <p class="hairline mt-10 pt-6 text-sm text-muted max-w-[66ch]">Questions about any of these policies: <a href="/contact" class="link">contact us</a> or call <a href="tel:{{ settings.phone_tel }}" class="link">{{ settings.phone_display }}</a>.</p>
+  </div>
+</section>
+{% endblock %}

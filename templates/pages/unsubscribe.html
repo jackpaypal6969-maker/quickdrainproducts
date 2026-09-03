@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+{% set hide_newsletter = True %}
+{% set no_index = True %}
+{% block content %}
+<section class="container-x py-16 sm:py-24">
+  <div class="max-w-lg mx-auto">
+    <p class="eyebrow">Email preferences</p>
+    {% if done %}
+    <h1 class="h2 mt-3">Unsubscribed.</h1>
+    <p class="lede mt-4"><strong class="text-ink break-all">{{ email }}</strong> will not get marketing email from Quick Drain Products again.</p>
+    <div class="card card-pad mt-8 space-y-4 text-sm text-muted">
+      <p class="flex gap-3">{{ icon('check', 18, 'text-accent shrink-0 mt-0.5') }}<span>Done as of now. No confirmation email follows, because that would be one more email.</span></p>
+      <p class="flex gap-3">{{ icon('mail', 18, 'text-accent shrink-0 mt-0.5') }}<span>Order emails still arrive: confirmations, shipping and tracking, refunds, and password resets you ask for. Those belong to an order, not to marketing.</span></p>
+      <p class="flex gap-3">{{ icon('refresh', 18, 'text-accent shrink-0 mt-0.5') }}<span>Changed your mind later? Tick the box at your next checkout, or in your account settings.</span></p>
+    </div>
+    <a href="/" class="btn btn-secondary mt-6">Back to the store</a>
+    {% else %}
+    <h1 class="h2 mt-3">Stop marketing email?</h1>
+    <p class="lede mt-4">This unsubscribes <strong class="text-ink break-all">{{ email }}</strong> from newsletters, offers and reminders.</p>
+    <form action="/email/unsubscribe/{{ token }}" method="post" class="card card-pad mt-8">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <p class="text-sm text-muted">You still get the emails that belong to an order: confirmation, shipping and tracking, refunds, and password resets if you ask for one. Nothing else.</p>
+      <div class="mt-5 flex flex-col sm:flex-row gap-3">
+        <button type="submit" class="btn btn-primary">Unsubscribe</button>
+        <a href="/" class="btn btn-ghost">Keep them</a>
+      </div>
+    </form>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

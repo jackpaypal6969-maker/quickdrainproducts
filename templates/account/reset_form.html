@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% set hide_newsletter = True %}
+{% set no_index = True %}
+{% block content %}
+<section class="container-x pt-8 pb-16">
+  <div class="max-w-md mx-auto">
+    <p class="eyebrow">Account</p>
+    <h1 class="h2 mt-3">Choose a new password.</h1>
+    <p class="text-muted mt-3">This link works once. You will be signed in as soon as the password is saved.</p>
+
+    <form action="/account/reset/{{ token }}" method="post" class="card card-pad mt-8 space-y-5">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div>
+        <label class="label" for="password">New password</label>
+        <input id="password" class="input" type="password" name="password" required minlength="10" maxlength="200" autocomplete="new-password" autofocus>
+        <p class="help">At least 10 characters.</p>
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Save password</button>
+    </form>
+
+    <p class="mt-6 text-sm text-muted">Link expired? <a href="/account/reset" class="link">Request a new one</a>.</p>
+  </div>
+</section>
+{% endblock %}

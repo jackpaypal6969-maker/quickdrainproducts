@@ -1,0 +1,27 @@
+{# Default accessibility statement. Shown when the admin has not written a body for the `accessibility` page. #}
+<div class="prose">
+<p>{{ settings.app_name }} should be usable by everyone, including people who rely on a screen reader, a keyboard, magnification or reduced motion. The target is <strong>WCAG 2.2 Level AA</strong> across the whole store, checkout included.</p>
+
+<h2>What is built in</h2>
+<ul>
+<li>Every page starts with a skip link to the main content, and every control can be reached and operated with the keyboard, including the cart drawer, the menu and the product photo gallery.</li>
+<li>Form fields have visible labels, not placeholder text. Errors are shown in plain language next to the form and announced to assistive technology.</li>
+<li>Buttons and links are at least 44 pixels tall. Icon-only buttons carry a text label for assistive technology.</li>
+<li>Text meets the AA contrast ratio against the dark background, and the single accent colour is never the only thing that carries meaning.</li>
+<li>Motion is limited to short fades and rises and switches off entirely when your device asks for reduced motion.</li>
+<li>Page structure uses real headings, lists and landmarks. The site works at 200% zoom and on a 320-pixel-wide screen without sideways scrolling.</li>
+<li>Checkout runs on Stripe's hosted page, which Stripe maintains to its own accessibility standard.</li>
+</ul>
+
+<h2>Known limits</h2>
+<ul>
+<li>Safety data sheets and label files are supplied by the manufacturer as PDFs and may not be fully tagged. If you need the information in another format, <a href="/contact">ask</a> and we will send it as plain text.</li>
+<li>Product photographs carry short alt text. The label lines, dose and directions are reproduced as text on the product page, so nothing important lives only in an image.</li>
+</ul>
+
+<h2>Tell us what is not working</h2>
+<p>If any part of this site is hard to use, we want to know: the page, what you were trying to do, and the browser or assistive technology you were using. Send it through the <a href="/contact">contact form</a> or call {{ settings.phone_display }}. We reply within two business days and treat confirmed barriers as a priority fix.</p>
+
+<h2>How this is checked</h2>
+<p>Pages are checked with automated tooling and by hand with keyboard-only navigation and a screen reader before they go live, and again after any change to the layout. This statement is reviewed whenever the site changes materially; the date at the top shows the last review.</p>
+</div>

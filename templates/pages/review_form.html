@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+{% set hide_newsletter = True %}
+{% set no_index = True %}
+{% block content %}
+{% set ns = namespace(seen=[], products=[]) %}
+{% for it in items %}
+  {% if it.product_id and it.product_id not in ns.seen %}
+    {% set ns.seen = ns.seen + [it.product_id] %}
+    {% set ns.products = ns.products + [it] %}
+  {% endif %}
+{% endfor %}
+{% set first_name = ((order.shipping_name or '')|trim).split(' ')[0] %}
+<section class="container-x pt-8 pb-16 grid gap-10 lg:grid-cols-[1fr_1.4fr] lg:items-start">
+  <div>
+    <p class="eyebrow">Order {{ order.order_number }}</p>
+    <h1 class="h2 mt-3">How did it go?</h1>
+    <p class="lede mt-4">A few honest lines help the next person decide. Say what you used it on and what you noticed, or that you noticed nothing yet; that is useful too.</p>
+
+    <div class="card mt-8">
+      <p class="eyebrow !text-faint px-5 pt-5">What you ordered</p>
+      <ul class="divide-y divide-line-soft mt-2">
+        {% for it in items %}
+        <li class="px-5 py-3 flex justify-between gap-4 text-sm"><span>{{ it.product_name }} — {{ it.variant_name }} × {{ it.qty }}</span><span class="text-faint tabular-nums">{{ (it.qty * it.units_per_pack)|plural('dose') }}</span></li>
+        {% endfor %}
+      </ul>
+      <p class="px-5 py-4 border-t border-line-soft text-xs text-faint">Placed {{ order.created_at|est_date }}{% if order.delivered_at %} · delivered {{ order.delivered_at|est_date }}{% endif %}</p>
+    </div>
+
+    <div class="panel p-4 mt-4 text-sm text-muted space-y-2">
+      {% if verified %}
+      <p class="flex gap-3">{{ icon('shield', 16, 'text-accent mt-0.5 shrink-0') }}<span>This link came from your order, so the review carries a <span class="badge badge-accent !py-0.5">Verified purchase</span> mark. Only real orders get one.</span></p>
+      {% else %}
+      <p class="flex gap-3">{{ icon('shield', 16, 'text-accent mt-0.5 shrink-0') }}<span>Reviews tied to an order carry a <span class="badge badge-accent !py-0.5">Verified purchase</span> mark. Only real orders get one.</span></p>
+      {% endif %}
+      <p class="flex gap-3">{{ icon('user', 16, 'text-accent mt-0.5 shrink-0') }}<span>A person reads every review before it appears. We do not edit them, and critical ones are published too.</span></p>
+    </div>
+  </div>
+
+  {% if ns.products %}
+  <form action="/reviews" method="post" class="card card-pad space-y-5" data-reveal>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
+    <input type="hidden" name="order_number" value="{{ order.order_number }}">
+    <input type="hidden" name="token" value="{{ token }}">
+    {% if ns.products|length > 1 %}
+    <div>
+      <label class="label" for="rv-product">Which product</label>
+      <select id="rv-product" class="input" name="product_id" required>
+        {% for it in ns.products %}<option value="{{ it.product_id }}">{{ it.product_name }}</option>{% endfor %}
+      </select>
+    </div>
+    {% else %}
+    <input type="hidden" name="product_id" value="{{ ns.products[0].product_id }}">
+    <p class="text-sm text-muted">Reviewing <strong class="text-ink">{{ ns.products[0].product_name }}</strong>.</p>
+    {% endif %}
+
+    <fieldset>
+      <legend class="label">Rating</legend>
+      <div class="grid grid-cols-5 gap-2">
+        {% for i in range(1, 6) %}
+        <label class="choice">
+          <input type="radio" name="rating" value="{{ i }}" required>
+          <span class="choice-body flex-col justify-center gap-1 !py-3 text-center">
+            <span class="font-display font-extrabold text-2xl leading-none">{{ i }}</span>
+            <span class="text-xs text-faint">{{ ['Poor', 'Fair', 'OK', 'Good', 'Great'][i - 1] }}</span>
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label class="label" for="rv-name">Your name</label>
+        <input id="rv-name" class="input" name="author_name" required maxlength="60" autocomplete="given-name" value="{{ first_name }}">
+        <p class="help">Shown with the review. First name is fine.</p>
+      </div>
+      <div>
+        <label class="label" for="rv-title">Title <span class="font-normal text-faint">(optional)</span></label>
+        <input id="rv-title" class="input" name="title" maxlength="120">
+      </div>
+    </div>
+    <div>
+      <label class="label" for="rv-body">Review</label>
+      <textarea id="rv-body" class="input" name="body" required maxlength="3000" rows="7"></textarea>
+      <p class="help">Which drain, how many months in, what changed. No need to be kind.</p>
+    </div>
+    <div class="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
+      <button type="submit" class="btn btn-primary">Submit for moderation</button>
+      <p class="help !mt-0">Appears on the product page once approved. We send nothing else.</p>
+    </div>
+  </form>
+  {% else %}
+  <div class="card card-pad">
+    <h2 class="h3">This product is no longer listed.</h2>
+    <p class="text-sm text-muted mt-3">The item on this order has been removed from the catalog, so there is no product page for a review to live on. If you want to tell us how it went anyway, <a href="/contact" class="link">send a message</a>; we read those too.</p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

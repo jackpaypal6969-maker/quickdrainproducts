@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+{% set hide_newsletter = True %}
+{% set order_status = {
+  'paid': ('Paid', 'badge-accent', 'Payment received. Not shipped yet; tracking goes out by email the moment the label prints.'),
+  'on_hold': ('On hold', 'badge-warning', 'Held for a check on our side. We email you if we need anything.'),
+  'processing': ('Processing', 'badge-accent', 'Being packed. Tracking follows by email.'),
+  'shipped': ('Shipped', 'badge-success', 'On its way. Tracking is in the panel on the right.'),
+  'delivered': ('Delivered', 'badge-success', 'Delivered. One bottle per drain, once a month.'),
+  'partially_refunded': ('Partially refunded', 'badge-warning', 'Part of this order has been refunded to the original card.'),
+  'refunded': ('Refunded', '', 'Refunded in full to the original card.'),
+  'canceled': ('Canceled', 'badge-danger', 'Canceled. Any charge goes back to the original card.'),
+} %}
+{% set rma_status = {
+  'requested': ('Requested', 'badge-accent'),
+  'approved': ('Approved', 'badge-success'),
+  'received': ('Received', 'badge-success'),
+  'refunded': ('Refunded', 'badge-success'),
+  'rejected': ('Not approved', 'badge-danger'),
+} %}
+
+{% macro lookup_form(number, email, csrf_token, compact=False) -%}
+<form action="/orders/lookup" method="post" class="{{ 'space-y-3' if compact else 'space-y-4' }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div>
+    <label class="label" for="{{ 'lookup-number-alt' if compact else 'lookup-number' }}">Order number</label>
+    <input id="{{ 'lookup-number-alt' if compact else 'lookup-number' }}" class="input uppercase" name="order_number" required maxlength="20" autocomplete="off" spellcheck="false" placeholder="QD-260903-1A2B" value="{{ number or '' }}">
+    {% if not compact %}<p class="help">On your confirmation email. It starts with QD.</p>{% endif %}
+  </div>
+  <div>
+    <label class="label" for="{{ 'lookup-email-alt' if compact else 'lookup-email' }}">Email used at checkout</label>
+    <input id="{{ 'lookup-email-alt' if compact else 'lookup-email' }}" class="input" type="email" name="email" required maxlength="254" autocomplete="email" inputmode="email" value="{{ email or '' }}">
+  </div>
+  <button type="submit" class="btn {{ 'btn-secondary btn-block' if compact else 'btn-primary' }}">Find order</button>
+</form>
+{%- endmacro %}
+
+{% block content %}
+{% if order %}
+{% set st = order_status.get(order.status, (order.status|replace('_', ' ')|capitalize, '', '')) %}
+<section class="container-x pt-8 pb-16">
+  <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+    <div>
+      <p class="eyebrow">Find your order</p>
+      <h1 class="h2 mt-3">Order {{ order.order_number }}</h1>
+      <p class="text-muted mt-2">Placed {{ order.created_at|est_date }} · {{ order.email }}</p>
+    </div>
+    <div class="md:text-right">
+      <span class="badge {{ st[1] }} !text-sm">{{ st[0] }}</span>
+      <p class="text-sm text-muted mt-2 max-w-xs md:ml-auto">{{ st[2] }}</p>
+    </div>
+  </div>
+
+  <div class="mt-8 grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+    <div class="space-y-6">
+      <div class="card">
+        <ul class="divide-y divide-line-soft">
+          {% for it in items %}
+          <li class="p-4 sm:p-5 flex justify-between gap-4 text-sm">
+            <div>
+              <p class="font-semibold">{{ it.product_name }}</p>
+              <p class="text-muted">{{ it.variant_name }} × {{ it.qty }}{% if it.is_subscription %} · monthly subscription{% endif %}</p>
+            </div>
+            <p class="tabular-nums font-semibold">{{ it.line_total_cents|fmt_money }}</p>
+          </li>
+          {% endfor %}
+        </ul>
+        <dl class="p-4 sm:p-5 border-t border-line-soft text-sm space-y-1">
+          <div class="flex justify-between"><dt class="text-muted">Subtotal</dt><dd class="tabular-nums">{{ order.subtotal_cents|fmt_money }}</dd></div>
+          {% if order.discount_cents %}<div class="flex justify-between text-success"><dt>Discount{% if order.discount_code %} {{ order.discount_code }}{% endif %}</dt><dd class="tabular-nums">−{{ order.discount_cents|fmt_money }}</dd></div>{% endif %}
+          {% if order.credit_cents %}<div class="flex justify-between text-success"><dt>Store credit</dt><dd class="tabular-nums">−{{ order.credit_cents|fmt_money }}</dd></div>{% endif %}
+          <div class="flex justify-between"><dt class="text-muted">Shipping</dt><dd class="tabular-nums">{{ order.shipping_cents|fmt_money if order.shipping_cents else 'Free' }}</dd></div>
+          <div class="flex justify-between"><dt class="text-muted">Tax</dt><dd class="tabular-nums">{{ order.tax_cents|fmt_money }}</dd></div>
+          <div class="flex justify-between font-bold text-base pt-2 border-t border-line-soft"><dt>Total</dt><dd class="tabular-nums">{{ order.total_cents|fmt_money }}</dd></div>
+          {% if order.refunded_cents %}<div class="flex justify-between text-success"><dt>Refunded</dt><dd class="tabular-nums">−{{ order.refunded_cents|fmt_money }}</dd></div>{% endif %}
+        </dl>
+      </div>
+
+      <div class="card card-pad" id="return">
+        <p class="eyebrow">Returns</p>
+        <h2 class="h3 mt-2">Need to send something back?</h2>
+        {% if order.status in ['refunded', 'canceled'] %}
+        <p class="text-sm text-muted mt-3">This order is {{ st[0]|lower }}, so there is nothing to return. If something looks wrong, <a href="/contact" class="link">contact us</a>.</p>
+        {% else %}
+        <p class="text-sm text-muted mt-3">Tell us what happened. A person replies within one business day with the next step. If a bottle arrived damaged, keep the packaging in case we ask for a photo.</p>
+        <form action="/orders/lookup/rma" method="post" class="mt-5 space-y-4">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="order_number" value="{{ order.order_number }}">
+          <input type="hidden" name="email" value="{{ lookup_email }}">
+          <div>
+            <label class="label" for="rma-reason">Reason</label>
+            <select id="rma-reason" class="input" name="reason" required>
+              <option value="">Choose one</option>
+              <option>Damaged in transit</option>
+              <option>Wrong item</option>
+              <option>Changed my mind</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="label" for="rma-details">Details</label>
+            <textarea id="rma-details" class="input" name="details" maxlength="4000" rows="4"></textarea>
+            <p class="help">What arrived, what you expected, whether the seal is intact.</p>
+          </div>
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+            <button type="submit" class="btn btn-secondary">Request a return</button>
+            <p class="help !mt-0">Policy in full: <a href="/legal/refunds" class="link">Refunds &amp; returns</a>.</p>
+          </div>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <aside class="space-y-4">
+      <div class="card card-pad">
+        <p class="eyebrow !text-faint">Tracking</p>
+        {% if order.tracking_number %}
+        {% set carrier = (order.carrier or '')|lower %}
+        <p class="mt-2 font-semibold">{{ order.carrier or 'Carrier' }}</p>
+        <p class="font-mono text-sm break-all mt-1">{{ order.tracking_number }}</p>
+        {% if 'usps' in carrier %}
+        <a href="https://tools.usps.com/go/TrackConfirmAction?tLabels={{ order.tracking_number|urlencode }}" class="btn btn-secondary btn-sm mt-4" rel="noopener">Track on USPS {{ icon('external', 14) }}</a>
+        {% elif 'ups' in carrier %}
+        <a href="https://www.ups.com/track?tracknum={{ order.tracking_number|urlencode }}" class="btn btn-secondary btn-sm mt-4" rel="noopener">Track on UPS {{ icon('external', 14) }}</a>
+        {% elif 'fedex' in carrier %}
+        <a href="https://www.fedex.com/fedextrack/?trknbr={{ order.tracking_number|urlencode }}" class="btn btn-secondary btn-sm mt-4" rel="noopener">Track on FedEx {{ icon('external', 14) }}</a>
+        {% endif %}
+        {% if order.shipped_at %}<p class="text-xs text-faint mt-3">Shipped {{ order.shipped_at|est_date }}{% if order.delivered_at %} · delivered {{ order.delivered_at|est_date }}{% endif %}</p>{% endif %}
+        {% else %}
+        <p class="text-sm text-muted mt-2">{% if order.status in ['refunded', 'canceled'] %}No shipment on this order.{% else %}Not shipped yet. The tracking number goes out by email the moment the label prints, and shows here after that.{% endif %}</p>
+        {% endif %}
+      </div>
+
+      {% if order.shipping_line1 %}
+      <div class="card card-pad text-sm">
+        <p class="eyebrow !text-faint">Shipping to</p>
+        <p class="mt-2">{{ order.shipping_name }}<br>{{ order.shipping_line1 }}{% if order.shipping_line2 %}<br>{{ order.shipping_line2 }}{% endif %}<br>{{ order.shipping_city }}, {{ order.shipping_state }} {{ order.shipping_postal_code }}{% if order.shipping_country and order.shipping_country != 'US' %}<br>{{ order.shipping_country }}{% endif %}</p>
+        <p class="help">Need to change the address before it ships? <a href="/contact" class="link">Contact us</a> quickly. After it ships, the carrier handles redirects.</p>
+      </div>
+      {% endif %}
+
+      {% if rmas %}
+      <div class="card card-pad">
+        <p class="eyebrow !text-faint">Return requests</p>
+        <ul class="mt-2 divide-y divide-line-soft">
+          {% for r in rmas %}
+          {% set rs = rma_status.get(r.status, (r.status|capitalize, '')) %}
+          <li class="py-3 flex items-start justify-between gap-3 text-sm">
+            <div class="min-w-0">
+              <p class="font-semibold">{{ r.reason }}</p>
+              {% if r.details %}<p class="text-muted mt-1">{{ r.details }}</p>{% endif %}
+              <p class="text-xs text-faint mt-1">{{ r.created_at|est_date }}</p>
+            </div>
+            <span class="badge {{ rs[1] }} shrink-0">{{ rs[0] }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <div class="panel p-4">
+        <p class="eyebrow !text-faint mb-3">Look up a different order</p>
+        {{ lookup_form(None, lookup_email, csrf_token, compact=True) }}
+      </div>
+    </aside>
+  </div>
+</section>
+
+{% else %}
+<section class="container-x pt-8 pb-16 grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:items-start">
+  <div>
+    <p class="eyebrow">Find your order</p>
+    <h1 class="h2 mt-3">Look up an order.</h1>
+    <p class="lede mt-4">The order number from your confirmation email, plus the email you used at checkout. No account needed.</p>
+    <div class="card card-pad mt-8 max-w-lg" data-reveal>
+      {{ lookup_form(None, lookup_email, csrf_token) }}
+    </div>
+    <p class="help mt-4">{% if customer %}Signed in? <a href="/account" class="link">Your account</a> lists every order.{% else %}Have an account? <a href="/account/login" class="link">Sign in</a> for full order history.{% endif %}</p>
+  </div>
+  <aside class="space-y-4 lg:pt-14">
+    <div class="card card-pad">
+      <h2 class="h3">What you can do here</h2>
+      <ul class="mt-3 space-y-3 text-sm text-muted">
+        <li class="flex gap-3">{{ icon('package', 16, 'text-accent mt-0.5 shrink-0') }}<span>See the status and, once it ships, the carrier and tracking number.</span></li>
+        <li class="flex gap-3">{{ icon('refresh', 16, 'text-accent mt-0.5 shrink-0') }}<span>Start a return, and follow any return already open.</span></li>
+        <li class="flex gap-3">{{ icon('file', 16, 'text-accent mt-0.5 shrink-0') }}<span>Check the line items, totals and the address the parcel went to.</span></li>
+      </ul>
+    </div>
+    <div class="card card-pad">
+      <h2 class="h3">No confirmation email?</h2>
+      <p class="text-sm text-muted mt-2">Check spam for a message from Quick Drain Products. If it is not there, <a href="/contact" class="link">contact us</a> with the email you paid with and the date; we will find it.</p>
+    </div>
+  </aside>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+{% set hide_newsletter = True %}
+{% set no_index = True %}
+{% block content %}
+{% set status_meta = {
+  'paid': ('Paid', 'badge-accent'),
+  'on_hold': ('On hold', 'badge-warning'),
+  'processing': ('Processing', 'badge-accent'),
+  'shipped': ('Shipped', 'badge-success'),
+  'delivered': ('Delivered', 'badge-success'),
+  'partially_refunded': ('Partly refunded', 'badge-warning'),
+  'refunded': ('Refunded', ''),
+  'canceled': ('Canceled', 'badge-danger')
+} %}
+{% set rma_meta = {
+  'requested': ('Requested', 'badge-accent'),
+  'approved': ('Approved', 'badge-success'),
+  'received': ('Received', 'badge-success'),
+  'refunded': ('Refunded', 'badge-success'),
+  'rejected': ('Not approved', 'badge-danger')
+} %}
+{% set meta = status_meta.get(order.status, (order.status|replace('_', ' ')|capitalize, '')) %}
+{% if order.status == 'delivered' or order.delivered_at %}{% set stage = 4 %}
+{% elif order.status == 'shipped' or order.shipped_at %}{% set stage = 3 %}
+{% elif order.status == 'processing' %}{% set stage = 2 %}
+{% else %}{% set stage = 1 %}{% endif %}
+{% set closed = order.status in ('canceled', 'refunded') %}
+<section class="container-x pt-6 pb-16">
+  <nav aria-label="Breadcrumb" class="text-xs text-faint"><a href="/account" class="hover:text-ink">Your account</a> <span aria-hidden="true">/</span> <span class="text-nav">Order {{ order.order_number }}</span></nav>
+
+  <div class="mt-6 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <p class="eyebrow">Order {{ order.order_number }}</p>
+      <h1 class="h2 mt-3">Placed {{ order.created_at|est_date }}.</h1>
+      <p class="text-sm text-muted mt-2">{{ order.created_at|est_datetime }} · receipt sent to {{ order.email }}</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="badge {{ meta[1] }}">{{ meta[0] }}</span>
+      <form action="/account/orders/{{ order.id }}/reorder" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="btn btn-primary">{{ icon('refresh', 16) }} Reorder</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card card-pad mt-8">
+    <ol class="grid grid-cols-4 gap-2" aria-label="Order progress">
+      {% for label in ['Paid', 'Processing', 'Shipped', 'Delivered'] %}
+      {% set done = loop.index <= stage and not (closed and loop.index > 1 and loop.index > stage) %}
+      <li class="min-w-0"{% if loop.index == stage %} aria-current="step"{% endif %}>
+        <div class="h-1 rounded-pill {{ 'bg-accent' if done else 'bg-raised' }}"></div>
+        <p class="mt-2 text-xs font-semibold truncate {{ 'text-ink' if done else 'text-faint' }}">{{ label }}</p>
+        <p class="text-xs text-faint truncate">
+          {%- if loop.index == 1 %}{{ order.created_at|est_short }}
+          {%- elif loop.index == 3 and order.shipped_at %}{{ order.shipped_at|est_short }}
+          {%- elif loop.index == 4 and order.delivered_at %}{{ order.delivered_at|est_short }}
+          {%- else %}&nbsp;{% endif -%}
+        </p>
+      </li>
+      {% endfor %}
+    </ol>
+
+    {% if order.status == 'on_hold' %}
+    <p class="alert alert-warn mt-5">{{ icon('alert', 16, 'shrink-0 mt-0.5') }}<span>This order is on hold while we check stock against what was paid for. You will hear from us by email within one business day; nothing further is needed from you.</span></p>
+    {% elif order.status == 'canceled' %}
+    <p class="alert alert-error mt-5">{{ icon('info', 16, 'shrink-0 mt-0.5') }}<span>This order was canceled. Any payment taken is returned to the original card through Stripe.</span></p>
+    {% elif order.status in ('refunded', 'partially_refunded') %}
+    <p class="alert alert-ok mt-5">{{ icon('check', 16, 'shrink-0 mt-0.5') }}<span>{{ order.refunded_cents|fmt_money }} refunded to the original payment method. Card issuers usually show it within 5 to 10 business days.</span></p>
+    {% elif order.tracking_number %}
+    {% set carrier = order.carrier|lower %}
+    <div class="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+      <span class="text-muted inline-flex items-center gap-2">{{ icon('truck', 16, 'text-accent') }} {{ order.carrier or 'Carrier' }} tracking</span>
+      <span class="font-mono">{{ order.tracking_number }}</span>
+      {% if 'usps' in carrier %}
+      <a href="https://tools.usps.com/go/TrackConfirmAction?tLabels={{ order.tracking_number|urlencode }}" class="link" rel="noopener">Track on usps.com</a>
+      {% elif 'ups' in carrier %}
+      <a href="https://www.ups.com/track?tracknum={{ order.tracking_number|urlencode }}" class="link" rel="noopener">Track on ups.com</a>
+      {% elif 'fedex' in carrier %}
+      <a href="https://www.fedex.com/fedextrack/?trknbr={{ order.tracking_number|urlencode }}" class="link" rel="noopener">Track on fedex.com</a>
+      {% endif %}
+    </div>
+    {% elif stage < 3 %}
+    <p class="text-sm text-muted mt-5">Orders leave Long Island within one to two business days. Tracking is emailed the moment the label prints and appears here too.</p>
+    {% endif %}
+  </div>
+
+  <div class="mt-8 grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+    <div class="card">
+      <h2 class="h3 px-5 pt-5">Items</h2>
+      <ul class="divide-y divide-line-soft mt-3 border-t border-line-soft">
+        {% for it in items %}
+        <li class="px-5 py-4 flex justify-between gap-4 text-sm">
+          <div class="min-w-0">
+            <p class="font-semibold">{{ it.product_name }}</p>
+            <p class="text-muted">{{ it.variant_name }}{% if it.units_per_pack > 1 %} · {{ it.units_per_pack }} × 4 fl oz{% endif %}{% if it.is_subscription %} · monthly subscription{% endif %}</p>
+            <p class="text-xs text-faint mt-1">{{ it.qty }} × {{ it.unit_price_cents|fmt_money }} · {{ (it.qty * it.units_per_pack)|plural('drain-month') }}</p>
+          </div>
+          <p class="font-bold tabular-nums shrink-0">{{ it.line_total_cents|fmt_money }}</p>
+        </li>
+        {% endfor %}
+      </ul>
+      <dl class="px-5 py-4 border-t border-line-soft text-sm space-y-1">
+        <div class="flex justify-between"><dt class="text-muted">Subtotal</dt><dd class="tabular-nums">{{ order.subtotal_cents|fmt_money }}</dd></div>
+        {% if order.discount_cents %}<div class="flex justify-between text-success"><dt>Discount{% if order.discount_code %} {{ order.discount_code }}{% endif %}</dt><dd class="tabular-nums">−{{ order.discount_cents|fmt_money }}</dd></div>{% endif %}
+        {% if order.credit_cents %}<div class="flex justify-between text-success"><dt>Store credit</dt><dd class="tabular-nums">−{{ order.credit_cents|fmt_money }}</dd></div>{% endif %}
+        <div class="flex justify-between"><dt class="text-muted">Shipping</dt><dd class="tabular-nums">{{ order.shipping_cents|fmt_money if order.shipping_cents else 'Free' }}</dd></div>
+        <div class="flex justify-between"><dt class="text-muted">Tax</dt><dd class="tabular-nums">{{ order.tax_cents|fmt_money }}</dd></div>
+        <div class="flex justify-between font-bold text-base pt-2 border-t border-line-soft"><dt>Total</dt><dd class="tabular-nums">{{ order.total_cents|fmt_money }}</dd></div>
+        {% if order.refunded_cents %}<div class="flex justify-between text-success"><dt>Refunded</dt><dd class="tabular-nums">−{{ order.refunded_cents|fmt_money }}</dd></div>{% endif %}
+      </dl>
+    </div>
+
+    <aside class="space-y-6">
+      {% if order.shipping_line1 %}
+      <div class="card card-pad text-sm">
+        <p class="eyebrow !text-faint">Shipping to</p>
+        <address class="not-italic mt-2 leading-relaxed">
+          {% if order.shipping_name %}{{ order.shipping_name }}<br>{% endif %}
+          {{ order.shipping_line1 }}{% if order.shipping_line2 %}<br>{{ order.shipping_line2 }}{% endif %}<br>
+          {{ order.shipping_city }}, {{ order.shipping_state }} {{ order.shipping_postal_code }}
+          {% if order.shipping_phone %}<br><span class="text-muted">{{ order.shipping_phone }}</span>{% endif %}
+        </address>
+        {% if stage < 3 and not closed %}<p class="help">Wrong address? <a href="/contact" class="link">Tell us</a> before it ships and quote {{ order.order_number }}.</p>{% endif %}
+      </div>
+      {% endif %}
+
+      <div class="card card-pad" id="returns">
+        <h2 class="h3">Returns</h2>
+        {% if rmas %}
+        <ul class="mt-3 space-y-3 text-sm">
+          {% for r in rmas %}
+          {% set rm = rma_meta.get(r.status, (r.status|capitalize, '')) %}
+          <li class="panel p-3">
+            <div class="flex items-center justify-between gap-3">
+              <span class="font-semibold">{{ r.reason }}</span>
+              <span class="badge {{ rm[1] }}">{{ rm[0] }}</span>
+            </div>
+            <p class="text-xs text-faint mt-1">Requested {{ r.created_at|est_date }}{% if r.resolved_at %} · resolved {{ r.resolved_at|est_date }}{% endif %}</p>
+            {% if r.details %}<p class="text-muted mt-2 whitespace-pre-line">{{ r.details }}</p>{% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-sm text-muted mt-2">Unopened bottles can come back within 30 days of delivery for a refund to the original card. Arrived damaged, leaking or wrong? Say so below; nothing needs to be shipped back.</p>
+        {% endif %}
+
+        {% if not closed %}
+        <details class="mt-4">
+          <summary class="btn btn-secondary btn-sm list-none [&::-webkit-details-marker]:hidden">Request a return</summary>
+          <form action="/account/orders/{{ order.id }}/rma" method="post" class="mt-4 space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div>
+              <label class="label" for="rma-reason">Reason</label>
+              <select id="rma-reason" class="input" name="reason" required>
+                <option value="">Choose one</option>
+                <option>Unopened, no longer needed</option>
+                <option>Arrived damaged or leaking</option>
+                <option>Wrong item or quantity</option>
+                <option>Never arrived</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="label" for="rma-details">Details</label>
+              <textarea id="rma-details" class="input" name="details" rows="4" maxlength="4000"></textarea>
+              <p class="help">Which bottles, what happened, and anything that lets us sort it in one reply.</p>
+            </div>
+            <button type="submit" class="btn btn-secondary">Send return request</button>
+            <p class="text-xs text-faint">We reply within one business day. <a href="/legal/refunds" class="link">Full returns policy</a>.</p>
+          </form>
+        </details>
+        {% endif %}
+      </div>
+
+      <p class="text-sm text-muted">Anything else about this order? <a href="/contact" class="link">Contact us</a> and quote {{ order.order_number }}, or call <a href="tel:{{ settings.phone_tel }}" class="link">{{ settings.phone_display }}</a>.</p>
+    </aside>
+  </div>
+</section>
+{% endblock %}

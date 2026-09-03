@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+{% set og_type = 'article' %}
+{% block content %}
+<article class="container-x pt-6 pb-12">
+  <nav aria-label="Breadcrumb" class="text-xs text-faint"><a href="/" class="hover:text-ink">Home</a> <span aria-hidden="true">/</span> <a href="/blog" class="hover:text-ink">Drain maintenance notes</a> <span aria-hidden="true">/</span> <span class="text-nav">{{ post.title }}</span></nav>
+
+  <header class="max-w-3xl mt-6">
+    <p class="eyebrow">Drain maintenance notes</p>
+    <h1 class="h2 mt-3">{{ post.title }}</h1>
+    {% if post.excerpt %}<p class="lede mt-4">{{ post.excerpt }}</p>{% endif %}
+    <p class="text-sm text-faint mt-4">
+      {%- if post.published_at %}<time datetime="{{ post.published_at }}">{{ post.published_at|est_date }}</time>{% endif %}
+      {%- if post.author %} · {{ post.author }}{% endif %}
+      {%- if post.updated_at and post.published_at and post.updated_at[:10] > post.published_at[:10] %} · updated {{ post.updated_at|est_date }}{% endif -%}
+    </p>
+  </header>
+
+  {% if post.cover_base %}
+  <div class="mt-8 max-w-3xl rounded-lg overflow-hidden border border-line-soft bg-bg-deep">
+    <img src="/static/img/products/{{ post.cover_base }}-1200.jpg" width="1200" height="750" alt="" loading="eager" fetchpriority="high" class="w-full object-cover">
+  </div>
+  {% endif %}
+
+  <div class="prose mt-8">{{ post.body|md }}</div>
+
+  <div class="mt-10 max-w-3xl panel p-4 text-sm text-muted flex flex-wrap items-center gap-x-6 gap-y-2">
+    <span class="inline-flex items-center gap-2">{{ icon('info', 16, 'text-accent shrink-0') }} Nothing here claims more than the Quick Shot label does.</span>
+    <a href="/products/quick-shot" class="link">Read the label lines</a>
+    <a href="{{ settings.parent_site_url }}" class="link" rel="noopener">Service pages on quickdrainny.com</a>
+  </div>
+</article>
+
+{% if more %}
+<section class="section-tight bg-bg-alt border-y border-line-soft">
+  <div class="container-x">
+    <p class="eyebrow">More notes</p>
+    <ul class="mt-4 grid gap-4 md:grid-cols-3">
+      {% for m in more %}
+      <li class="card card-pad">
+        <h2 class="font-display font-bold text-lg leading-tight"><a href="/blog/{{ m.slug }}" class="hover:underline">{{ m.title }}</a></h2>
+        {% if m.excerpt %}<p class="text-sm text-muted mt-2">{{ m.excerpt }}</p>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
+
+{% include "components/booking_cta.html" %}
+{% endblock %}

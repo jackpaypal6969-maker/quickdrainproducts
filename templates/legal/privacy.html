@@ -1,0 +1,54 @@
+{# Default privacy policy. Shown when the admin has not written a body for the `privacy` page. #}
+<div class="prose">
+<p>{{ settings.app_name }} collects the least it can to sell and deliver a bottle of drain maintainer. This page says exactly what that is, who else touches it, and how to get it changed or deleted.</p>
+
+<h2>What we collect</h2>
+<ul>
+<li><strong>Email address</strong>: for the receipt, shipping updates, password resets and, only if you opt in, occasional maintenance notes and offers.</li>
+<li><strong>Name and shipping address</strong>: entered on Stripe's checkout page and stored with the order so we can ship it and answer questions about it. Addresses saved in your account are optional.</li>
+<li><strong>Phone number</strong>: optional, used only if a delivery needs a call.</li>
+<li><strong>Order history</strong>: what you bought, when, for how much, and its shipping status. Because one bottle is one drain-month, we also use it to work out when an order runs out so the reorder reminder is timed right.</li>
+<li><strong>Account details</strong>: a hashed password if you create an account, your email preference, and when you last signed in.</li>
+<li><strong>Messages</strong>: anything you send through the contact form, a review or a return request, with the IP address it came from, which we keep to block abuse.</li>
+</ul>
+<p>We do not collect card numbers, dates of birth or anything else that is not needed to fill the order.</p>
+
+<h2>Card data</h2>
+<p>Payment happens on a page hosted by Stripe. Your card number, expiry date and security code go straight to Stripe and never pass through or sit on our servers; we store no card details at all, not even the last four digits. Refunds are issued by asking Stripe to reverse the original charge. Stripe's own policy covers what it holds: <a href="https://stripe.com/privacy" rel="noopener">stripe.com/privacy</a>.</p>
+
+<h2>Who else handles it</h2>
+<ul>
+<li><strong>Stripe</strong>: payment processing, sales tax calculation and the checkout page. Receives your email, name, shipping address and the items ordered.</li>
+<li><strong>Resend</strong>: delivers our email (receipts, shipping updates, password resets, replies to return requests, and marketing email if you opted in). Receives your email address and the content of each message.</li>
+<li><strong>PostHog</strong>: product analytics, such as which pages are visited and whether a cart converts. Where it is enabled, events are tied to a random visitor id, and to your email once you check out or sign in, so we can tell whether a reminder led to a reorder. No card data and no message content are sent to it.</li>
+<li><strong>The delivery carrier</strong>: receives your name, address and phone number for that shipment.</li>
+</ul>
+<p>We do not sell personal information, share it with data brokers, or run third-party advertising pixels on this site.</p>
+
+<h2>Cookies</h2>
+<p>One signed session cookie keeps your cart and sign-in working. It holds a random id rather than your data and expires after {{ settings.session_days }} days. PostHog, where enabled, sets its own analytics cookie. There are no advertising cookies. Blocking cookies stops the cart and sign-in from working.</p>
+
+<h2>Marketing email</h2>
+<p>We send maintenance notes and offers only if you ticked the box at sign-up, in your account, or in the newsletter form. Every marketing email has an unsubscribe link that works in one click, and the preference can be changed in your account at any time. Receipts, shipping notices and password resets are part of fulfilling the order and are sent regardless.</p>
+
+<h2>How long we keep it</h2>
+<p>Order records, including the name and address they shipped to, are kept for as long as tax and accounting rules require, which is several years after the sale. Account details are kept until you ask us to delete the account. Contact messages and return requests are kept with the order they relate to. Analytics data is held by PostHog for the retention period set in that service.</p>
+
+<h2>Your choices</h2>
+<ul>
+<li><strong>See it.</strong> Your <a href="/account">account page</a> shows your orders, addresses and preferences. Guests can look up any order with its number and email at <a href="/orders/lookup">Find your order</a>.</li>
+<li><strong>Correct it.</strong> Change your name and phone in your account; ask us to correct anything else.</li>
+<li><strong>Delete it.</strong> Ask through the <a href="/contact">contact form</a> from the email on the account. We close the account and remove your details from it. Order records that tax rules require us to keep are retained but are no longer linked to a usable account.</li>
+<li><strong>Stop marketing.</strong> The unsubscribe link in any marketing email, or the preference in your account.</li>
+</ul>
+<p>California residents have the additional rights described in the CCPA. Make any request the same way and we will honour it; we never treat anyone differently for exercising a privacy right.</p>
+
+<h2>Security</h2>
+<p>The site runs over HTTPS. Passwords are stored as salted hashes, never in plain text. Admin access requires a second factor, and every change to an order is logged. If we discover a breach that affects your data, we will tell you by email and, where the law requires, notify the New York Attorney General.</p>
+
+<h2>Children</h2>
+<p>This store is not directed at anyone under 18 and we do not knowingly collect information from children.</p>
+
+<h2>Changes and contact</h2>
+<p>If this policy changes, the date at the top of this page updates. Privacy questions go through the <a href="/contact">contact form</a> or by phone to {{ settings.phone_display }}. Post can be addressed to {{ settings.app_name }}, care of Quick Drain, Long Island, New York.</p>
+</div>

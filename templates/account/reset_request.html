@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% set hide_newsletter = True %}
+{% set no_index = True %}
+{% block content %}
+<section class="container-x pt-8 pb-16">
+  <div class="max-w-md mx-auto">
+    <p class="eyebrow">Account</p>
+    <h1 class="h2 mt-3">Reset your password.</h1>
+    <p class="text-muted mt-3">Enter the email on your account or on a past order. If we have it, a link arrives within a minute and works for two hours.</p>
+
+    <form action="/account/reset" method="post" class="card card-pad mt-8 space-y-5">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div>
+        <label class="label" for="email">Email</label>
+        <input id="email" class="input" type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" maxlength="254">
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Email me a reset link</button>
+    </form>
+
+    <div class="mt-6 text-sm text-muted space-y-2">
+      <p>Guest orders count. Setting a password on the email you used at checkout turns those orders into an account.</p>
+      <p><a href="/account/login" class="link">Back to sign in</a></p>
+    </div>
+  </div>
+</section>
+{% endblock %}

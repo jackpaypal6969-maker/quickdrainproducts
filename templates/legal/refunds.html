@@ -1,0 +1,35 @@
+{# Default refunds and returns policy. Shown when the admin has not written a body for the `refunds` page. #}
+<div class="prose">
+<p>Quick Shot is a consumable, so the rules are short: sealed bottles come back, opened ones do not, and anything we got wrong is fixed at our cost.</p>
+
+<h2>30-day returns on unopened bottles</h2>
+<p>Any bottle still sealed can be returned within 30 days of the delivery date for a refund of what you paid for it. Multi-packs can be returned in part (four sealed bottles from a six-pack, say) and the refund is worked out per bottle. The original shipping charge is not refunded unless the return is our fault, and you cover return postage unless it is.</p>
+<p>Opened, partly used or unsealed bottles cannot be returned or refunded. This is a liquid enzyme product: once the seal is broken we cannot resell it or know how it was stored.</p>
+
+<h2>Damaged, leaking, wrong or missing</h2>
+<p>If a parcel arrives damaged, a bottle has leaked, you received the wrong item or quantity, or tracking says delivered and nothing came, tell us within 7 days of the delivery date. Include a photo where there is something to photograph. We replace or refund, your choice, and nothing needs to be shipped back. If a parcel is lost in transit we replace it once the carrier confirms it is not coming.</p>
+
+<h2>How to start a return</h2>
+<ol>
+<li>Signed in: open the order on your <a href="/account">account page</a> and use <strong>Request a return</strong>.</li>
+<li>Guest: use <a href="/orders/lookup">Find your order</a> with the order number and email, then request the return from there.</li>
+<li>We reply within one business day with a return address, or with a replacement or refund confirmation when nothing needs to come back.</li>
+<li>Pack the bottles upright so they cannot knock together and send them with a tracked service. Keep the receipt until the refund lands.</li>
+</ol>
+
+<h2>How refunds are paid</h2>
+<p>Every refund goes back to the payment method used at checkout, issued through Stripe. We do not refund to a different card, by cheque or in cash; store credit is offered only if you ask for it. A refund is issued within 3 business days of the sealed bottles reaching us, or of our decision when nothing is being returned. The card issuer then usually takes 5 to 10 business days to show it. The refunded amount appears on your order page and is confirmed by email.</p>
+
+<h2>Discounts and free shipping</h2>
+<p>If a discount code applied to the order, the refund is for the discounted price you actually paid. If a partial return takes the order below the {{ settings.free_shipping_threshold_cents|fmt_money_short }} free-shipping threshold, we do not claw back the {{ settings.flat_shipping_cents|fmt_money }} shipping charge.</p>
+
+<h2>Subscriptions</h2>
+<p>A subscription renewal that has already shipped is treated like any other order: sealed bottles are returnable within 30 days. To stop future renewals, <a href="/contact">contact us</a> before the next billing date and the cancellation takes effect from that date.</p>
+
+<h2>Cancelling an order</h2>
+<p>Orders usually ship within one to two business days. To cancel, <a href="/contact">contact us</a> or call {{ settings.phone_display }} straight away. If the parcel has not left, we cancel and refund in full; if it has, treat it as a return.</p>
+
+<h2>What this policy does not cover</h2>
+<p>A product that did what its label says but did not solve a problem the label never claimed to solve (a backup, a blocked line, roots) is not a defect. That drain needs a diagnostic visit, and we would rather you book one at <a href="{{ settings.parent_site_url }}" rel="noopener">quickdrainny.com</a> than buy a second bottle.</p>
+<p>Nothing here limits any right you have under New York consumer protection law.</p>
+</div>

@@ -1,0 +1,42 @@
+{# Default terms of sale. Shown when the admin has not written a body for the `terms` page. #}
+<div class="prose">
+<p>These terms cover every purchase made through {{ settings.app_name }}, the online store of Quick Drain, a sewer and drain service company on Long Island, New York (<a href="{{ settings.parent_site_url }}" rel="noopener">quickdrainny.com</a>). Placing an order means you accept them. They are written to be read; if anything is unclear, <a href="/contact">ask us</a> before you buy.</p>
+
+<h2>1. Who can order</h2>
+<p>You must be 18 or older and ordering for delivery to an address in the United States. Products are sold for household and light commercial drain maintenance as directed on the label, not for resale.</p>
+
+<h2>2. What we sell and what we claim</h2>
+<p>Every statement about a product on this site comes from its label or its safety data sheet. Quick Shot is a natural drain enzyme, dosed for monthly use on any drain, 4 fl oz (118 mL) per bottle. We do not claim that it opens clogs, clears a backup or treats a septic system, because the label does not. A drain that is backing up needs a diagnostic visit, not a bottle: see <a href="{{ settings.parent_site_url }}" rel="noopener">quickdrainny.com</a> or call {{ settings.phone_display }}.</p>
+<p>Read the label before use and follow its directions. Keep the product out of reach of children. Where a formulation requires it, a California Proposition 65 warning is shown on the product page before the item can be added to the cart.</p>
+
+<h2>3. Prices and payment</h2>
+<p>Prices are in US dollars and can change without notice; the price shown at checkout is the price you pay. Sales tax, where it applies, is calculated on Stripe's checkout page from the ship-to address. Shipping is charged as described in the <a href="/legal/shipping">shipping policy</a>: {{ settings.flat_shipping_cents|fmt_money }} flat, free at {{ settings.free_shipping_threshold_cents|fmt_money_short }} and over.</p>
+<p>Payment is taken on Stripe's hosted checkout page. Card numbers never reach our servers. Discount codes must be entered in the cart before checkout, apply once per order, and may be withdrawn if used outside their stated terms.</p>
+
+<h2>4. When an order is accepted</h2>
+<p>Your order is accepted when Stripe confirms payment and we email an order confirmation with an order number. We may cancel an order and refund it in full if stock ran out between your payment and our fulfilment, if the price shown was a clear error, if the address cannot be served, or if we suspect fraud. If we cancel, you hear from us by email within one business day.</p>
+
+<h2>5. Shipping, risk and delivery</h2>
+<p>We ship to US addresses only, as an ordinary parcel. Risk of loss passes to you when the parcel is delivered to the address you gave at checkout; until then a lost or damaged parcel is ours to put right. Delivery times in the shipping policy are estimates, not promises.</p>
+
+<h2>6. Returns and refunds</h2>
+<p>Unopened bottles can be returned within 30 days of delivery. Refunds go back to the original payment method through Stripe. The <a href="/legal/refunds">refunds and returns policy</a> gives the full rules, including how damaged or wrong deliveries are handled, and forms part of these terms.</p>
+
+<h2>7. Subscriptions</h2>
+<p>If a monthly subscription is offered and you choose it, your card is charged at the interval shown at checkout until you cancel. Cancel any time before the next renewal by <a href="/contact">contacting us</a>. A renewal that has already shipped is treated as a normal order.</p>
+
+<h2>8. Accounts</h2>
+<p>You are responsible for keeping your password private and for what happens under your account. Guest orders are stored under the email used at checkout; setting a password on that email claims them. Tell us promptly if you think your account has been used without your permission.</p>
+
+<h2>9. Limits on liability</h2>
+<p>To the extent New York law allows, our liability for any order is limited to the amount you paid for it. We are not liable for indirect or consequential loss, including damage caused by use contrary to the label or on a drain that needed service rather than maintenance. Nothing here limits liability that cannot lawfully be limited.</p>
+
+<h2>10. Governing law and disputes</h2>
+<p>These terms are governed by the laws of the State of New York. Any dispute we cannot settle by talking will be brought in the state or federal courts located in New York. Please talk to us first; nearly everything is fixed with one email.</p>
+
+<h2>11. Changes</h2>
+<p>We may update these terms. The date at the top of this page shows the current version, and changes apply to orders placed after they are posted.</p>
+
+<h2>12. Contact</h2>
+<p>{{ settings.app_name }}, a Quick Drain company, Long Island, New York. <a href="/contact">Contact form</a> · {{ settings.phone_display }} · <a href="{{ settings.parent_site_url }}" rel="noopener">quickdrainny.com</a>.</p>
+</div>

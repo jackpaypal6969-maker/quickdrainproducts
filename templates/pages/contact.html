@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+{% set sent = request.query_params.get('sent') == '1' %}
+{% set pf = prefill or {} %}
+{% block content %}
+<section class="container-x pt-8 pb-16 grid gap-10 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+  <div>
+    <p class="eyebrow">Contact</p>
+    {% if sent %}
+    <h1 class="h2 mt-3">Message received.</h1>
+    <p class="lede mt-4">A person reads it and replies within one business day, to the address you gave.</p>
+    <div class="card card-pad mt-8 max-w-lg" data-reveal>
+      <div class="flex items-start gap-3">
+        <span class="text-accent mt-0.5 shrink-0">{{ icon('check', 22) }}</span>
+        <div>
+          <p class="font-semibold">Your message is in the queue.</p>
+          <p class="text-sm text-muted mt-1">If it is about an order, we quote the order number in our reply. If the drain has started backing up since you wrote, call instead; that is the faster route.</p>
+        </div>
+      </div>
+      <div class="mt-6 flex flex-col sm:flex-row gap-3">
+        <a href="/products" class="btn btn-secondary">Back to products</a>
+        <a href="/contact" class="btn btn-ghost">Send another message</a>
+      </div>
+    </div>
+    {% else %}
+    <h1 class="h2 mt-3">Ask about an order, a bottle, or a label.</h1>
+    <p class="lede mt-4">Order status, shipping, returns, what a line on the label means. A person reads every message and replies within one business day.</p>
+    <form action="/contact" method="post" class="card card-pad mt-8 space-y-4" data-reveal>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="label" for="contact-name">Name</label>
+          <input id="contact-name" class="input" name="name" required maxlength="100" autocomplete="name" value="{{ ((pf.get('first_name', '') ~ ' ' ~ pf.get('last_name', ''))|trim) }}">
+        </div>
+        <div>
+          <label class="label" for="contact-email">Email</label>
+          <input id="contact-email" class="input" type="email" name="email" required maxlength="254" autocomplete="email" inputmode="email" value="{{ pf.get('email', '') }}">
+        </div>
+        <div>
+          <label class="label" for="contact-phone">Phone <span class="font-normal text-faint">(optional)</span></label>
+          <input id="contact-phone" class="input" type="tel" name="phone" maxlength="30" autocomplete="tel" inputmode="tel" value="{{ pf.get('phone', '') }}">
+        </div>
+        <div>
+          <label class="label" for="contact-order">Order number <span class="font-normal text-faint">(optional)</span></label>
+          <input id="contact-order" class="input uppercase" name="order_number" maxlength="20" autocomplete="off" spellcheck="false" placeholder="QD-260903-1A2B">
+          <p class="help">On your confirmation email.</p>
+        </div>
+      </div>
+      <div>
+        <label class="label" for="contact-subject">Subject</label>
+        <select id="contact-subject" class="input" name="subject" required>
+          <option value="">Choose one</option>
+          <option>Order status or tracking</option>
+          <option>Shipping question</option>
+          <option>Return or refund</option>
+          <option>Product or label question</option>
+          <option>Safety data sheet request</option>
+          <option>Bulk or trade order</option>
+          <option>Something else</option>
+        </select>
+      </div>
+      <div>
+        <label class="label" for="contact-body">Message</label>
+        <textarea id="contact-body" class="input" name="body" required maxlength="5000" rows="6"></textarea>
+      </div>
+      <div class="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
+        <button type="submit" class="btn btn-primary">Send message</button>
+        <p class="help !mt-0">Goes to the Quick Drain office. No mailing list, no follow-up sequence.</p>
+      </div>
+    </form>
+    {% endif %}
+  </div>
+
+  <aside class="space-y-4">
+    <div class="card card-pad glow-bottom">
+      <p class="eyebrow">Drain backing up right now?</p>
+      <h2 class="h3 mt-2">Call. Do not wait on email.</h2>
+      <p class="text-sm text-muted mt-2">Standing water, a line that keeps slowing down, several fixtures gurgling at once: that is a diagnostic visit, not a bottle. Quick Drain's crew books it directly.</p>
+      <div class="mt-5 flex flex-col gap-3">
+        <a href="tel:{{ settings.phone_tel }}" class="btn btn-primary">{{ icon('phone', 16) }} {{ settings.phone_display }}</a>
+        <a href="{{ settings.booking_url }}" class="btn btn-secondary" rel="noopener">Book a diagnostic visit {{ icon('arrow', 16) }}</a>
+      </div>
+    </div>
+    <div class="card card-pad">
+      <h2 class="h3">Faster than a message</h2>
+      <ul class="mt-3 space-y-3 text-sm text-muted">
+        <li class="flex gap-3">{{ icon('package', 16, 'text-accent mt-0.5 shrink-0') }}<span><a href="/orders/lookup" class="link">Find your order</a> shows status and tracking, and starts a return.</span></li>
+        <li class="flex gap-3">{{ icon('truck', 16, 'text-accent mt-0.5 shrink-0') }}<span><a href="/shipping-and-safety" class="link">Shipping &amp; safety</a> covers rates, the US-only rule and the safety data sheet.</span></li>
+        <li class="flex gap-3">{{ icon('file', 16, 'text-accent mt-0.5 shrink-0') }}<span><a href="/legal/refunds" class="link">Refunds &amp; returns</a> is the policy in full.</span></li>
+      </ul>
+    </div>
+  </aside>
+</section>
+{% endblock %}

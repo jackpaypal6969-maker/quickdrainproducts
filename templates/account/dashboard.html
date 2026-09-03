@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+{% set hide_newsletter = True %}
+{% set no_index = True %}
+{% block content %}
+{% set status_meta = {
+  'paid': ('Paid', 'badge-accent'),
+  'on_hold': ('On hold', 'badge-warning'),
+  'processing': ('Processing', 'badge-accent'),
+  'shipped': ('Shipped', 'badge-success'),
+  'delivered': ('Delivered', 'badge-success'),
+  'partially_refunded': ('Partly refunded', 'badge-warning'),
+  'refunded': ('Refunded', ''),
+  'canceled': ('Canceled', 'badge-danger')
+} %}
+<section class="container-x pt-8 pb-16">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <p class="eyebrow">Your account</p>
+      <h1 class="h2 mt-3">{% if profile.first_name %}Hello, {{ profile.first_name }}.{% else %}Your account.{% endif %}</h1>
+      <p class="text-sm text-muted mt-2">{{ profile.email }}</p>
+    </div>
+    <form action="/account/logout" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn btn-ghost btn-sm">Sign out</button>
+    </form>
+  </div>
+
+  <div class="mt-8 grid gap-8 lg:grid-cols-[13rem_1fr] lg:items-start">
+    <nav class="lg:sticky lg:top-24 flex lg:flex-col gap-1 overflow-x-auto -mx-1 px-1" aria-label="Account sections">
+      <a href="#orders" class="nav-link whitespace-nowrap">Orders</a>
+      <a href="#addresses" class="nav-link whitespace-nowrap">Addresses</a>
+      {% if subscriptions %}<a href="#subscriptions" class="nav-link whitespace-nowrap">Subscription</a>{% endif %}
+      <a href="#profile" class="nav-link whitespace-nowrap">Profile</a>
+      <a href="#password" class="nav-link whitespace-nowrap">Password</a>
+      <a href="#email" class="nav-link whitespace-nowrap">Email</a>
+    </nav>
+
+    <div class="min-w-0 space-y-12">
+
+      <section id="orders" aria-labelledby="orders-h" class="scroll-mt-24">
+        <h2 id="orders-h" class="h3">Orders</h2>
+        {% if orders %}
+        <div class="card mt-4 overflow-hidden">
+          <div class="table-wrap px-2">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th scope="col">Order</th>
+                  <th scope="col">Placed</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="num">Total</th>
+                  <th scope="col"><span class="sr-only">Reorder</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for o in orders %}
+                {% set meta = status_meta.get(o.status, (o.status|replace('_', ' ')|capitalize, '')) %}
+                <tr>
+                  <td><a href="/account/orders/{{ o.id }}" class="font-mono font-semibold text-ink hover:underline">{{ o.order_number }}</a></td>
+                  <td class="text-muted whitespace-nowrap">{{ o.created_at|est_date }}</td>
+                  <td><span class="badge {{ meta[1] }}">{{ meta[0] }}</span></td>
+                  <td class="num font-semibold">{{ o.total_cents|fmt_money }}</td>
+                  <td class="text-right whitespace-nowrap">
+                    <form action="/account/orders/{{ o.id }}/reorder" method="post" class="inline-block">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                      <button type="submit" class="btn btn-secondary btn-sm">{{ icon('refresh', 14) }} Reorder</button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p class="help">Reorder puts the same packs in your cart at today's price. Open an order for tracking, the line breakdown or a return.</p>
+        {% else %}
+        <div class="card card-pad mt-4 max-w-lg">
+          <p class="text-muted">No orders on this account yet. Orders placed as a guest under {{ profile.email }} will appear here automatically.</p>
+          <a href="/products/quick-shot" class="btn btn-primary mt-4">See Quick Shot</a>
+        </div>
+        {% endif %}
+      </section>
+
+      <section id="addresses" aria-labelledby="addresses-h" class="scroll-mt-24">
+        <div class="flex items-baseline justify-between gap-3">
+          <h2 id="addresses-h" class="h3">Addresses</h2>
+          <span class="text-xs text-faint">{{ addresses|length }} of 10</span>
+        </div>
+        <p class="text-sm text-muted mt-2 max-w-xl">Checkout asks for the ship-to address on Stripe's page every time. Addresses saved here stay on file with your account.</p>
+        {% if addresses %}
+        <ul class="mt-4 grid gap-3 sm:grid-cols-2">
+          {% for a in addresses %}
+          <li class="card card-pad text-sm">
+            <div class="flex items-center justify-between gap-3">
+              <p class="font-semibold">{{ a.label }}</p>
+              {% if a.is_default %}<span class="badge badge-accent">Default</span>{% endif %}
+            </div>
+            <address class="not-italic text-muted mt-2 leading-relaxed">
+              {% if a.name %}{{ a.name }}<br>{% endif %}
+              {{ a.line1 }}{% if a.line2 %}<br>{{ a.line2 }}{% endif %}<br>
+              {{ a.city }}, {{ a.state }} {{ a.postal_code }}
+              {% if a.phone %}<br>{{ a.phone }}{% endif %}
+            </address>
+            <div class="mt-4 flex flex-wrap gap-2">
+              {% if not a.is_default %}
+              <form action="/account/addresses/{{ a.id }}/default" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="btn btn-secondary btn-sm" aria-label="Make {{ a.label }} the default address">Make default</button>
+              </form>
+              {% endif %}
+              <form action="/account/addresses/{{ a.id }}/delete" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="btn btn-ghost btn-sm text-danger" aria-label="Delete {{ a.label }} address">Delete</button>
+              </form>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if addresses|length < 10 %}
+        <details class="card mt-4" {% if not addresses %}open{% endif %}>
+          <summary class="px-5 py-4 font-semibold flex items-center justify-between gap-3 list-none [&::-webkit-details-marker]:hidden">Add an address {{ icon('plus', 16, 'text-accent') }}</summary>
+          <form action="/account/addresses" method="post" class="px-5 pb-5 pt-4 border-t border-line-soft grid gap-4 sm:grid-cols-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="sm:col-span-2">
+              <label class="label" for="addr-name">Full name</label>
+              <input id="addr-name" class="input" type="text" name="name" autocomplete="shipping name" maxlength="100">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="label" for="addr-line1">Street address</label>
+              <input id="addr-line1" class="input" type="text" name="line1" required autocomplete="shipping address-line1" maxlength="120">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="label" for="addr-line2">Apartment, suite or unit <span class="text-faint font-normal">(optional)</span></label>
+              <input id="addr-line2" class="input" type="text" name="line2" autocomplete="shipping address-line2" maxlength="120">
+            </div>
+            <div>
+              <label class="label" for="addr-city">City</label>
+              <input id="addr-city" class="input" type="text" name="city" required autocomplete="shipping address-level2" maxlength="80">
+            </div>
+            <div class="grid grid-cols-[1fr_1.3fr] gap-3">
+              <div>
+                <label class="label" for="addr-state">State</label>
+                <select id="addr-state" class="input" name="state" required autocomplete="shipping address-level1">
+                  {% for s in states %}<option value="{{ s }}"{% if s == 'NY' %} selected{% endif %}>{{ s }}</option>{% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="label" for="addr-zip">ZIP</label>
+                <input id="addr-zip" class="input" type="text" name="postal_code" required inputmode="numeric" autocomplete="shipping postal-code" maxlength="12">
+              </div>
+            </div>
+            <div>
+              <label class="label" for="addr-phone">Phone <span class="text-faint font-normal">(optional)</span></label>
+              <input id="addr-phone" class="input" type="tel" name="phone" autocomplete="shipping tel" maxlength="30">
+            </div>
+            <div>
+              <label class="label" for="addr-label">Label</label>
+              <input id="addr-label" class="input" type="text" name="label" value="Home" maxlength="30">
+              <p class="help">Home, Shop, Rental: whatever tells them apart.</p>
+            </div>
+            <div class="sm:col-span-2">
+              <button type="submit" class="btn btn-primary">Save address</button>
+            </div>
+          </form>
+        </details>
+        {% else %}
+        <p class="help">That is the limit of 10 saved addresses. Delete one to add another.</p>
+        {% endif %}
+      </section>
+
+      {% if subscriptions %}
+      <section id="subscriptions" aria-labelledby="subs-h" class="scroll-mt-24">
+        <h2 id="subs-h" class="h3">Subscription</h2>
+        <ul class="mt-4 space-y-3">
+          {% for s in subscriptions %}
+          <li class="card card-pad flex flex-wrap items-center justify-between gap-3 text-sm">
+            <div>
+              <p class="font-semibold">Monthly delivery, every {{ s.interval_days }} days</p>
+              <p class="text-muted mt-1">Started {{ s.created_at|est_date }}{% if s.canceled_at %} · canceled {{ s.canceled_at|est_date }}{% endif %}</p>
+            </div>
+            <span class="badge {{ 'badge-success' if s.status == 'active' else ('badge-danger' if s.status == 'canceled' else 'badge-warning') }}">{{ s.status|replace('_', ' ')|capitalize }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        <p class="text-sm text-muted mt-3">To pause, skip a month or cancel, <a href="/contact" class="link">send us a note</a> or call {{ settings.phone_display }}. Changes take effect before the next renewal.</p>
+      </section>
+      {% endif %}
+
+      <section id="profile" aria-labelledby="profile-h" class="scroll-mt-24">
+        <h2 id="profile-h" class="h3">Profile</h2>
+        <form action="/account/profile" method="post" class="card card-pad mt-4 grid gap-4 sm:grid-cols-2">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div>
+            <label class="label" for="pf-first">First name</label>
+            <input id="pf-first" class="input" type="text" name="first_name" value="{{ profile.first_name }}" autocomplete="given-name" maxlength="80">
+          </div>
+          <div>
+            <label class="label" for="pf-last">Last name</label>
+            <input id="pf-last" class="input" type="text" name="last_name" value="{{ profile.last_name }}" autocomplete="family-name" maxlength="80">
+          </div>
+          <div>
+            <label class="label" for="pf-phone">Phone <span class="text-faint font-normal">(optional)</span></label>
+            <input id="pf-phone" class="input" type="tel" name="phone" value="{{ profile.phone }}" autocomplete="tel" maxlength="30">
+            <p class="help">Only used if a delivery needs a call.</p>
+          </div>
+          <div>
+            <label class="label" for="pf-email">Email</label>
+            <input id="pf-email" class="input" type="email" value="{{ profile.email }}" readonly aria-readonly="true">
+            <p class="help">Your orders are tied to this address. <a href="/contact" class="link">Contact us</a> to change it.</p>
+          </div>
+          <div class="sm:col-span-2">
+            <button type="submit" class="btn btn-primary">Save profile</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="password" aria-labelledby="password-h" class="scroll-mt-24">
+        <h2 id="password-h" class="h3">Password</h2>
+        <form action="/account/password" method="post" class="card card-pad mt-4 grid gap-4 sm:grid-cols-2">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div>
+            <label class="label" for="pw-current">Current password</label>
+            <input id="pw-current" class="input" type="password" name="current_password" required autocomplete="current-password">
+          </div>
+          <div>
+            <label class="label" for="pw-new">New password</label>
+            <input id="pw-new" class="input" type="password" name="password" required minlength="10" maxlength="200" autocomplete="new-password">
+            <p class="help">At least 10 characters.</p>
+          </div>
+          <div class="sm:col-span-2">
+            <button type="submit" class="btn btn-secondary">Change password</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="email" aria-labelledby="email-h" class="scroll-mt-24">
+        <h2 id="email-h" class="h3">Email preference</h2>
+        <form action="/account/marketing" method="post" class="card card-pad mt-4 space-y-4">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label class="flex items-start gap-3 text-sm">
+            <input type="checkbox" name="opt_in" value="1" class="checkbox mt-0.5"{% if profile.marketing_opt_in %} checked{% endif %}>
+            <span><span class="font-semibold block">Send me occasional drain maintenance notes and offers</span><span class="text-muted">Receipts, shipping updates and password resets are part of the order and are sent regardless.</span></span>
+          </label>
+          <button type="submit" class="btn btn-secondary">Save preference</button>
+        </form>
+      </section>
+
+    </div>
+  </div>
+</section>
+{% endblock %}

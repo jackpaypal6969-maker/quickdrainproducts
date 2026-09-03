@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+{% block content %}
+<section class="container-x pt-8 pb-12">
+  <div class="max-w-2xl" data-reveal>
+    <p class="eyebrow">From the service side</p>
+    <h1 class="h2 mt-3">Drain maintenance notes.</h1>
+    <p class="lede mt-4">What a monthly enzyme dose does, what it cannot do, and when the honest answer is a camera in the line. Written by the people who run the jetter.</p>
+  </div>
+
+  {% if posts %}
+  <ul class="mt-10 grid gap-5 md:grid-cols-2" data-reveal data-reveal-stagger>
+    {% for p in posts %}
+    <li class="card overflow-hidden flex flex-col" data-reveal>
+      {% if p.cover_base %}
+      <img src="/static/img/products/{{ p.cover_base }}-768.jpg" width="768" height="480" alt="" loading="lazy" class="w-full aspect-[16/10] object-cover border-b border-line-soft">
+      {% endif %}
+      <div class="card-pad flex-1 flex flex-col">
+        <p class="text-xs text-faint">{% if p.published_at %}<time datetime="{{ p.published_at }}">{{ p.published_at|est_date }}</time>{% endif %}{% if p.author %} · {{ p.author }}{% endif %}</p>
+        <h2 class="font-display font-bold text-xl leading-tight mt-2"><a href="/blog/{{ p.slug }}" class="hover:underline">{{ p.title }}</a></h2>
+        {% if p.excerpt %}<p class="text-sm text-muted mt-3">{{ p.excerpt }}</p>{% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="card card-pad mt-10 max-w-lg">
+    <p class="text-muted">Nothing published yet. The service pages on <a href="{{ settings.parent_site_url }}" class="link" rel="noopener">quickdrainny.com</a> cover the same ground in the meantime.</p>
+  </div>
+  {% endif %}
+</section>
+
+<section class="section-tight border-t border-line-soft">
+  <div class="container-x grid gap-5 md:grid-cols-2">
+    <div class="card card-pad">
+      <p class="eyebrow">Deeper reading</p>
+      <h2 class="h3 mt-2">The service pages go further.</h2>
+      <p class="text-sm text-muted mt-2">Camera inspection, hydro jetting, and sewer and septic inspections for home buyers: the full explanations live on the parent site.</p>
+      <a href="{{ settings.parent_site_url }}" class="btn btn-secondary btn-sm mt-4" rel="noopener">quickdrainny.com {{ icon('external', 14) }}</a>
+    </div>
+    <div class="card card-pad">
+      <p class="eyebrow">The product these notes are about</p>
+      <h2 class="h3 mt-2">Quick Shot.</h2>
+      <p class="text-sm text-muted mt-2">A natural drain enzyme, dosed for monthly use on any drain. 4 fl oz per bottle. One bottle, one drain, one month.</p>
+      <a href="/products/quick-shot" class="btn btn-secondary btn-sm mt-4">See Quick Shot {{ icon('arrow', 14) }}</a>
+    </div>
+  </div>
+</section>
+
+{% include "components/booking_cta.html" %}
+{% endblock %}

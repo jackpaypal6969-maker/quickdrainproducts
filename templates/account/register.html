@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% set hide_newsletter = True %}
+{% set no_index = True %}
+{% block content %}
+<section class="container-x pt-8 pb-16">
+  <div class="max-w-md mx-auto">
+    <p class="eyebrow">Account</p>
+    <h1 class="h2 mt-3">Create an account.</h1>
+    <p class="text-muted mt-3">Order history, one-click reorders and a note before a dose runs out. Nothing else.</p>
+
+    <form action="/account/register" method="post" class="card card-pad mt-8 space-y-5">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div>
+        <label class="label" for="email">Email</label>
+        <input id="email" class="input" type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" maxlength="254">
+        <p class="help">Receipts and shipping updates go here.</p>
+      </div>
+      <div>
+        <label class="label" for="password">Password</label>
+        <input id="password" class="input" type="password" name="password" required minlength="10" maxlength="200" autocomplete="new-password">
+        <p class="help">At least 10 characters.</p>
+      </div>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="label" for="first_name">First name</label>
+          <input id="first_name" class="input" type="text" name="first_name" autocomplete="given-name" maxlength="80">
+        </div>
+        <div>
+          <label class="label" for="last_name">Last name</label>
+          <input id="last_name" class="input" type="text" name="last_name" autocomplete="family-name" maxlength="80">
+        </div>
+      </div>
+      <label class="flex items-start gap-3 text-sm">
+        <input type="checkbox" name="marketing" value="1" class="checkbox mt-0.5">
+        <span><span class="font-semibold block">Occasional email about drain maintenance</span><span class="text-muted">A few notes a year and the odd offer. Every message has an unsubscribe link.</span></span>
+      </label>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Create account</button>
+      <p class="text-xs text-faint">By creating an account you accept the <a href="/legal/terms" class="link">terms of sale</a> and <a href="/legal/privacy" class="link">privacy policy</a>.</p>
+    </form>
+
+    <div class="mt-6 text-sm text-muted space-y-2">
+      <p>Already have an account? <a href="/account/login" class="link">Sign in</a>.</p>
+      <p>Ordered before as a guest? Those orders are already on file under that email. <a href="/account/reset" class="link">Set a password</a> to claim them; there is no separate sign-up.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}
