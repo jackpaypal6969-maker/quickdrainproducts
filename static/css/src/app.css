@@ -5,6 +5,7 @@
 @import "../tokens.css";
 @source "../../../templates";
 @source "../../js";
+@import "./box.css";
 
 @theme inline {
   --color-bg: var(--color-bg);
