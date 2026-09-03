@@ -139,11 +139,6 @@
     if (els.hint) { els.hint.textContent = hint || (subscribing ? 'The same box ships every ' + EVERY + ' at the same count. Cancel any time from your account.' : 'One delivery. Switch to the subscription later if you like.'); els.hint.classList.toggle('text-warning', bottles > MAX_TOTAL); }
     if (els.summary) els.summary.classList.toggle('is-ready', !hint);
 
-    $$('[data-preset]').forEach((b) => {
-      let p = null; try { p = JSON.parse(b.getAttribute('data-preset') || 'null'); } catch (e) { p = null; }
-      const match = !!p && keys.every((k) => (+p[k] || 0) === counts[k]);
-      b.setAttribute('aria-pressed', String(match));
-    });
     save();
   }
 
@@ -158,20 +153,6 @@
   root.addEventListener('click', (e) => {
     const step = e.target.closest('[data-step]');
     if (step) { const k = step.getAttribute('data-for'); set(k, counts[k] + parseInt(step.getAttribute('data-step'), 10)); return; }
-    const preset = e.target.closest('[data-preset]');
-    if (preset) {
-      let p = null; try { p = JSON.parse(preset.getAttribute('data-preset') || 'null'); } catch (x) { p = null; }
-      if (!p) return;
-      const prev = Object.assign({}, counts);
-      keys.forEach((k) => { counts[k] = clamp(p[k]); });
-      keys.forEach((k, i) => {
-        // rows fill one after another so the preset reads as a sequence, not a flash
-        const delay = reduced ? 0 : Math.min(i * 60, 300);
-        if (delay) setTimeout(() => paintRow(k, counts[k], prev[k]), delay); else paintRow(k, counts[k], prev[k]);
-      });
-      render(null, null);
-      return;
-    }
     if (e.target.closest('[data-box-clear]')) {
       const prev = Object.assign({}, counts);
       keys.forEach((k) => { counts[k] = 0; });

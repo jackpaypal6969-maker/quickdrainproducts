@@ -19,9 +19,6 @@
     .box-stepper { grid-column: 2; justify-self: start; }
   }
 
-  /* ---- presets ---- */
-  .box-preset[aria-pressed="true"] { border-color: var(--color-accent); background: var(--color-accent-soft); color: var(--color-text); }
-
   /* ---- bottle rack: fixture · (label) · one bottle per drain ---- */
   .box-cal { display: grid; gap: .5rem; }
   .box-cal-row { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); align-items: center; gap: .625rem; }

@@ -61,26 +61,13 @@
 <section class="container-x pb-16 grid gap-8 lg:grid-cols-[1.35fr_1fr] lg:gap-12 lg:items-start" data-box>
   <div class="min-w-0 space-y-8">
 
-    <div class="card card-pad" data-reveal>
-      <div class="flex flex-wrap items-end justify-between gap-3">
+    <div class="card" data-reveal>
+      <div class="card-pad pb-0 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p class="eyebrow">Start from a preset</p>
-          <h2 class="h3 mt-2">Roughly your house?</h2>
+          <p class="eyebrow">Your fixtures</p>
+          <h2 class="h3 mt-2">Every drain gets one bottle a month.</h2>
         </div>
         <button type="button" class="btn btn-ghost btn-sm" data-box-clear>Clear all</button>
-      </div>
-      <div class="mt-4 flex flex-wrap gap-2" role="group" aria-label="Presets">
-        <button type="button" class="btn btn-secondary box-preset" data-preset='{"kitchen":1,"bath":1,"toilet":1,"shower":1,"tub":0,"floor":0}' aria-pressed="false">Apartment <span class="text-faint font-medium">· 4 drains</span></button>
-        <button type="button" class="btn btn-secondary box-preset" data-preset='{"kitchen":1,"bath":2,"toilet":2,"shower":1,"tub":1,"floor":1}' aria-pressed="false">2-bath home <span class="text-faint font-medium">· 8 drains</span></button>
-        <button type="button" class="btn btn-secondary box-preset" data-preset='{"kitchen":1,"bath":3,"toilet":3,"shower":2,"tub":1,"floor":1}' aria-pressed="false">3-bath home <span class="text-faint font-medium">· 11 drains</span></button>
-      </div>
-      <p class="help">Presets fill the counts below. Adjust anything that is different in your home.</p>
-    </div>
-
-    <div class="card" data-reveal>
-      <div class="card-pad pb-0">
-        <p class="eyebrow">Your fixtures</p>
-        <h2 class="h3 mt-2">Every drain gets one bottle a month.</h2>
       </div>
       <ul class="box-rows mt-4" aria-label="Fixture counts">
         {% for key, label, hint in fixtures %}

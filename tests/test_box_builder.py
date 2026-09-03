@@ -43,7 +43,9 @@ def test_page_renders_with_monthly_config(client, conn):
     assert html.count('data-fixture="') == 6
     assert html.count('data-step="1"') == 6 and html.count('data-step="-1"') == 6
     assert html.count('class="box-cell"') == 6 * 20
-    assert 'data-preset=' in html and "3-bath home" in html
+    # no presets: the customer counts their own house
+    assert 'data-preset=' not in html and "preset" not in html.lower()
+    assert 'data-box-clear' in html
 
 
 def test_builder_sku_is_hidden_from_the_product_page(client, conn):
