@@ -303,9 +303,10 @@ def record_admin_failure(conn: sqlite3.Connection, admin_id: int) -> None:
     attempts = (row["failed_attempts"] if row else 0) + 1
     locked_until = None
     if attempts >= LOCKOUT_THRESHOLD:
-        # escalate: 15 min, then 30, 60 ... capped at 24h
-        factor = min(2 ** (attempts - LOCKOUT_THRESHOLD), 96)
-        locked_until = iso(utcnow() + timedelta(minutes=LOCKOUT_MINUTES * factor))
+        # Flat 15-minute account lock. Escalation lives per source IP (the shared
+        # rate limiter + fail2ban), so a stranger cannot lock the real admin out
+        # for a day by guessing wrong on purpose.
+        locked_until = iso(utcnow() + timedelta(minutes=LOCKOUT_MINUTES))
     conn.execute("UPDATE admin_users SET failed_attempts = ?, locked_until = ? WHERE id = ?", (attempts, locked_until, admin_id))
 
 

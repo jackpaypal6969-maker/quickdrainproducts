@@ -110,10 +110,10 @@ def create_app() -> FastAPI:
     problems = settings.validate()
     for p in problems:
         log.error("CONFIG: %s", p)
-    if any("SECRET_KEY" in p for p in problems):
-        raise RuntimeError("SECRET_KEY is missing or too short; refusing to start with unsigned sessions")
-    if any("live key" in p for p in problems):
-        raise RuntimeError("Live Stripe key present but live mode is not enabled for this build")
+    if problems:
+        # Every validate() entry is fatal: unsigned sessions, a live key without the
+        # explicit override, or an https BASE_URL with a non-Secure cookie.
+        raise RuntimeError("Refusing to start: " + "; ".join(problems))
 
     prod = settings.is_production
     app = FastAPI(
