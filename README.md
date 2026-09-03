@@ -270,6 +270,16 @@ it was copied.
 - **Interactive calculators** (dose/coverage beyond the static ledger table).
 - **Cloudflare** in front of the origin (the VPS IP is currently exposed).
 
+## One-line install from a phone
+
+On a fresh Ubuntu VPS, as root:
+
+```
+curl -fsSL https://raw.githubusercontent.com/jackpaypal6969-maker/quickdrainproducts/main/deploy/bootstrap.sh | bash -s -- <vps-ip> 8086
+```
+
+It clones into `/opt/quick-drain`, writes a first `.env` (paths, `SECRET_KEY`, `BASE_URL=http://<vps-ip>:8086`, `EMAIL_DRY_RUN=on`), and runs `deploy.sh`. Re-running it pulls the latest code and keeps the existing `.env`. Once a domain and TLS exist, pass the URL instead of the IP: `bash -s -- https://shop.your-domain 443` and set `COOKIE_SECURE=on` in `.env`.
+
 ## Subscribe-and-save
 
 Customers can choose **one-time** or **subscribe** on the product page and pick a delivery interval. The admin controls it under **Settings**:
