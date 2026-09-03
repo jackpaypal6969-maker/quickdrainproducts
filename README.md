@@ -151,7 +151,7 @@ Renewal is automatic (`systemctl list-timers | grep certbot`).
 ## Stripe
 
 1. Dashboard → Developers → Webhooks → **Add endpoint**: `https://<domain>/webhooks/stripe`.
-2. Events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`, `customer.subscription.updated`, `customer.subscription.deleted`.
+2. Events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`, `customer.subscription.updated`, `customer.subscription.deleted`, `customer.subscription.created`, `invoice.paid`, `invoice.payment_failed`.
 3. Paste the endpoint's signing secret (`whsec_…`) into `STRIPE_WEBHOOK_SECRET`, restart. Until it is set the endpoint answers 503 and paid orders are not recorded.
 4. Stripe Tax: Dashboard → Tax → Registrations → add **New York**; keep `STRIPE_TAX_ENABLED=on` (Checkout sessions are created with `automatic_tax`).
 5. Local testing: `stripe listen --forward-to http://127.0.0.1:8006/webhooks/stripe` prints a temporary `whsec_` for your local `.env`; `stripe trigger checkout.session.completed` exercises the handler.
@@ -269,3 +269,24 @@ it was copied.
 - **Affiliate program**: only the nullable `referral_code` column on carts and orders exists; nothing reads it yet.
 - **Interactive calculators** (dose/coverage beyond the static ledger table).
 - **Cloudflare** in front of the origin (the VPS IP is currently exposed).
+
+## Subscribe-and-save
+
+Customers can choose **one-time** or **subscribe** on the product page and pick a delivery interval. The admin controls it under **Settings**:
+
+| Setting | Meaning | Default |
+|---|---|---|
+| `subscription_discount_percent` | Discount off the one-time price for subscribers (site-wide) | 10 |
+| `subscription_intervals` | Intervals offered, in months, comma separated | `1,2,3` |
+| Variant → *Subscription discount %* | Per-pack override of the site-wide percent (blank = use site-wide) | blank |
+| `SUBSCRIPTIONS_ENABLED` (.env) | Master switch; `off` hides the option entirely | `on` |
+
+How it works:
+
+- Checkout runs in Stripe **subscription mode** with recurring `price_data` at the subscriber price and the delivery interval as `interval_count`. Shipping below the free threshold is a recurring line so it is charged every cycle. Stripe Tax applies per invoice.
+- The first order is created by `checkout.session.completed` exactly like a one-time purchase, and a row is written to `subscriptions` (lines, interval, shipping, Stripe ids).
+- Every later cycle Stripe sends `invoice.paid` with `billing_reason=subscription_cycle`; the webhook creates a **fulfilment order** for the recorded lines (atomic stock decrement, on-hold if short), emails the confirmation, and records the next renewal date. It is idempotent on the event id and on the invoice id.
+- `invoice.payment_failed` marks the subscription *past_due*; Stripe's Smart Retries handle dunning. `customer.subscription.updated/deleted` keep status, `cancel_at_period_end` and the renewal date in sync.
+- From **Your account** a customer can cancel (takes effect at period end, no further charges), resume before the period ends, or open Stripe's **billing portal** to update the card or address. Enable the portal once in the Stripe dashboard (Settings → Billing → Customer portal) so the button works.
+- Renewal orders show in the admin like any other order, tagged `utm_source=subscription`, and count in the reports.
+- A cart holds one subscription interval at a time; one-time items can ride along in the same checkout.

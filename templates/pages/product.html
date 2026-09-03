@@ -42,24 +42,13 @@
       <span class="font-display font-extrabold text-4xl tabular-nums leading-none" data-price>{{ product.from_price_cents|fmt_money }}</span>
       <span class="text-faint line-through tabular-nums" data-compare hidden></span>
       <span class="text-sm text-muted" data-per-unit>per bottle</span>
-      <span class="badge badge-success ml-auto" data-stock>In stock</span>
+      <span class="badge badge-success ml-auto whitespace-nowrap" data-stock>In stock</span>
     </div>
 
     <form action="/cart/add" method="post" class="mt-6 space-y-5" data-add-form>
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="variant_id" value="{{ product.variants[0].id if product.variants else '' }}" data-selected-variant>
       {{ variant_selector(product) }}
-      <div class="flex items-end gap-3">
-        <div>
-          <label class="label" for="qty">Quantity</label>
-          <div class="inline-flex items-center rounded-pill border border-line">
-            <button type="button" class="icon-btn" data-qty-step="-1" aria-label="Decrease quantity">{{ icon('minus', 16) }}</button>
-            <input id="qty" class="w-12 h-11 text-center bg-transparent font-bold tabular-nums border-0 focus:outline-none" type="number" name="qty" value="1" min="1" max="24" inputmode="numeric" data-qty-input>
-            <button type="button" class="icon-btn" data-qty-step="1" aria-label="Increase quantity">{{ icon('plus', 16) }}</button>
-          </div>
-        </div>
-        <button type="submit" class="btn btn-primary btn-lg flex-1" data-add-button data-add-button-main>Add to cart</button>
-      </div>
       {% if product.subscriptions.enabled and product.variants %}
       {# Source: shadcn/ui "radio-group" tiles (MIT); interval + price logic in app.js #}
       <fieldset data-delivery-selector>
@@ -90,6 +79,17 @@
         </div>
       </fieldset>
       {% endif %}
+      <div class="flex items-end gap-3">
+        <div>
+          <label class="label" for="qty">Quantity</label>
+          <div class="inline-flex items-center rounded-pill border border-line">
+            <button type="button" class="icon-btn" data-qty-step="-1" aria-label="Decrease quantity">{{ icon('minus', 16) }}</button>
+            <input id="qty" class="w-12 h-11 text-center bg-transparent font-bold tabular-nums border-0 focus:outline-none" type="number" name="qty" value="1" min="1" max="24" inputmode="numeric" data-qty-input>
+            <button type="button" class="icon-btn" data-qty-step="1" aria-label="Increase quantity">{{ icon('plus', 16) }}</button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg flex-1" data-add-button data-add-button-main>Add to cart</button>
+      </div>
     </form>
 
     <form action="/notify-me" method="post" class="mt-4 panel p-4" data-notify-form data-ajax-form hidden>
