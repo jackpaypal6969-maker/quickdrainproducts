@@ -99,7 +99,7 @@ def plural(n, singular: str, plural_form: str | None = None) -> str:
 
 def render_jsonld(data) -> Markup:
     """JSON-LD for a <script> tag. `<`, `>` and `&` become unicode escapes so
-    review text can never close the script element (stored-XSS on PPS)."""
+    review text can never close the script element (a stored-XSS class of bug)."""
     raw = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     raw = raw.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
     raw = raw.replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")

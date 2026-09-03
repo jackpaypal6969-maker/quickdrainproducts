@@ -50,7 +50,7 @@ def register(request: Request, email: str = Form(""), password: str = Form(""), 
         return redirect("/account/register")
     existing = one(conn, "SELECT id, password_hash FROM customers WHERE email_norm = ?", (norm,))
     if existing:
-        # Registration must never write to an existing account (live ATO bug on PPS).
+        # Registration must never write to an existing account (a live account-takeover class of bug).
         # One message for both registered and guest rows, so the form does not say
         # which kind of history an address has.
         flash(request, "That email is already with us. Sign in, or use 'Reset password' to set a password — it works for past guest orders too.", "error")
