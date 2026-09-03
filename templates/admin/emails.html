@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, badge, empty, stat %}
+{% block content %}
+{{ head('Site', 'Email log', 'Every message the store tried to send, with the provider outcome once the webhook reports back.') }}
+
+{% set tally = counts if counts is mapping else {} %}
+<div class="mt-6 grid gap-3 sm:grid-cols-3">
+  {{ stat('Bounce rate', bounce_rate ~ '%', 'Bounced + complained over delivered') }}
+  {{ stat('Sent', (tally.get('sent', 0) + tally.get('delivered', 0)), 'Includes delivered') }}
+  {{ stat('Failed', (tally.get('failed', 0) + tally.get('bounced', 0) + tally.get('complained', 0)), 'Failed, bounced, complained') }}
+</div>
+
+<div class="mt-6 flex flex-wrap gap-2" role="navigation" aria-label="Filter by status">
+  <a href="/admin/emails" class="nav-link inline-flex items-center min-h-11 !py-2.5 border border-line-soft" {% if not status %}aria-current="page"{% endif %}>All</a>
+  {% for s in ['queued', 'sent', 'delivered', 'bounced', 'complained', 'failed', 'suppressed', 'dry_run'] %}
+  {% if tally.get(s) %}<a href="/admin/emails?status={{ s }}" class="nav-link inline-flex items-center min-h-11 !py-2.5 border border-line-soft" {% if status == s %}aria-current="page"{% endif %}>{{ s|replace('_', ' ')|capitalize }} <span class="text-faint">{{ tally.get(s) }}</span></a>{% endif %}
+  {% endfor %}
+</div>
+
+<div class="card mt-4">
+  {% if rows %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">When</th><th scope="col">To</th><th scope="col">Template</th><th scope="col">Subject</th><th scope="col">Status</th><th scope="col">Related</th></tr></thead>
+      <tbody>
+        {% for m in rows %}
+        <tr>
+          <td class="text-muted whitespace-nowrap">{{ m.created_at|est_datetime }}</td>
+          <td class="break-all">{{ m.to_email }}</td>
+          <td><span class="font-mono text-xs">{{ m.template }}</span><p class="text-xs text-faint">{{ m.category }}</p></td>
+          <td class="min-w-[14rem]">{{ m.subject }}{% if m.error %}<p class="text-xs text-danger mt-1 break-words">{{ m.error }}</p>{% endif %}{% if m.provider_id %}<p class="text-xs text-faint font-mono break-all mt-1">{{ m.provider_id }}</p>{% endif %}</td>
+          <td>{{ badge(m.status) }}</td>
+          <td class="text-muted whitespace-nowrap">{% if m.related_type == 'order' and m.related_id %}<a href="/admin/orders/{{ m.related_id }}" class="link">order #{{ m.related_id }}</a>{% elif m.related_type %}{{ m.related_type }}{% if m.related_id %} #{{ m.related_id }}{% endif %}{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}{{ empty('No email logged' ~ (' with that status' if status else '') ~ '.') }}{% endif %}
+</div>
+{% if page > 1 or rows|length >= 100 %}
+<nav class="mt-4 flex items-center justify-between gap-3 text-sm text-muted" aria-label="Pagination">
+  <span>Page {{ page }}</span>
+  <div class="flex gap-2">
+    {% if page > 1 %}<a class="btn btn-secondary btn-sm" href="/admin/emails?status={{ status|urlencode }}&page={{ page - 1 }}">Previous</a>{% endif %}
+    {% if rows|length >= 100 %}<a class="btn btn-secondary btn-sm" href="/admin/emails?status={{ status|urlencode }}&page={{ page + 1 }}">Next</a>{% endif %}
+  </div>
+</nav>
+{% endif %}
+{% endblock %}

@@ -36,28 +36,29 @@
   /* ------------------------------------------------------------ focus trap */
   const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
   let openLayer = null;
-  function openLayerEl(el, opener) {
+  function openLayerEl(el, opener, restoreTo) {
     if (openLayer) closeLayer();
     const overlay = $('[data-overlay-for="' + el.id + '"]');
     el.hidden = false; if (overlay) overlay.hidden = false;
     // next frame so the transition runs from the hidden state
     requestAnimationFrame(() => { el.setAttribute('data-open', 'true'); if (overlay) overlay.setAttribute('data-open', 'true'); });
     document.body.style.overflow = 'hidden';
-    openLayer = { el, opener: opener || document.activeElement, overlay };
-    if (opener) opener.setAttribute('aria-expanded', 'true');
+    const active = document.activeElement && document.activeElement !== document.body ? document.activeElement : null;
+    openLayer = { el, opener: opener || null, restoreTo: restoreTo || opener || active, overlay };
+    if (opener && opener.hasAttribute('aria-expanded')) opener.setAttribute('aria-expanded', 'true');
     const first = $$(FOCUSABLE, el).find(n => n.offsetParent !== null);
     setTimeout(() => (first || el).focus({ preventScroll: true }), 30);
     if (overlay) overlay.addEventListener('click', closeLayer, { once: true });
   }
   function closeLayer() {
     if (!openLayer) return;
-    const { el, opener, overlay } = openLayer;
+    const { el, opener, restoreTo, overlay } = openLayer;
     el.removeAttribute('data-open'); if (overlay) overlay.removeAttribute('data-open');
     document.body.style.overflow = '';
     const done = () => { el.hidden = true; if (overlay) overlay.hidden = true; };
     if (reduced) done(); else setTimeout(done, 260);
-    if (opener && opener.setAttribute) opener.setAttribute('aria-expanded', 'false');
-    if (opener && opener.focus) opener.focus({ preventScroll: true });
+    if (opener && opener.hasAttribute('aria-expanded')) opener.setAttribute('aria-expanded', 'false');
+    if (restoreTo && restoreTo.focus && document.contains(restoreTo)) restoreTo.focus({ preventScroll: true });
     openLayer = null;
   }
   document.addEventListener('keydown', (e) => {
@@ -72,8 +73,10 @@
     }
   });
   document.addEventListener('click', (e) => {
+    const back = e.target.closest('[data-history-back]');
+    if (back) { e.preventDefault(); if (history.length > 1) history.back(); else location.href = '/'; return; }
     const closer = e.target.closest('[data-close-sheet],[data-close-dialog]');
-    if (closer) { e.preventDefault(); closeLayer(); return; }
+    if (closer) { if (!(closer.tagName === 'A' && closer.getAttribute('href'))) e.preventDefault(); closeLayer(); return; }
     const openCart = e.target.closest('[data-open-cart]');
     if (openCart) { e.preventDefault(); openLayerEl($('#cart-drawer'), openCart); return; }
     const openNav = e.target.closest('[data-open-nav]');
@@ -105,13 +108,14 @@
 
   /* ------------------------------------------------------------ accordion */
   $$('[data-accordion]').forEach(acc => {
+    $$('[data-acc-panel]', acc).forEach(p => { if (p.getAttribute('data-open') !== 'true' && p.firstElementChild) p.firstElementChild.inert = true; });
     acc.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-acc-trigger]');
       if (!btn) return;
       const panel = document.getElementById(btn.getAttribute('aria-controls'));
       const open = btn.getAttribute('aria-expanded') === 'true';
       btn.setAttribute('aria-expanded', String(!open));
-      if (panel) panel.setAttribute('data-open', String(!open));
+      if (panel) { panel.setAttribute('data-open', String(!open)); const inner = panel.firstElementChild; if (inner) inner.inert = open; }
     });
   });
 
@@ -148,7 +152,7 @@
         setCount(json.count || 0); setDrawer(json.html);
         if (btn) { const label = btn.textContent; btn.classList.add('is-done'); btn.textContent = 'Added'; setTimeout(() => { btn.classList.remove('is-done'); btn.textContent = label; }, 1400); }
         track('add_to_cart', { variant_id: data.variant_id, qty: data.qty });
-        openLayerEl($('#cart-drawer'), $('[data-open-cart]'));
+        openLayerEl($('#cart-drawer'), $('[data-open-cart]'), btn);
       } else {
         toast((json && json.message) || 'Could not add that to the cart.', 'error');
       }
@@ -158,18 +162,26 @@
     }
   });
 
+  let cartSeq = 0;
   document.addEventListener('click', async (e) => {
     const qbtn = e.target.closest('[data-cart-qty]');
     if (!qbtn) return;
     e.preventDefault();
     const line = qbtn.closest('[data-line-id]');
+    if (!line || line.dataset.busy === '1') return;
+    line.dataset.busy = '1';
+    $$('[data-cart-qty]', line).forEach(b => { b.disabled = true; });
+    const seq = ++cartSeq;
     const current = parseInt(line.querySelector('span[aria-live]').textContent, 10) || 0;
     const next = current + parseInt(qbtn.getAttribute('data-delta'), 10);
     skeleton(true);
-    const { ok, json } = await postForm(next <= 0 ? '/cart/remove' : '/cart/update', { item_id: qbtn.getAttribute('data-cart-qty'), qty: next });
+    let result;
+    try { result = await postForm(next <= 0 ? '/cart/remove' : '/cart/update', { item_id: qbtn.getAttribute('data-cart-qty'), qty: next }); }
+    catch (err) { result = { ok: false, json: {} }; }
+    if (seq !== cartSeq) return; // a newer request already replaced the drawer
     skeleton(false);
-    if (ok) { setCount(json.count || 0); setDrawer(json.html); }
-    else toast('Could not update the cart.', 'error');
+    if (result.ok) { setCount(result.json.count || 0); setDrawer(result.json.html); }
+    else { line.dataset.busy = ''; $$('[data-cart-qty]', line).forEach(b => { b.disabled = false; }); toast('Could not update the cart.', 'error'); }
   });
 
   /* ------------------------------------------------------- variant selector */
@@ -277,7 +289,10 @@
     if (!seen && !/[?&]nl=0/.test(location.search)) {
       let fired = false;
       const fire = () => {
-        if (fired || openLayer) return; fired = true;
+        if (fired || openLayer) return;
+        const a = document.activeElement;
+        if (a && a.closest && a.closest('form')) { setTimeout(fire, 15000); return; } // someone is typing: try later
+        fired = true;
         try { localStorage.setItem('qd_nl_seen', String(Date.now())); } catch (e) { /* noop */ }
         openLayerEl(nl, null);
       };

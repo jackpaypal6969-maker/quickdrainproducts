@@ -16,7 +16,7 @@
       <ul class="divide-y divide-line-soft">
         {% for it in totals['items'] %}
         <li class="p-5 flex gap-4">
-          <div class="w-20 h-20 rounded-md bg-bg-deep border border-line-soft shrink-0 overflow-hidden">{% if it.image_base %}<img src="/static/img/products/{{ it.image_base }}-480.jpg" width="80" height="80" alt="" class="w-full h-full object-cover" loading="lazy">{% endif %}</div>
+          <div class="w-20 h-20 rounded-md bg-bg-deep border border-line-soft shrink-0 overflow-hidden">{% if it.thumb_url %}<img src="{{ it.thumb_url }}" width="80" height="80" alt="" class="w-full h-full object-cover" loading="lazy">{% endif %}</div>
           <div class="flex-1 min-w-0">
             <div class="flex justify-between gap-3">
               <div><a href="/products/{{ it.product_slug }}" class="font-semibold hover:underline">{{ it.product_name }}</a><p class="text-sm text-muted">{{ it.variant_name }} · {{ it.units_per_pack }} × 4 fl oz</p>{% if it.interval_months %}<p class="text-xs text-accent mt-1">Subscription · every {{ it.interval_months }} {{ 'month' if it.interval_months == 1 else 'months' }} · {{ it.sub_percent }}% off · cancel any time</p>{% endif %}</div>

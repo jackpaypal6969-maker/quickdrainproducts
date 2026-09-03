@@ -2,7 +2,6 @@
 -- Money is integer cents everywhere. Timestamps are ISO-8601 UTC text.
 -- The orders table is named `orders` (plural) so no query ever quotes a reserved word.
 
-PRAGMA journal_mode = WAL;
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -91,7 +90,7 @@ CREATE INDEX IF NOT EXISTS idx_variants_product ON variants(product_id);
 
 CREATE TABLE IF NOT EXISTS inventory_movements (
   id INTEGER PRIMARY KEY,
-  variant_id INTEGER NOT NULL REFERENCES variants(id) ON DELETE CASCADE,
+  variant_id INTEGER NOT NULL REFERENCES variants(id) ON DELETE RESTRICT,
   delta INTEGER NOT NULL,
   reason TEXT NOT NULL,                -- order|restock|adjust|refund|rma
   order_id INTEGER,
@@ -178,6 +177,7 @@ CREATE TABLE IF NOT EXISTS carts (
   updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
 );
 CREATE INDEX IF NOT EXISTS idx_carts_customer ON carts(customer_id);
+CREATE INDEX IF NOT EXISTS idx_carts_session ON carts(stripe_checkout_session_id);
 CREATE INDEX IF NOT EXISTS idx_carts_abandoned ON carts(checkout_started_at, abandoned_email_sent_at, converted_order_id);
 
 CREATE TABLE IF NOT EXISTS cart_items (
@@ -266,6 +266,8 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
 CREATE INDEX IF NOT EXISTS idx_orders_email ON orders(email);
 CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_payment_intent ON orders(stripe_payment_intent_id);
+CREATE INDEX IF NOT EXISTS idx_orders_subscription ON orders(stripe_subscription_id);
 
 CREATE TABLE IF NOT EXISTS order_items (
   id INTEGER PRIMARY KEY,
@@ -330,7 +332,7 @@ CREATE TABLE IF NOT EXISTS rma_requests (
 -- ---------------------------------------------------------------- reviews
 CREATE TABLE IF NOT EXISTS reviews (
   id INTEGER PRIMARY KEY,
-  product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
   customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL,
   order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL,
   author_name TEXT NOT NULL,
@@ -392,6 +394,9 @@ CREATE TABLE IF NOT EXISTS email_log (
 );
 CREATE INDEX IF NOT EXISTS idx_email_log_provider ON email_log(provider_id);
 CREATE INDEX IF NOT EXISTS idx_email_log_to ON email_log(to_email);
+CREATE INDEX IF NOT EXISTS idx_email_log_related ON email_log(related_type, related_id);
+CREATE INDEX IF NOT EXISTS idx_discount_locked ON discount_codes(restricted_to_email, channel);
+CREATE INDEX IF NOT EXISTS idx_inventory_variant ON inventory_movements(variant_id);
 
 CREATE TABLE IF NOT EXISTS contact_messages (
   id INTEGER PRIMARY KEY,

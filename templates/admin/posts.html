@@ -1,0 +1,57 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, badge, empty %}
+{% block content %}
+{% call head('Site', 'Content', 'Notes (blog posts) and the legal pages. Drafts are invisible on the store.') %}
+<a href="/admin/posts/new" class="btn btn-primary">New post</a>
+{% endcall %}
+
+<section class="card mt-6">
+  <h2 class="text-lg px-5 pt-5 pb-3">Posts</h2>
+  {% if posts %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">Title</th><th scope="col">Status</th><th scope="col">Published</th><th scope="col">Updated</th><th scope="col" class="relative"><span class="sr-only">Actions</span></th></tr></thead>
+      <tbody>
+        {% for p in posts %}
+        <tr>
+          <td><a href="/admin/posts/{{ p.id }}" class="tap-text font-semibold hover:underline">{{ p.title }}</a><p class="text-xs text-faint font-mono">/blog/{{ p.slug }}</p></td>
+          <td>{{ badge(p.status) }}</td>
+          <td class="text-muted whitespace-nowrap">{{ p.published_at|est_date if p.published_at else '—' }}</td>
+          <td class="text-muted whitespace-nowrap">{{ p.updated_at|est_datetime }}</td>
+          <td class="whitespace-nowrap">
+            {% if p.status == 'published' %}<a href="/blog/{{ p.slug }}" class="btn btn-ghost btn-sm">View</a>{% endif %}
+            <form method="post" action="/admin/posts/{{ p.id }}/delete" class="inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit" class="btn btn-ghost btn-sm text-danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}{{ empty('No posts yet.') }}{% endif %}
+</section>
+
+<section class="card mt-6">
+  <h2 class="text-lg px-5 pt-5 pb-3">Pages</h2>
+  <p class="text-muted text-sm px-5 pb-3">An empty body shows the built-in default text for that page.</p>
+  {% if pages %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">Page</th><th scope="col">Body</th><th scope="col">Status</th><th scope="col">Updated</th></tr></thead>
+      <tbody>
+        {% for pg in pages %}
+        <tr>
+          <td><a href="/admin/pages/{{ pg.id }}" class="tap-text font-semibold hover:underline">{{ pg.title }}</a><p class="text-xs text-faint font-mono">/{{ pg.slug }}</p></td>
+          <td class="text-muted">{% if pg.body_len %}{{ pg.body_len }} characters{% else %}<span class="badge">Default text</span>{% endif %}</td>
+          <td>{{ badge(pg.status) }}</td>
+          <td class="text-muted whitespace-nowrap">{{ pg.updated_at|est_datetime }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}{{ empty('No pages seeded yet. Run scripts/seed.py.') }}{% endif %}
+</section>
+{% endblock %}

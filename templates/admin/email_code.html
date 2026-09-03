@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+{% set bare = True %}
+{% block content %}
+<p class="eyebrow">Last step</p>
+<h1 class="text-xl mt-2">Email code</h1>
+<p class="text-muted text-sm mt-1">A one-time code went to <span class="text-ink font-semibold">{{ email_hint }}</span>. It expires in a few minutes.</p>
+<form method="post" action="/admin/2fa/email" class="mt-6 space-y-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="field">
+    <label class="label" for="code">Code from the email</label>
+    <input id="code" class="input font-mono tracking-[0.3em] text-lg" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="12" required autofocus>
+  </div>
+  <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+</form>
+<div class="mt-5 flex items-center justify-between gap-2">
+  <form method="post" action="/admin/2fa/email/resend">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit" class="btn btn-ghost btn-sm">Send a new code</button>
+  </form>
+  <form method="post" action="/admin/logout">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit" class="btn btn-ghost btn-sm">Start over</button>
+  </form>
+</div>
+{% endblock %}

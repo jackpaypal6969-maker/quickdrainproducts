@@ -1,0 +1,40 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, onoff, empty %}
+
+{% macro collection_form(c, csrf_token) -%}
+{% set k = 'c' ~ (c.id if c else 'new') ~ '-' %}
+<form method="post" action="/admin/collections/save" class="grid gap-3 sm:grid-cols-[1fr_2fr_6rem_auto] items-end">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="id" value="{{ c.id if c else 0 }}">
+  <div><label class="label" for="{{ k }}name">Name</label><input id="{{ k }}name" class="input" name="name" value="{{ c.name if c else '' }}" maxlength="80" required></div>
+  <div><label class="label" for="{{ k }}desc">Description</label><input id="{{ k }}desc" class="input" name="description" value="{{ c.description if c else '' }}" maxlength="500"></div>
+  <div><label class="label" for="{{ k }}sort">Sort</label><input id="{{ k }}sort" class="input" type="number" name="sort" value="{{ c.sort if c else 0 }}" inputmode="numeric"></div>
+  <div class="flex items-center gap-3">
+    <label class="text-sm whitespace-nowrap"><input type="checkbox" class="checkbox" name="is_active" value="1" {% if (c and c.is_active) or not c %}checked{% endif %}>Active</label>
+    <button type="submit" class="btn btn-secondary">{{ 'Save' if c else 'Add' }}</button>
+  </div>
+</form>
+{%- endmacro %}
+
+{% block content %}
+{{ head('Catalog', 'Collections', 'Groups on the /products page. The slug is set from the name on creation and never changes.') }}
+
+<div class="mt-6 space-y-4">
+  {% for c in collections %}
+  <article class="card card-pad">
+    <div class="flex flex-wrap items-center gap-2 mb-3">
+      <span class="font-mono text-xs text-faint">/products?collection={{ c.slug }}</span>
+      {{ onoff(c.is_active) }}
+      <span class="badge">{{ c.product_count|plural('product') }}</span>
+    </div>
+    {{ collection_form(c, csrf_token) }}
+  </article>
+  {% else %}
+  <div class="card">{{ empty('No collections yet.') }}</div>
+  {% endfor %}
+  <article class="card card-pad border-dashed">
+    <h2 class="text-base mb-3">New collection</h2>
+    {{ collection_form(None, csrf_token) }}
+  </article>
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{# Admin-only macros. They take no context, so pass csrf_token in explicitly where a form is rendered. #}
+
+{% macro badge(status) -%}
+{%- set tone = {
+  'paid': 'badge-accent', 'on_hold': 'badge-warning', 'processing': '', 'shipped': 'badge-success', 'delivered': 'badge-success',
+  'partially_refunded': 'badge-warning', 'refunded': 'badge-warning', 'canceled': 'badge-danger',
+  'pending': 'badge-warning', 'approved': 'badge-success', 'rejected': 'badge-danger',
+  'requested': 'badge-warning', 'received': 'badge-accent',
+  'sent': 'badge-success', 'delivered_mail': 'badge-success', 'bounced': 'badge-danger', 'complained': 'badge-danger', 'failed': 'badge-danger', 'suppressed': 'badge-warning', 'queued': '', 'dry_run': '',
+  'new': 'badge-warning', 'replied': 'badge-accent', 'closed': '',
+  'published': 'badge-success', 'draft': '', 'active': 'badge-success', 'inactive': '', 'hero': 'badge-accent', 'label': 'badge-warning', 'gallery': ''
+} -%}
+<span class="badge whitespace-nowrap {{ tone.get(status, '') }}">{{ (status or '')|replace('_', ' ') }}</span>
+{%- endmacro %}
+
+{% macro onoff(flag, yes='Active', no='Inactive') -%}
+<span class="badge {{ 'badge-success' if flag else '' }}">{{ yes if flag else no }}</span>
+{%- endmacro %}
+
+{% macro head(eyebrow, title, sub='') -%}
+<div class="flex flex-wrap items-end justify-between gap-4">
+  <div class="min-w-0">
+    <p class="eyebrow">{{ eyebrow }}</p>
+    <h1 class="text-2xl sm:text-3xl mt-2 break-words">{{ title }}</h1>
+    {% if sub %}<p class="text-muted text-sm mt-2">{{ sub }}</p>{% endif %}
+  </div>
+  {% if caller is defined %}<div class="flex flex-wrap gap-2">{{ caller() }}</div>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro stat(label, value, hint='') -%}
+<div class="card !p-5">
+  <p class="eyebrow !text-faint">{{ label }}</p>
+  <p class="font-display font-extrabold text-3xl tabular-nums mt-2 leading-none">{{ value }}</p>
+  {% if hint %}<p class="help">{{ hint }}</p>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro empty(text) -%}
+<p class="text-muted text-sm py-10 text-center">{{ text }}</p>
+{%- endmacro %}
+
+{% macro pager(page, pages, base) -%}
+{% if pages > 1 %}
+<nav class="mt-4 flex items-center justify-between gap-3 text-sm text-muted" aria-label="Pagination">
+  <span>Page {{ page }} of {{ pages }}</span>
+  <div class="flex gap-2">
+    {% if page > 1 %}<a class="btn btn-secondary btn-sm" href="{{ base }}page={{ page - 1 }}">Previous</a>{% endif %}
+    {% if page < pages %}<a class="btn btn-secondary btn-sm" href="{{ base }}page={{ page + 1 }}">Next</a>{% endif %}
+  </div>
+</nav>
+{% endif %}
+{%- endmacro %}
+
+{% macro chips(items, current, base, param='status', all_label='') -%}
+<div class="flex flex-wrap gap-2" role="navigation" aria-label="Filter">
+  {% if all_label %}<a href="{{ base }}" class="nav-link inline-flex items-center min-h-11 !py-2.5 border border-line-soft" {% if not current %}aria-current="page"{% endif %}>{{ all_label }}</a>{% endif %}
+  {% for it in items %}
+  <a href="{{ base }}{{ '&' if '?' in base else '?' }}{{ param }}={{ it }}" class="nav-link inline-flex items-center min-h-11 !py-2.5 border border-line-soft" {% if current == it %}aria-current="page"{% endif %}>{{ it|replace('_', ' ')|capitalize }}</a>
+  {% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro json_details(before, after) -%}
+{% if before or after %}
+<details class="text-xs">
+  <summary class="text-faint tap-inline">Details</summary>
+  {% if before %}<p class="eyebrow !text-faint !text-[0.65rem] mt-2">Before</p><pre class="font-mono whitespace-pre-wrap break-all text-muted mt-1">{{ before }}</pre>{% endif %}
+  {% if after %}<p class="eyebrow !text-faint !text-[0.65rem] mt-2">After</p><pre class="font-mono whitespace-pre-wrap break-all text-muted mt-1">{{ after }}</pre>{% endif %}
+</details>
+{% endif %}
+{%- endmacro %}

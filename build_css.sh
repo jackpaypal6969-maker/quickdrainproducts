@@ -33,6 +33,7 @@ resolve_tailwind() {
 
 TW="$(resolve_tailwind)"
 if [ "${1:-}" = "--watch" ]; then
+  printf '{"app.css": "app.css"}\n' > "$OUT_DIR/manifest.json"   # asset() serves the live file while watching
   exec $TW -i "$IN" -o "$OUT_DIR/app.css" --watch
 fi
 

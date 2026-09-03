@@ -1,0 +1,40 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, empty, pager, json_details %}
+{% block content %}
+{{ head('Site', 'Audit log', 'Every admin, webhook and system change, with before and after snapshots.') }}
+
+<form method="get" action="/admin/audit" class="mt-6 flex gap-2 lg:w-96" role="search">
+  <label class="sr-only" for="q">Search the audit log</label>
+  <input id="q" class="input" type="search" name="q" value="{{ q }}" placeholder="Action, actor or target type">
+  <button type="submit" class="btn btn-secondary shrink-0">Search</button>
+</form>
+
+<div class="card mt-4">
+  {% if rows %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">When</th><th scope="col">Who</th><th scope="col">Action</th><th scope="col">Target</th><th scope="col">Change</th></tr></thead>
+      <tbody>
+        {% for e in rows %}
+        <tr>
+          <td class="text-muted whitespace-nowrap">{{ e.created_at|est_datetime }}</td>
+          <td><span class="font-semibold">{{ e.actor_name or e.actor_type }}</span><p class="text-xs text-faint">{{ e.actor_type }}{% if e.ip %} · <span class="font-mono">{{ e.ip }}</span>{% endif %}</p></td>
+          <td class="font-mono text-xs whitespace-nowrap">{{ e.action }}</td>
+          <td class="text-muted whitespace-nowrap">
+            {% if e.target_type == 'order' and e.target_id %}<a href="/admin/orders/{{ e.target_id }}" class="link">order #{{ e.target_id }}</a>
+            {% elif e.target_type == 'product' and e.target_id %}<a href="/admin/products/{{ e.target_id }}" class="link">product #{{ e.target_id }}</a>
+            {% elif e.target_type == 'customer' and e.target_id %}<a href="/admin/customers/{{ e.target_id }}" class="link">customer #{{ e.target_id }}</a>
+            {% elif e.target_type == 'post' and e.target_id %}<a href="/admin/posts/{{ e.target_id }}" class="link">post #{{ e.target_id }}</a>
+            {% elif e.target_type %}{{ e.target_type }}{% if e.target_id %} #{{ e.target_id }}{% endif %}
+            {% else %}—{% endif %}
+          </td>
+          <td class="min-w-[16rem] max-w-md">{{ json_details(e.before_json, e.after_json) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}{{ empty('Nothing logged yet.') }}{% endif %}
+</div>
+{{ pager(page, pages, '/admin/audit?q=' ~ (q|urlencode) ~ '&') }}
+{% endblock %}

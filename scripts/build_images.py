@@ -37,7 +37,7 @@ PRODUCTS = IMG / "products"
 SRC = IMG / "src"
 FONTS = ROOT / "static" / "fonts"
 NODE_PLAYWRIGHT = ROOT / "node_modules" / "playwright"
-CHROMIUM = Path(os.environ.get("QD_CHROMIUM", "/opt/pw-browsers/chromium"))
+CHROMIUM = Path(os.environ.get("QD_CHROMIUM") or shutil.which("chromium") or shutil.which("chromium-browser") or shutil.which("google-chrome") or (os.path.join(os.environ.get("PLAYWRIGHT_BROWSERS_PATH", ""), "chromium") if os.environ.get("PLAYWRIGHT_BROWSERS_PATH") else "chromium"))
 
 INDIGO_900 = "#140B33"
 INDIGO_950 = "#0D0724"
@@ -315,9 +315,20 @@ def render(jobs: list[dict]) -> bool:
 
 # --------------------------------------------------------------------------- #
 
+def _outputs_present() -> bool:
+    names = ("quick-shot-hero", "quick-shot-label", "quick-shot-counter")
+    expected = [PRODUCTS / f"{n}-{w}.{ext}" for n in names for w in (480, 768, 1200, 1600) for ext in ("jpg", "webp")]
+    expected += [IMG / "og-default.jpg", IMG / "favicon.svg", IMG / "apple-touch-icon.png", PRODUCTS / "quick-shot-bottle.svg"]
+    return all(p.exists() for p in expected)
+
+
 def main() -> int:
     PRODUCTS.mkdir(parents=True, exist_ok=True)
     SRC.mkdir(parents=True, exist_ok=True)
+    if "--force" not in sys.argv and _outputs_present():
+        # Renditions are committed; deploy.sh calls this every run and must not dirty the checkout.
+        print("renditions already present; nothing to do (pass --force to re-render)")
+        return 0
 
     svg = bottle_svg()
     (PRODUCTS / "quick-shot-bottle.svg").write_text(svg, encoding="utf-8")

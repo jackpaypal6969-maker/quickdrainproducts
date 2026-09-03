@@ -1,0 +1,49 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, empty %}
+{% block content %}
+{{ head('Site', 'Admin sign-ins', 'Every password, authenticator, backup-code and email-code attempt. Lockouts clear from Settings.') }}
+
+<div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[1fr_1.8fr] items-start">
+  <section class="card min-w-0">
+    <h2 class="text-lg px-5 pt-5 pb-3">By address, last 7 days</h2>
+    {% if by_ip %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th scope="col">IP</th><th scope="col" class="num">Attempts</th><th scope="col" class="num">Succeeded</th></tr></thead>
+        <tbody>
+          {% for r in by_ip %}
+          <tr>
+            <td class="font-mono">{{ r.ip }}</td>
+            <td class="num">{{ r.n }}</td>
+            <td class="num {{ 'text-danger' if (r.n - (r.ok or 0)) >= 5 else '' }}">{{ r.ok or 0 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}{{ empty('No attempts this week.') }}{% endif %}
+  </section>
+
+  <section class="card min-w-0">
+    <h2 class="text-lg px-5 pt-5 pb-3">Latest attempts</h2>
+    {% if rows %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th scope="col">When</th><th scope="col">Username</th><th scope="col">Stage</th><th scope="col">Result</th><th scope="col">IP</th></tr></thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td class="text-muted whitespace-nowrap">{{ r.created_at|est_datetime }}</td>
+            <td class="font-semibold">{{ r.username or '—' }}</td>
+            <td class="text-muted">{{ r.stage|replace('_', ' ') }}</td>
+            <td>{% if r.success %}<span class="badge badge-success">OK</span>{% else %}<span class="badge badge-danger">Failed</span>{% endif %}</td>
+            <td class="font-mono text-xs">{{ r.ip }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}{{ empty('No sign-in attempts recorded.') }}{% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, badge, empty, chips %}
+{% block content %}
+{{ head('People', 'Contact inbox', 'Replies go out from your own mail client; mark the thread here so nothing is answered twice.') }}
+
+<div class="mt-6">{{ chips(['new', 'replied', 'closed'], status, '/admin/contact') }}</div>
+
+<div class="mt-4 space-y-4">
+  {% for m in messages %}
+  <article class="card card-pad grid gap-4 lg:grid-cols-[1fr_auto]">
+    <div class="min-w-0">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="font-semibold">{{ m.name }}</span>
+        {{ badge(m.status) }}
+        <span class="text-muted text-sm">{{ m.created_at|est_datetime }}</span>
+      </div>
+      <p class="text-sm mt-2 flex flex-wrap gap-x-4 gap-y-1">
+        <a href="mailto:{{ m.email }}?subject=Re: {{ (m.subject or 'Your message to Quick Drain Products')|urlencode }}" class="link break-all">{{ m.email }}</a>
+        {% if m.phone %}<a href="tel:{{ m.phone }}" class="link">{{ m.phone }}</a>{% endif %}
+        {% if m.order_number %}<a href="/admin/orders?q={{ m.order_number|urlencode }}" class="link font-mono">{{ m.order_number }}</a>{% endif %}
+      </p>
+      {% if m.subject %}<p class="font-display font-bold text-lg mt-3">{{ m.subject }}</p>{% endif %}
+      <p class="text-muted mt-2 whitespace-pre-wrap">{{ m.body }}</p>
+      <p class="text-xs text-faint mt-3 font-mono">{{ m.ip }}</p>
+    </div>
+    <div class="flex lg:flex-col gap-2 flex-wrap">
+      {% if m.status != 'replied' %}
+      <form method="post" action="/admin/contact/{{ m.id }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="status" value="replied"><button type="submit" class="btn btn-primary btn-sm w-full">Mark replied</button></form>
+      {% endif %}
+      {% if m.status != 'closed' %}
+      <form method="post" action="/admin/contact/{{ m.id }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="status" value="closed"><button type="submit" class="btn btn-secondary btn-sm w-full">Close</button></form>
+      {% endif %}
+      {% if m.status != 'new' %}
+      <form method="post" action="/admin/contact/{{ m.id }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="status" value="new"><button type="submit" class="btn btn-ghost btn-sm w-full">Reopen</button></form>
+      {% endif %}
+    </div>
+  </article>
+  {% else %}
+  <div class="card">{{ empty('No ' ~ status ~ ' messages.') }}</div>
+  {% endfor %}
+</div>
+{% endblock %}

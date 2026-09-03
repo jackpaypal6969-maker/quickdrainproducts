@@ -8,6 +8,7 @@ from __future__ import annotations
 import contextlib
 import itertools
 import sqlite3
+import time
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -62,20 +63,28 @@ def connect(db_path: Path | None = None) -> sqlite3.Connection:
 
 
 def migrate(db_path: Path | None = None) -> None:
+    """Safe to run from several processes at once (two uvicorn workers, the
+    cron job): WAL is set with a retry, schema.sql is IF NOT EXISTS throughout,
+    and each migration is decided under the write lock."""
     conn = connect(db_path)
     try:
+        for attempt in range(20):
+            try:
+                conn.execute("PRAGMA journal_mode = WAL")
+                break
+            except sqlite3.OperationalError:
+                time.sleep(0.05 * (attempt + 1))
         conn.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
-        applied = {r["version"] for r in conn.execute("SELECT version FROM schema_migrations")}
         for version, statements in MIGRATIONS:
-            if version in applied:
-                continue
             with transaction(conn):
+                cur = conn.execute("INSERT OR IGNORE INTO schema_migrations(version) VALUES (?)", (version,))
+                if cur.rowcount == 0:
+                    continue  # already applied (possibly by a sibling process a moment ago)
                 for step in statements:
                     if callable(step):
                         step(conn)
                     else:
                         conn.execute(step)
-                conn.execute("INSERT INTO schema_migrations(version) VALUES (?)", (version,))
     finally:
         conn.close()
 

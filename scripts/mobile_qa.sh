@@ -16,10 +16,13 @@ mkdir -p "$OUT" "$APP_DIR/docs/qa"
 fail=0
 for page in "/" "/products/quick-shot" "/cart" "/checkout/success?session_id=demo"; do
   name="$(echo "$page" | sed -E 's#[/?=]+#-#g; s#^-##; s#-$##')"; name="${name:-home}"
+  case "$page" in /checkout/success*) name="checkout-pending" ;; esac
   echo "== $page"
   if NODE_PATH="$APP_DIR/node_modules" node "$AUDIT" "$BASE$page" --out "$OUT/$name" | grep -E "CRITICAL|SERIOUS|MODERATE|HTTP" ; then :; fi
   if grep -q "CRITICAL" "$OUT/$name/report.md"; then fail=1; fi
-  cp -f "$OUT/$name/mobile-390x844.png" "$APP_DIR/docs/qa/$name-390.png" 2>/dev/null || true
 done
+# The audit's full-page capture does not scroll, so reveal sections look blank in
+# its PNGs; the docs/qa set is captured with a scroll-through pass instead.
+NODE_PATH="$APP_DIR/node_modules" node "$APP_DIR/scripts/qa_screens.js" "$BASE" "$APP_DIR/docs/qa"
 echo
 [ "$fail" = "0" ] && echo "MOBILE QA: no critical findings" || { echo "MOBILE QA: CRITICAL findings — see $OUT"; exit 1; }

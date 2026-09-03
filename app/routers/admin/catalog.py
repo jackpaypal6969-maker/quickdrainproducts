@@ -48,7 +48,7 @@ def products(request: Request, conn: sqlite3.Connection = Depends(get_db), admin
 @router.get("/products/new")
 def product_new(request: Request, conn: sqlite3.Connection = Depends(get_db), admin: dict = Depends(require_admin)):
     collections = [dict(r) for r in all_rows(conn, "SELECT id, name FROM collections ORDER BY sort")]
-    return arender(request, "admin/product_form.html", {"product": None, "collections": collections, "formulations": FORMULATIONS, "meta_title": "New product"}, conn, admin)
+    return arender(request, "admin/product_form.html", {"product": None, "movements": [], "collections": collections, "formulations": FORMULATIONS, "meta_title": "New product"}, conn, admin)
 
 
 @router.get("/products/{product_id}")

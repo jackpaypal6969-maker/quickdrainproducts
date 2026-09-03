@@ -147,13 +147,13 @@ def create_renewal_order(conn: sqlite3.Connection, invoice: dict, stripe_subscri
     """One fulfilment order per paid renewal invoice. Idempotent on the event id
     and on the invoice id (stored as the order's checkout session key)."""
     with transaction(conn):
+        sub = one(conn, "SELECT * FROM subscriptions WHERE stripe_subscription_id = ?", (stripe_subscription_id,))
+        if not sub:
+            return "unknown"  # not recorded as processed: Stripe's retry (or a re-send) can still create the order
         try:
             conn.execute("INSERT INTO processed_events(event_id, source, type) VALUES (?, 'stripe', 'invoice.paid')", (event_id,))
         except sqlite3.IntegrityError:
             return None
-        sub = one(conn, "SELECT * FROM subscriptions WHERE stripe_subscription_id = ?", (stripe_subscription_id,))
-        if not sub:
-            return "unknown"
         session_key = f"inv_{invoice.get('id', '')}"
         existing = one(conn, "SELECT * FROM orders WHERE stripe_checkout_session_id = ?", (session_key,))
         if existing:

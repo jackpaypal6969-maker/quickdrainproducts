@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, badge %}
+{% from "components/icons.html" import icon %}
+{% block content %}
+{% call head('Content', page.title, '/' ~ page.slug ~ ' · last saved ' ~ (page.updated_at|est_datetime)) %}
+<a href="/admin/posts" class="btn btn-ghost">All content</a>
+<a href="/{{ page.slug }}" class="btn btn-secondary" rel="noopener">View page {{ icon('external', 14) }}</a>
+{% endcall %}
+
+<form method="post" action="/admin/pages/{{ page.id }}" class="mt-6 grid gap-6 xl:grid-cols-[1.6fr_1fr] items-start">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="card card-pad space-y-4">
+    <div class="field"><label class="label" for="title">Title</label><input id="title" class="input text-lg font-semibold" name="title" value="{{ page.title }}" maxlength="150" required></div>
+    <div class="field"><label class="label" for="body">Body</label><textarea id="body" class="input font-mono text-sm leading-relaxed" name="body" rows="24" maxlength="60000">{{ page.body }}</textarea><p class="help">Markdown-lite. Leave empty to show the built-in default text for this page.</p></div>
+  </div>
+  <aside class="card card-pad space-y-4 xl:sticky xl:top-6">
+    <div class="field"><label class="label" for="status">Status</label>
+      <select id="status" class="input" name="status">
+        <option value="published" {% if page.status == 'published' %}selected{% endif %}>Published</option>
+        <option value="draft" {% if page.status == 'draft' %}selected{% endif %}>Draft (hidden)</option>
+      </select>
+    </div>
+    <p class="text-sm text-muted">{% if page.body %}{{ page.body|length }} characters of custom text.{% else %}Currently showing the default text.{% endif %}</p>
+    <button type="submit" class="btn btn-primary btn-block">Save page</button>
+  </aside>
+</form>
+{% endblock %}

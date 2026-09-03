@@ -1,0 +1,38 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, badge, empty, chips %}
+{% from "components/icons.html" import stars %}
+{% block content %}
+{{ head('People', 'Reviews', 'Only approved reviews show on the store and feed the rating.') }}
+
+<div class="mt-6">{{ chips(['pending', 'approved', 'rejected'], status, '/admin/reviews') }}</div>
+
+<div class="mt-4 space-y-4">
+  {% for r in reviews %}
+  <article class="card card-pad grid gap-4 lg:grid-cols-[1fr_auto]">
+    <div class="min-w-0">
+      <div class="flex flex-wrap items-center gap-2">
+        {{ stars(r.rating, 16) }}
+        <span class="font-semibold">{{ r.author_name }}</span>
+        {% if r.is_verified %}<span class="badge badge-success">Verified buyer</span>{% endif %}
+        {{ badge(r.status) }}
+        <span class="text-muted text-sm">{{ r.product_name }} · {{ r.created_at|est_datetime }}</span>
+      </div>
+      {% if r.title %}<p class="font-display font-bold text-lg mt-3">{{ r.title }}</p>{% endif %}
+      <p class="text-muted mt-2 whitespace-pre-wrap">{{ r.body }}</p>
+      <p class="text-xs text-faint mt-3">{{ r.email or 'no email' }}{% if r.order_id %} · <a href="/admin/orders/{{ r.order_id }}" class="link">order</a>{% endif %}{% if r.customer_id %} · <a href="/admin/customers/{{ r.customer_id }}" class="link">customer</a>{% endif %} · {{ r.ip }}</p>
+    </div>
+    <div class="flex lg:flex-col gap-2 flex-wrap">
+      {% if r.status != 'approved' %}
+      <form method="post" action="/admin/reviews/{{ r.id }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="approve"><button type="submit" class="btn btn-primary btn-sm w-full">Approve</button></form>
+      {% endif %}
+      {% if r.status != 'rejected' %}
+      <form method="post" action="/admin/reviews/{{ r.id }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="reject"><button type="submit" class="btn btn-secondary btn-sm w-full">Reject</button></form>
+      {% endif %}
+      <form method="post" action="/admin/reviews/{{ r.id }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="delete"><button type="submit" class="btn btn-danger btn-sm w-full">Delete</button></form>
+    </div>
+  </article>
+  {% else %}
+  <div class="card">{{ empty('No ' ~ status ~ ' reviews.') }}</div>
+  {% endfor %}
+</div>
+{% endblock %}

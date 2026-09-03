@@ -98,7 +98,8 @@ def lines(conn: sqlite3.Connection, cart_id: int) -> list[dict]:
                   v.subscription_discount_percent,
                   p.id AS product_id, p.name AS product_name, p.slug AS product_slug, p.dose_interval_days,
                   p.drains_per_unit, p.hazmat, COALESCE(v.weight_oz, p.weight_oz) AS weight_oz,
-                  (SELECT base FROM product_images WHERE product_id = p.id ORDER BY CASE kind WHEN 'hero' THEN 0 ELSE 1 END, sort LIMIT 1) AS image_base
+                  (SELECT base FROM product_images WHERE product_id = p.id ORDER BY CASE kind WHEN 'hero' THEN 0 ELSE 1 END, sort LIMIT 1) AS image_base,
+                  (SELECT source FROM product_images WHERE product_id = p.id ORDER BY CASE kind WHEN 'hero' THEN 0 ELSE 1 END, sort LIMIT 1) AS image_source
            FROM cart_items ci
            JOIN variants v ON v.id = ci.variant_id
            JOIN products p ON p.id = v.product_id
@@ -122,6 +123,7 @@ def lines(conn: sqlite3.Connection, cart_id: int) -> list[dict]:
             d["interval_months"] = 0
         d["line_total_cents"] = d["price_cents"] * d["qty"]
         d["short_stock"] = d["qty"] > d["stock"]
+        d["thumb_url"] = (f"/media/uploads/{d['image_base']}-480.jpg" if d.get("image_source") == "upload" else f"/static/img/products/{d['image_base']}-480.jpg") if d.get("image_base") else ""
         out.append(d)
     return out
 

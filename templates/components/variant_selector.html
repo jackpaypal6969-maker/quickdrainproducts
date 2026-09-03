@@ -2,10 +2,10 @@
 {% macro variant_selector(product) -%}
 <fieldset data-variant-selector>
   <legend class="label">Pack size</legend>
-  <div class="grid gap-2" role="radiogroup">
+  <div class="grid gap-2">
     {% for v in product.variants %}
     <label class="choice">
-      <input type="radio" name="variant" value="{{ v.id }}" {% if loop.first %}checked{% endif %}
+      <input type="radio" name="variant_id" value="{{ v.id }}" {% if loop.first %}checked{% endif %}
              data-id="{{ v.id }}" data-price="{{ v.price_cents }}" data-compare="{{ v.compare_at_cents or '' }}" data-units="{{ v.units_per_pack }}" data-stock="{{ v.stock }}" data-low="{{ v.low_stock_threshold }}" data-sub-price="{{ v.sub_price_cents }}" data-sub-percent="{{ v.sub_percent }}" data-sub-rec="{{ v.sub_recommended_months }}" data-name="{{ v.name }}">
       <span class="choice-body">
         <span>

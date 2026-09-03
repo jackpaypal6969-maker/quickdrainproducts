@@ -1,0 +1,38 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, badge, empty, pager, chips %}
+{% block content %}
+{{ head('Sell', 'Orders', total|plural('order') ~ (' matching' if (status or q) else ' in total')) }}
+
+<div class="mt-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+  {{ chips(statuses, status, '/admin/orders' ~ ('?q=' ~ (q|urlencode) if q else ''), 'status', 'All') }}
+  <form method="get" action="/admin/orders" class="flex gap-2 lg:w-96" role="search">
+    {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+    <label class="sr-only" for="q">Search orders</label>
+    <input id="q" class="input" type="search" name="q" value="{{ q }}" placeholder="Order number, email, name or tracking">
+    <button type="submit" class="btn btn-secondary shrink-0">Search</button>
+  </form>
+</div>
+
+<div class="card mt-4">
+  {% if orders %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">Order</th><th scope="col">Placed</th><th scope="col">Customer</th><th scope="col">Status</th><th scope="col" class="num">Total</th><th scope="col">Shipping</th></tr></thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td><a href="/admin/orders/{{ o.id }}" class="tap-text font-mono font-semibold hover:underline whitespace-nowrap">{{ o.order_number }}</a>{% if o.discount_code %}<p class="text-xs text-faint font-mono">{{ o.discount_code }}</p>{% endif %}</td>
+          <td class="text-muted whitespace-nowrap">{{ o.created_at|est_datetime }}</td>
+          <td class="min-w-[12rem]"><span class="block">{{ o.shipping_name or '—' }}</span><span class="text-muted text-xs">{{ o.email }}</span></td>
+          <td>{{ badge(o.status) }}{% if o.refunded_cents %}<p class="text-xs text-faint mt-1">−{{ o.refunded_cents|fmt_money }} refunded</p>{% endif %}</td>
+          <td class="num font-semibold">{{ o.total_cents|fmt_money }}</td>
+          <td class="text-muted text-xs">{{ o.shipping_city }}{% if o.shipping_state %}, {{ o.shipping_state }}{% endif %}{% if o.tracking_number %}<p class="font-mono mt-1">{{ o.carrier }} {{ o.tracking_number }}</p>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}{{ empty('No orders match.') }}{% endif %}
+</div>
+{{ pager(page, pages, '/admin/orders?status=' ~ (status|urlencode) ~ '&q=' ~ (q|urlencode) ~ '&') }}
+{% endblock %}

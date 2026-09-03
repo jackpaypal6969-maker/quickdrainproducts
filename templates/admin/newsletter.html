@@ -1,0 +1,78 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, badge, empty, stat %}
+{% block content %}
+{% call head('People', 'Newsletter', 'Subscribers, back-in-stock requests and the suppression list.') %}
+<a href="/admin/newsletter/export.csv" class="btn btn-secondary">Export CSV</a>
+{% endcall %}
+
+{% set active = subscribers|rejectattr('unsubscribed_at')|list %}
+<div class="mt-6 grid gap-3 sm:grid-cols-3">
+  {{ stat('Subscribed', active|length, 'Shown: newest 500') }}
+  {{ stat('Waiting on stock', notify|rejectattr('notified_at')|list|length, 'Emailed automatically on restock') }}
+  {{ stat('Suppressed', suppressed|length, 'Unsubscribes, bounces, complaints') }}
+</div>
+
+<section class="card mt-6">
+  <h2 class="text-lg px-5 pt-5 pb-3">Subscribers</h2>
+  {% if subscribers %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">Email</th><th scope="col">Source</th><th scope="col">Welcome code</th><th scope="col">Joined</th><th scope="col">Status</th></tr></thead>
+      <tbody>
+        {% for s in subscribers %}
+        <tr>
+          <td class="break-all">{{ s.email }}</td>
+          <td class="text-muted">{{ s.source }}</td>
+          <td>{% if s.code %}<span class="font-mono text-xs">{{ s.code }}</span> <span class="text-faint text-xs">{{ 'used' if s.usage_count else 'unused' }}</span>{% else %}—{% endif %}</td>
+          <td class="text-muted whitespace-nowrap">{{ s.created_at|est_date }}</td>
+          <td>{% if s.unsubscribed_at %}<span class="badge">Unsubscribed {{ s.unsubscribed_at|est_date }}</span>{% else %}<span class="badge badge-success">Subscribed</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}{{ empty('Nobody has subscribed yet.') }}{% endif %}
+</section>
+
+<section class="card mt-6">
+  <h2 class="text-lg px-5 pt-5 pb-3">Notify-me requests</h2>
+  {% if notify %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">Email</th><th scope="col">SKU</th><th scope="col">Requested</th><th scope="col">Notified</th></tr></thead>
+      <tbody>
+        {% for n in notify %}
+        <tr>
+          <td class="break-all">{{ n.email }}</td>
+          <td class="font-mono">{{ n.sku }}</td>
+          <td class="text-muted whitespace-nowrap">{{ n.created_at|est_datetime }}</td>
+          <td>{% if n.notified_at %}<span class="badge badge-success">{{ n.notified_at|est_date }}</span>{% else %}<span class="badge badge-warning">Waiting</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}{{ empty('No back-in-stock requests.') }}{% endif %}
+</section>
+
+<section class="card mt-6">
+  <h2 class="text-lg px-5 pt-5 pb-3">Suppression list</h2>
+  {% if suppressed %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">Email</th><th scope="col">Reason</th><th scope="col">Note</th><th scope="col">Since</th></tr></thead>
+      <tbody>
+        {% for s in suppressed %}
+        <tr>
+          <td class="break-all">{{ s.email }}</td>
+          <td>{{ badge(s.reason) }}</td>
+          <td class="text-muted">{{ s.note }}</td>
+          <td class="text-muted whitespace-nowrap">{{ s.created_at|est_datetime }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}{{ empty('Nothing suppressed.') }}{% endif %}
+</section>
+{% endblock %}

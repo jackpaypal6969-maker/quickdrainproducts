@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-"""Seed the catalog with Quick Shot. Idempotent: re-running updates label facts
-and never touches prices or stock that an admin has already changed.
+"""Seed the catalog with Quick Shot. Idempotent: re-running adds only what is
+missing and never touches anything an admin has edited (prices, stock, copy,
+specs, FAQs). Pass --force to rewrite the label facts, specs and FAQs.
 
 Everything below about the product comes from the label photo:
   DRAIN MAINTAINER / QUICK SHOT / NATURAL DRAIN ENZYME /
@@ -115,10 +116,12 @@ def main() -> None:
                 "seo_title": "Quick Shot — natural drain enzyme, monthly dose | Quick Drain Products",
                 "seo_description": "Quick Shot is a natural drain enzyme dosed for monthly use on any drain. 4 fl oz per bottle. Ships as an ordinary parcel. From Quick Drain, Long Island.",
             }
+            force = "--force" in sys.argv
             if product:
-                sets = ", ".join(f"{k} = ?" for k in label_fields)
-                conn.execute(f"UPDATE products SET {sets}, updated_at = strftime('%Y-%m-%dT%H:%M:%SZ','now') WHERE id = ?", (*label_fields.values(), product["id"]))
                 pid = product["id"]
+                if force:
+                    sets = ", ".join(f"{k} = ?" for k in label_fields)
+                    conn.execute(f"UPDATE products SET {sets}, updated_at = strftime('%Y-%m-%dT%H:%M:%SZ','now') WHERE id = ?", (*label_fields.values(), pid))
             else:
                 cols = ", ".join(["slug", *label_fields])
                 marks = ", ".join("?" for _ in range(len(label_fields) + 1))
@@ -130,17 +133,20 @@ def main() -> None:
                 ("QS-3", "3-pack", 3, 4200, 4800, 60, 1),
                 ("QS-6", "6-pack", 6, 7800, 9600, 40, 2),
             ]
+            fresh_product = product is None
             for sku, name, units, price, compare, stock, sort in variants:
-                if not one(conn, "SELECT id FROM variants WHERE sku = ?", (sku,)):
+                if (fresh_product or force) and not one(conn, "SELECT id FROM variants WHERE sku = ?", (sku,)):
                     conn.execute("INSERT INTO variants(product_id, sku, name, units_per_pack, price_cents, compare_at_cents, stock, sort) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (pid, sku, name, units, price, compare, stock, sort))
                     conn.execute("INSERT INTO inventory_movements(variant_id, delta, reason, note) VALUES ((SELECT id FROM variants WHERE sku = ?), ?, 'restock', 'seed')", (sku, stock))
 
-            conn.execute("DELETE FROM product_specs WHERE product_id = ?", (pid,))
-            for i, (label, value) in enumerate(SPECS):
-                conn.execute("INSERT INTO product_specs(product_id, label, value, sort) VALUES (?, ?, ?, ?)", (pid, label, value, i))
-            conn.execute("DELETE FROM product_faqs WHERE product_id = ?", (pid,))
-            for i, (q, a) in enumerate(FAQS):
-                conn.execute("INSERT INTO product_faqs(product_id, question, answer, sort) VALUES (?, ?, ?, ?)", (pid, q, a, i))
+            if force or not one(conn, "SELECT 1 FROM product_specs WHERE product_id = ?", (pid,)):
+                conn.execute("DELETE FROM product_specs WHERE product_id = ?", (pid,))
+                for i, (label, value) in enumerate(SPECS):
+                    conn.execute("INSERT INTO product_specs(product_id, label, value, sort) VALUES (?, ?, ?, ?)", (pid, label, value, i))
+            if force or not one(conn, "SELECT 1 FROM product_faqs WHERE product_id = ?", (pid,)):
+                conn.execute("DELETE FROM product_faqs WHERE product_id = ?", (pid,))
+                for i, (q, a) in enumerate(FAQS):
+                    conn.execute("INSERT INTO product_faqs(product_id, question, answer, sort) VALUES (?, ?, ?, ?)", (pid, q, a, i))
 
             images = [
                 ("quick-shot-hero", "Quick Shot 4 fl oz bottle on a dark surface", 1200, 1500, "hero", 0),

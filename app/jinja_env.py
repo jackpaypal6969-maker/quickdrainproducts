@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -17,7 +18,10 @@ from .config import settings
 from .security import parse_iso
 from .services import markdown_lite
 
-_TZ = ZoneInfo(settings.tz)
+try:
+    _TZ = ZoneInfo(settings.tz)
+except Exception:  # noqa: BLE001 - validate() reports it; keep imports alive
+    _TZ = ZoneInfo("America/New_York")
 
 
 def _to_local(value) -> datetime | None:
@@ -59,9 +63,18 @@ def est_short(value) -> str:
 
 
 def fmt_money(cents, show_zero_cents: bool = True) -> str:
-    try:
-        cents = int(cents or 0)
-    except (TypeError, ValueError):
+    """Money is integer cents everywhere. Digit strings are accepted; anything
+    else is a caller bug and is logged instead of silently rendering $0.00."""
+    if cents is None or cents == "":
+        cents = 0
+    elif isinstance(cents, bool):
+        cents = int(cents)
+    elif isinstance(cents, str) and cents.strip().lstrip("-").isdigit():
+        cents = int(cents.strip())
+    elif isinstance(cents, float) and cents.is_integer():
+        cents = int(cents)
+    elif not isinstance(cents, int):
+        logging.getLogger("qd.templates").warning("fmt_money got %r (%s); expected integer cents", cents, type(cents).__name__)
         cents = 0
     sign = "-" if cents < 0 else ""
     cents = abs(cents)

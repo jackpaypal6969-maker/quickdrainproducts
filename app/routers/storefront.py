@@ -74,7 +74,10 @@ def product_detail(slug: str, request: Request, conn: sqlite3.Connection = Depen
 
 def _safe_media(rel: str) -> Path:
     root = settings.media_dir.resolve()
-    target = (root / rel).resolve()
+    try:
+        target = (root / rel).resolve()
+    except (ValueError, OSError):
+        raise HTTPException(404)
     if root not in target.parents or not target.is_file():
         raise HTTPException(404)
     return target

@@ -74,7 +74,7 @@
 /* ------------------------------------------------------------- base */
 @layer base {
   html { background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
-  body { font-size: var(--text-base); line-height: var(--leading-body); min-height: 100dvh; font-feature-settings: "cv11", "ss01"; overflow-x: clip; }
+  body { font-size: var(--text-base); line-height: var(--leading-body); min-height: 100dvh; font-feature-settings: "cv11", "ss01"; overflow-x: clip; overflow-wrap: anywhere; }
   h1, h2, h3, .display { font-family: var(--font-display); font-weight: 800; letter-spacing: var(--tracking-display); line-height: var(--leading-display); text-wrap: balance; }
   h4, h5 { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.01em; line-height: var(--leading-tight); }
   p { text-wrap: pretty; }
@@ -120,7 +120,7 @@
   .btn.is-done { background: var(--color-success); color: var(--color-text-on-accent); }
 
   /* Card — shadcn/ui card, hairline border, 20px radius as on the parent site */
-  .card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); }
+  .card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); min-width: 0; }
   .card-pad { padding: clamp(1.25rem, 3vw, 2rem); }
   .panel { background: var(--color-raised); border: 1px solid var(--color-border-soft); border-radius: var(--radius-md); }
   .hairline { border-top: 1px solid var(--color-border-soft); }
@@ -177,8 +177,9 @@
   .acc-trigger svg { flex: none; transition: transform var(--dur-base) var(--ease-standard); }
   .acc-trigger[aria-expanded="true"] svg { transform: rotate(180deg); }
   .acc-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--dur-slow) var(--ease-standard); }
-  .acc-panel > div { overflow: hidden; }
+  .acc-panel > div { overflow: hidden; visibility: hidden; transition: visibility 0s linear var(--dur-slow); }
   .acc-panel[data-open="true"] { grid-template-rows: 1fr; }
+  .acc-panel[data-open="true"] > div { visibility: visible; transition-delay: 0s; }
   .acc-content { padding-bottom: 1.25rem; color: var(--color-text-muted); max-width: 60ch; }
 
   /* Sheet / Dialog — shadcn/ui sheet (cart drawer, mobile nav) and dialog (newsletter) */

@@ -4,14 +4,14 @@
 {% if not t or not t['items'] %}
 <div class="p-6 text-center text-muted">
   <p class="text-base">Your cart is empty.</p>
-  <a href="/products/quick-shot" class="btn btn-secondary mt-4" data-close-sheet>See Quick Shot</a>
+  <a href="/products/quick-shot" class="btn btn-secondary mt-4">See Quick Shot</a>
 </div>
 {% else %}
 <ul class="divide-y divide-line-soft px-5" data-cart-lines>
   {% for it in t['items'] %}
   <li class="py-4 flex gap-4" data-line-id="{{ it.id }}">
     <div class="w-16 h-16 rounded-md bg-bg-deep border border-line-soft shrink-0 overflow-hidden">
-      {% if it.image_base %}<img src="/static/img/products/{{ it.image_base }}-480.jpg" width="64" height="64" alt="" class="w-full h-full object-cover" loading="lazy">{% endif %}
+      {% if it.thumb_url %}<img src="{{ it.thumb_url }}" width="64" height="64" alt="" class="w-full h-full object-cover" loading="lazy">{% endif %}
     </div>
     <div class="flex-1 min-w-0">
       <p class="font-semibold leading-tight">{{ it.product_name }}</p>

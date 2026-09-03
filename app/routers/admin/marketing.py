@@ -8,6 +8,7 @@ import sqlite3
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from starlette.responses import StreamingResponse
 
+from ...config import settings
 from ...db import all_rows, all_settings, one, set_setting, transaction
 from ...deps import flash, get_db, ip, redirect, require_admin
 from ...security import hash_password, normalize_email, parse_iso, password_policy_error, verify_password
@@ -70,11 +71,19 @@ def discount_save(request: Request, id: str = Form("0"), code: str = Form(""), k
 
 
 def _date(value: str, end_of_day: bool = False) -> str | None:
+    """A date typed in the admin means that calendar day in the store's time zone."""
     v = (value or "").strip()
     if not v:
         return None
     if len(v) == 10:
-        v = v + ("T23:59:59Z" if end_of_day else "T00:00:00Z")
+        from datetime import date, datetime, time, timezone
+        from zoneinfo import ZoneInfo
+        try:
+            d = date.fromisoformat(v)
+        except ValueError:
+            return None
+        local = datetime.combine(d, time.max.replace(microsecond=0) if end_of_day else time.min, tzinfo=ZoneInfo(settings.tz))
+        return local.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     dt = parse_iso(v)
     return dt.strftime("%Y-%m-%dT%H:%M:%SZ") if dt else None
 

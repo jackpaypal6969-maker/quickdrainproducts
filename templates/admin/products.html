@@ -1,0 +1,32 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, onoff, empty %}
+{% block content %}
+{% call head('Catalog', 'Products', 'One product at launch. Variants, stock and documents live on each product page.') %}
+<a href="/admin/products/new" class="btn btn-primary">New product</a>
+{% endcall %}
+
+<div class="card mt-6">
+  {% if products %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">Product</th><th scope="col">Formulation</th><th scope="col" class="num">Packs</th><th scope="col" class="num">Stock</th><th scope="col">State</th><th scope="col">Updated</th></tr></thead>
+      <tbody>
+        {% for p in products %}
+        <tr>
+          <td>
+            <a href="/admin/products/{{ p.id }}" class="tap-text font-semibold hover:underline">{{ p.name }}</a>
+            <p class="text-xs text-faint font-mono">/products/{{ p.slug }}</p>
+          </td>
+          <td class="text-muted">{{ p.formulation_type|capitalize }}{% if p.hazmat %} <span class="badge badge-warning ml-1">Hazmat</span>{% endif %}</td>
+          <td class="num">{{ p.variant_count }}</td>
+          <td class="num">{{ p.stock }}</td>
+          <td class="whitespace-nowrap">{{ onoff(p.is_active) }}{% if p.is_featured %} <span class="badge badge-accent">Featured</span>{% endif %}</td>
+          <td class="text-muted whitespace-nowrap">{{ p.updated_at|est_datetime }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}{{ empty('No products yet. Run scripts/seed.py or add one.') }}{% endif %}
+</div>
+{% endblock %}

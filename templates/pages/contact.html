@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% set hide_newsletter = True %}
 {% from "components/icons.html" import icon %}
 {% set sent = request.query_params.get('sent') == '1' %}
 {% set pf = prefill or {} %}

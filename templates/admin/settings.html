@@ -1,0 +1,99 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, empty %}
+{% block content %}
+{{ head('Site', 'Settings', 'Storefront switches and admin accounts. Stripe, email and shipping numbers live in the environment, not here.') }}
+
+<div class="mt-6 grid gap-6 xl:grid-cols-[1.6fr_1fr] items-start">
+  <form method="post" action="/admin/settings" class="space-y-6 min-w-0">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <section class="card card-pad space-y-4">
+      <h2 class="text-lg">Promo banner</h2>
+      <div class="field"><label class="label" for="promo_banner">Banner text</label><input id="promo_banner" class="input" name="promo_banner" value="{{ values.get('promo_banner', '') }}" maxlength="200" placeholder="Free shipping on 3-packs this month"></div>
+      <label class="text-sm"><input type="checkbox" class="checkbox" name="promo_banner_enabled" value="1" {% if values.get('promo_banner_enabled', '0') == '1' %}checked{% endif %}>Show the banner above the header</label>
+    </section>
+
+    <section class="card card-pad space-y-4">
+      <h2 class="text-lg">Store notice</h2>
+      <div class="field"><label class="label" for="store_notice">Notice</label><textarea id="store_notice" class="input" name="store_notice" rows="3" maxlength="2000">{{ values.get('store_notice', '') }}</textarea><p class="help">For holiday shipping pauses and the like. Blank hides it.</p></div>
+    </section>
+
+    <section class="card card-pad space-y-4">
+      <h2 class="text-lg">Newsletter</h2>
+      <label class="text-sm"><input type="checkbox" class="checkbox" name="newsletter_enabled" value="1" {% if values.get('newsletter_enabled', '1') == '1' %}checked{% endif %}>Newsletter sign-up modal and footer form</label>
+      <div class="field sm:max-w-xs"><label class="label" for="newsletter_discount_percent">Welcome discount (%)</label><input id="newsletter_discount_percent" class="input" type="number" name="newsletter_discount_percent" min="0" max="90" inputmode="numeric" value="{{ values.get('newsletter_discount_percent', '10') }}"><p class="help">Each subscriber gets a single-use percent-off code.</p></div>
+    </section>
+
+    <section class="card card-pad space-y-4">
+      <h2 class="text-lg">Subscribe and save</h2>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="field"><label class="label" for="subscription_discount_percent">Subscription discount (%)</label><input id="subscription_discount_percent" class="input" type="number" name="subscription_discount_percent" min="0" max="90" inputmode="numeric" value="{{ values.get('subscription_discount_percent', '10') }}"><p class="help">Site-wide default; a pack can override it.</p></div>
+        <div class="field"><label class="label" for="subscription_intervals">Delivery intervals (months)</label><input id="subscription_intervals" class="input font-mono" name="subscription_intervals" value="{{ values.get('subscription_intervals', '1,2,3') }}" maxlength="40" placeholder="1,2,3"><p class="help">Comma list, 1–12. Offered on the product page.</p></div>
+      </div>
+      <p class="help">Subscriptions only appear when SUBSCRIPTIONS_ENABLED is on and a pack has a Stripe subscription price.</p>
+    </section>
+
+    <section class="card card-pad space-y-4">
+      <h2 class="text-lg">Reviews</h2>
+      <label class="text-sm"><input type="checkbox" class="checkbox" name="reviews_enabled" value="1" {% if values.get('reviews_enabled', '1') == '1' %}checked{% endif %}>Accept new reviews and show approved ones</label>
+    </section>
+
+    <section class="card card-pad space-y-4">
+      <h2 class="text-lg">Email blocklist</h2>
+      <div class="field"><label class="label" for="email_blocklist_extra">Extra blocked domains</label><textarea id="email_blocklist_extra" class="input font-mono text-sm" name="email_blocklist_extra" rows="3" maxlength="2000" placeholder="mailinator.com, tempmail.dev">{{ values.get('email_blocklist_extra', '') }}</textarea><p class="help">Comma separated, added to the built-in disposable-domain list. Applies to sign-ups and the newsletter.</p></div>
+    </section>
+
+    <div class="flex items-center gap-3 sticky bottom-0 py-3 bg-bg/95 border-t border-line-soft">
+      <button type="submit" class="btn btn-primary">Save settings</button>
+    </div>
+  </form>
+
+  <aside class="space-y-6 min-w-0">
+    <section class="card">
+      <h2 class="text-lg px-5 pt-5 pb-3">Admin users</h2>
+      <p class="text-muted text-sm px-5 pb-3">Add or reset an admin from the server with scripts/create_admin.py.</p>
+      {% if admins %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th scope="col">User</th><th scope="col">State</th><th scope="col" class="relative"><span class="sr-only">Actions</span></th></tr></thead>
+          <tbody>
+            {% for a in admins %}
+            <tr>
+              <td>
+                <span class="font-semibold">{{ a.username }}</span>{% if a.id == admin.id %} <span class="badge badge-accent">you</span>{% endif %}
+                <p class="text-xs text-muted break-all">{{ a.email }}</p>
+                <p class="text-xs text-faint">{{ 'Last sign-in ' ~ (a.last_login_at|est_datetime) if a.last_login_at else 'Never signed in' }}</p>
+              </td>
+              <td class="whitespace-nowrap">
+                <span class="badge {{ 'badge-success' if a.totp_enabled else 'badge-warning' }}">{{ '2FA on' if a.totp_enabled else '2FA pending' }}</span>
+                {% if not a.is_active %}<p class="mt-1"><span class="badge badge-danger">Disabled</span></p>{% endif %}
+                {% if a.locked_until %}<p class="mt-1"><span class="badge badge-danger">Locked</span></p>{% elif a.failed_attempts %}<p class="text-xs text-faint mt-1">{{ a.failed_attempts }} failed</p>{% endif %}
+              </td>
+              <td class="whitespace-nowrap">
+                <form method="post" action="/admin/settings/admins/{{ a.id }}/unlock" class="inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <button type="submit" class="btn btn-ghost btn-sm">Unlock</button>
+                </form>
+                <form method="post" action="/admin/settings/admins/{{ a.id }}/reset-2fa" class="inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <button type="submit" class="btn btn-ghost btn-sm text-danger">Reset 2FA</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}{{ empty('No admin users.') }}{% endif %}
+    </section>
+
+    <form method="post" action="/admin/settings/password" class="card card-pad space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <h2 class="text-lg">Change your password</h2>
+      <div class="field"><label class="label" for="current_password">Current password</label><input id="current_password" class="input" type="password" name="current_password" autocomplete="current-password" required></div>
+      <div class="field"><label class="label" for="password">New password</label><input id="password" class="input" type="password" name="password" autocomplete="new-password" minlength="10" required><p class="help">At least 10 characters. Your authenticator stays enrolled.</p></div>
+      <button type="submit" class="btn btn-secondary btn-block">Change password</button>
+    </form>
+  </aside>
+</div>
+{% endblock %}

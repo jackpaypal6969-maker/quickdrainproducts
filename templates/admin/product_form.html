@@ -1,0 +1,261 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, badge, onoff, empty %}
+{% from "components/icons.html" import icon %}
+{% set p = product or {} %}
+{% set editing = product is not none %}
+
+{% macro field(name, label, value='', type='text', help='', step='', min='', required=False, maxlength='', mono=False, inputmode='', id='') -%}
+{% set fid = id or ('f-' ~ name) %}
+<div class="field">
+  <label class="label" for="{{ fid }}">{{ label }}</label>
+  <input id="{{ fid }}" class="input{% if mono %} font-mono{% endif %}" type="{{ type }}" name="{{ name }}" value="{{ value }}"{% if step %} step="{{ step }}"{% endif %}{% if min != '' %} min="{{ min }}"{% endif %}{% if required %} required{% endif %}{% if maxlength %} maxlength="{{ maxlength }}"{% endif %}{% if inputmode %} inputmode="{{ inputmode }}"{% endif %}>
+  {% if help %}<p class="help">{{ help }}</p>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro area(name, label, value='', help='', rows=4, maxlength='', id='') -%}
+{% set fid = id or ('f-' ~ name) %}
+<div class="field">
+  <label class="label" for="{{ fid }}">{{ label }}</label>
+  <textarea id="{{ fid }}" class="input" name="{{ name }}" rows="{{ rows }}"{% if maxlength %} maxlength="{{ maxlength }}"{% endif %}>{{ value }}</textarea>
+  {% if help %}<p class="help">{{ help }}</p>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro variant_form(v, pid, csrf_token) -%}
+{% set k = 'v' ~ (v.id if v else 'new') ~ '-' %}
+<form method="post" action="/admin/products/{{ pid }}/variants/save" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="variant_id" value="{{ v.id if v else 0 }}">
+  {{ field('sku', 'SKU', v.sku if v else '', required=True, maxlength=40, mono=True, id=k ~ 'sku') }}
+  {{ field('name', 'Pack name', v.name if v else '', required=True, maxlength=80, id=k ~ 'name') }}
+  {{ field('units_per_pack', 'Bottles per pack', v.units_per_pack if v else 1, type='number', min=1, inputmode='numeric', id=k ~ 'units') }}
+  {{ field('sort', 'Sort', v.sort if v else 0, type='number', inputmode='numeric', id=k ~ 'sort') }}
+  {{ field('price', 'Price (USD)', ('%.2f'|format(v.price_cents / 100)) if v else '', type='text', inputmode='decimal', required=True, help='Dollars, e.g. 16.00', id=k ~ 'price') }}
+  {{ field('compare_at', 'Compare-at (USD)', ('%.2f'|format(v.compare_at_cents / 100)) if (v and v.compare_at_cents) else '', type='text', inputmode='decimal', help='Shown struck through; must exceed price', id=k ~ 'compare') }}
+  {% if not v %}
+  {{ field('stock', 'Opening stock', 0, type='number', min=0, inputmode='numeric', help='Later changes go through Adjust stock', id=k ~ 'stock') }}
+  {% endif %}
+  {{ field('low_stock_threshold', 'Low-stock threshold', v.low_stock_threshold if v else 5, type='number', min=0, inputmode='numeric', id=k ~ 'low') }}
+  {{ field('weight_oz', 'Ship weight (oz)', (v.weight_oz or '') if v else '', type='number', step='0.1', min=0, inputmode='decimal', id=k ~ 'weight') }}
+  {{ field('stripe_price_id', 'Stripe price ID', v.stripe_price_id if v else '', mono=True, maxlength=80, help='price_… for one-time checkout', id=k ~ 'sp') }}
+  {{ field('stripe_subscription_price_id', 'Stripe subscription price ID', v.stripe_subscription_price_id if v else '', mono=True, maxlength=80, help='Recurring price; blank hides the subscribe option', id=k ~ 'ssp') }}
+  {{ field('subscription_discount_percent', 'Subscription discount (%)', (v.subscription_discount_percent if v.subscription_discount_percent is not none else '') if v else '', type='number', min=0, inputmode='numeric', help='Blank = site-wide default from Settings', id=k ~ 'subpct') }}
+  <div class="flex items-end justify-between gap-3 sm:col-span-2 lg:col-span-4 pt-1">
+    <label class="text-sm"><input type="checkbox" class="checkbox" name="is_active" value="1" {% if (v and v.is_active) or not v %}checked{% endif %}>Active (purchasable)</label>
+    <button type="submit" class="btn btn-secondary">{{ 'Save pack' if v else 'Add pack' }}</button>
+  </div>
+</form>
+{%- endmacro %}
+
+{% block content %}
+{% call head('Catalog', p.get('name') or 'New product', ('Edit label facts, packs, stock, images and documents.' if editing else 'Only the name is required to save. Everything else can follow.')) %}
+<a href="/admin/products" class="btn btn-ghost">All products</a>
+{% if editing %}<a href="/products/{{ p.slug }}" class="btn btn-secondary" rel="noopener">View on store {{ icon('external', 14) }}</a>{% endif %}
+{% endcall %}
+
+<form method="post" action="/admin/products/save" class="mt-6 space-y-6">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="id" value="{{ p.get('id') or 0 }}">
+
+  <section class="card card-pad">
+    <h2 class="text-lg">Basics</h2>
+    <div class="mt-4 grid gap-4 md:grid-cols-2">
+      {{ field('name', 'Name', p.get('name') or '', required=True, maxlength=120) }}
+      {{ field('slug', 'URL slug', p.get('slug') or '', mono=True, maxlength=80, help='Blank = derived from the name') }}
+      <div class="md:col-span-2">{{ field('tagline', 'Tagline', p.get('tagline') or '', maxlength=200, help='One sentence under the name on the product page') }}</div>
+      <div class="field">
+        <label class="label" for="f-collection">Collection</label>
+        <select id="f-collection" class="input" name="collection_id">
+          <option value="">None</option>
+          {% for c in collections %}<option value="{{ c.id }}" {% if p.get('collection_id') == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="label" for="f-formulation">Formulation</label>
+        <select id="f-formulation" class="input" name="formulation_type">
+          {% for f in formulations %}<option value="{{ f }}" {% if (p.get('formulation_type') or 'enzymatic') == f %}selected{% endif %}>{{ f|capitalize }}</option>{% endfor %}
+        </select>
+        <p class="help">Caustic and acid are DOT corrosives and are flagged hazmat automatically.</p>
+      </div>
+      {{ field('sort', 'Sort order', p.get('sort') or 0, type='number', inputmode='numeric') }}
+      <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm self-end">
+        <label><input type="checkbox" class="checkbox" name="is_active" value="1" {% if p.get('is_active', 1) %}checked{% endif %}>Active on the store</label>
+        <label><input type="checkbox" class="checkbox" name="is_featured" value="1" {% if p.get('is_featured') %}checked{% endif %}>Featured on home</label>
+        <label><input type="checkbox" class="checkbox" name="hazmat" value="1" {% if p.get('hazmat') %}checked{% endif %}>Hazmat (ground only)</label>
+      </div>
+    </div>
+  </section>
+
+  <section class="card card-pad">
+    <h2 class="text-lg">Label facts</h2>
+    <p class="text-muted text-sm mt-1">Copy the label word for word. The store never claims more than what is entered here.</p>
+    <div class="mt-4 grid gap-4 md:grid-cols-2">
+      <div class="md:col-span-2">{{ field('dose_text', 'Dosing statement', p.get('dose_text') or '', maxlength=300, help='e.g. “Dosed for monthly use on any drain”') }}</div>
+      {{ field('net_volume_oz', 'Net volume (fl oz)', p.get('net_volume_oz') or '', type='number', step='0.1', min=0, inputmode='decimal') }}
+      {{ field('net_volume_ml', 'Net volume (mL)', p.get('net_volume_ml') or '', type='number', step='1', min=0, inputmode='decimal') }}
+      {{ field('dose_interval_days', 'Dose interval (days)', p.get('dose_interval_days') or 30, type='number', min=1, inputmode='numeric', help='30 = one bottle per month') }}
+      {{ field('drains_per_unit', 'Drains per bottle', p.get('drains_per_unit') or 1, type='number', min=1, inputmode='numeric') }}
+      {{ field('weight_oz', 'Ship weight per bottle (oz)', p.get('weight_oz') or 5, type='number', step='0.1', min=0, inputmode='decimal') }}
+      {{ field('active_ingredients', 'Active ingredients', p.get('active_ingredients') or '', maxlength=2000, help='From the SDS or back label only') }}
+      <div class="md:col-span-2">{{ area('label_claims', 'Label claims (one per line)', (p.get('claims') or [])|join('\n'), help='Each line becomes a card on the product page. Four lines is plenty.', rows=5) }}</div>
+      <div class="md:col-span-2">{{ area('directions', 'Directions', p.get('directions') or '', help='Markdown-lite. Blank shows “see label”.', rows=5, maxlength=5000) }}</div>
+      {{ field('safe_for', 'Safe for (comma list)', p.get('safe_for') or '', maxlength=500) }}
+      {{ field('not_safe_for', 'Not for (comma list)', p.get('not_safe_for') or '', maxlength=500) }}
+      <div class="md:col-span-2">{{ field('prop65_warning', 'Prop 65 warning', p.get('prop65_warning') or '', maxlength=1000, help='Blank = no warning required') }}</div>
+    </div>
+  </section>
+
+  <section class="card card-pad">
+    <h2 class="text-lg">Description</h2>
+    {{ area('description', 'Product description', p.get('description') or '', help='Markdown-lite: paragraphs, **bold**, lists, links. Rendered escaped.', rows=8, maxlength=20000) }}
+  </section>
+
+  <section class="card card-pad">
+    <h2 class="text-lg">Specifications</h2>
+    <p class="text-muted text-sm mt-1">Label / value pairs for the spec table. Blank rows are ignored.</p>
+    <div class="mt-4 space-y-2">
+      {% set specs = (p.get('specs') or []) + [{}, {}, {}] %}
+      {% for s in specs %}
+      <div class="grid gap-2 sm:grid-cols-[1fr_2fr]">
+        <div><label class="sr-only" for="spec-l-{{ loop.index }}">Spec label {{ loop.index }}</label><input id="spec-l-{{ loop.index }}" class="input" name="spec_label" value="{{ s.get('label') or '' }}" maxlength="80" placeholder="Label"></div>
+        <div><label class="sr-only" for="spec-v-{{ loop.index }}">Spec value {{ loop.index }}</label><input id="spec-v-{{ loop.index }}" class="input" name="spec_value" value="{{ s.get('value') or '' }}" maxlength="500" placeholder="Value"></div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card card-pad">
+    <h2 class="text-lg">FAQ</h2>
+    <p class="text-muted text-sm mt-1">Question and answer pairs. Blank rows are ignored.</p>
+    <div class="mt-4 space-y-4">
+      {% set faqs = (p.get('faqs') or []) + [{}, {}, {}] %}
+      {% for f in faqs %}
+      <div class="panel p-3 space-y-2">
+        <div><label class="label" for="faq-q-{{ loop.index }}">Question {{ loop.index }}</label><input id="faq-q-{{ loop.index }}" class="input" name="faq_q" value="{{ f.get('question') or '' }}" maxlength="200"></div>
+        <div><label class="label" for="faq-a-{{ loop.index }}">Answer</label><textarea id="faq-a-{{ loop.index }}" class="input !min-h-[4.5rem]" name="faq_a" rows="2" maxlength="2000">{{ f.get('answer') or '' }}</textarea></div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card card-pad">
+    <h2 class="text-lg">Search</h2>
+    <div class="mt-4 grid gap-4">
+      {{ field('seo_title', 'SEO title', p.get('seo_title') or '', maxlength=150, help='Blank uses the product name') }}
+      {{ area('seo_description', 'SEO description', p.get('seo_description') or '', rows=2, maxlength=300) }}
+    </div>
+  </section>
+
+  <div class="flex flex-wrap items-center gap-3 sticky bottom-0 py-3 bg-bg/95 border-t border-line-soft">
+    <button type="submit" class="btn btn-primary">{{ 'Save product' if editing else 'Create product' }}</button>
+    <a href="/admin/products" class="btn btn-ghost">Cancel</a>
+  </div>
+</form>
+
+{% if editing %}
+<section class="mt-10" id="packs">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div><p class="eyebrow">Packs</p><h2 class="text-xl mt-1">Variants and stock</h2></div>
+    <p class="text-muted text-sm">Prices are dollars; stock changes are logged as movements.</p>
+  </div>
+  <div class="mt-4 space-y-4">
+    {% for v in p.all_variants %}
+    <article class="card card-pad">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h3 class="text-base flex items-center gap-2">{{ v.name }} <span class="text-faint font-mono text-xs font-normal">{{ v.sku }}</span> {{ onoff(v.is_active) }}</h3>
+        <span class="badge {{ 'badge-danger' if v.stock <= 0 else ('badge-warning' if v.stock <= v.low_stock_threshold else 'badge-success') }} tabular-nums">{{ v.stock }} in stock</span>
+      </div>
+      <div class="mt-4">{{ variant_form(v, p.id, csrf_token) }}</div>
+      <form method="post" action="/admin/products/{{ p.id }}/variants/{{ v.id }}/stock" class="mt-4 pt-4 border-t border-line-soft grid gap-3 sm:grid-cols-[8rem_1fr_auto] items-end">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div><label class="label" for="stk-{{ v.id }}">Adjust stock</label><input id="stk-{{ v.id }}" class="input" type="number" name="delta" value="0" step="1" inputmode="numeric" aria-describedby="stk-help-{{ v.id }}"></div>
+        <div><label class="label" for="stk-note-{{ v.id }}">Note</label><input id="stk-note-{{ v.id }}" class="input" name="note" maxlength="200" placeholder="Received 24 from supplier"></div>
+        <button type="submit" class="btn btn-secondary">Apply</button>
+        <p class="help sm:col-span-3 !mt-0" id="stk-help-{{ v.id }}">Positive adds (restock), negative removes (adjust). Cannot go below zero.</p>
+      </form>
+    </article>
+    {% endfor %}
+    <details class="card card-pad">
+      <summary class="font-display font-bold text-base cursor-pointer min-h-11 flex items-center">Add a pack</summary>
+      <div class="mt-4">{{ variant_form(None, p.id, csrf_token) }}</div>
+    </details>
+  </div>
+</section>
+
+<section class="mt-10" id="images">
+  <div><p class="eyebrow">Media</p><h2 class="text-xl mt-1">Images</h2></div>
+  <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {% for img in p.images %}
+    <article class="card overflow-hidden">
+      <div class="aspect-[4/5] bg-bg-deep border-b border-line-soft">
+        {% if img.src %}<img src="{{ img.src }}" alt="{{ img.alt }}" width="{{ img.width }}" height="{{ img.height }}" loading="lazy" class="w-full h-full object-contain">{% else %}<p class="h-full grid place-items-center text-faint text-sm">Renditions not built</p>{% endif %}
+      </div>
+      <div class="p-4">
+        <div class="flex items-center justify-between gap-2">{{ badge(img.kind) }}<span class="text-xs text-faint font-mono truncate">{{ img.base }}</span></div>
+        <p class="text-sm text-muted mt-2 line-clamp-2">{{ img.alt or 'No alt text' }}</p>
+        <div class="mt-3 flex gap-2">
+          {% if img.kind != 'hero' %}
+          <form method="post" action="/admin/products/{{ p.id }}/images/{{ img.id }}/hero"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit" class="btn btn-secondary btn-sm">Make hero</button></form>
+          {% endif %}
+          <form method="post" action="/admin/products/{{ p.id }}/images/{{ img.id }}/delete"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit" class="btn btn-danger btn-sm">Delete</button></form>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+    <form method="post" action="/admin/products/{{ p.id }}/images" enctype="multipart/form-data" class="card card-pad space-y-3 self-start">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <h3 class="text-base">Upload an image</h3>
+      <div><label class="label" for="img-file">File (JPEG, PNG or WebP, up to 12 MB)</label><input id="img-file" class="input !py-2" type="file" name="image" accept="image/jpeg,image/png,image/webp" required></div>
+      <div><label class="label" for="img-alt">Alt text</label><input id="img-alt" class="input" name="alt" maxlength="200" placeholder="Quick Shot bottle beside a kitchen sink"></div>
+      <div><label class="label" for="img-kind">Kind</label><select id="img-kind" class="input" name="kind"><option value="gallery">Gallery</option><option value="hero">Hero (replaces current)</option><option value="label">Label photo</option></select></div>
+      <button type="submit" class="btn btn-secondary">Upload and build renditions</button>
+    </form>
+  </div>
+</section>
+
+<section class="mt-10" id="documents">
+  <div><p class="eyebrow">Documents</p><h2 class="text-xl mt-1">SDS and label</h2></div>
+  <div class="mt-4 grid gap-4 lg:grid-cols-2">
+    <div class="card card-pad">
+      <dl class="space-y-3 text-sm">
+        <div class="flex items-center justify-between gap-3"><dt class="text-muted">Safety data sheet</dt><dd>{% if p.sds_available %}<a href="/products/{{ p.slug }}/sds" class="link">View PDF</a>{% elif p.sds_path %}<span class="badge badge-warning">File missing on disk</span>{% else %}<span class="badge">Not uploaded</span>{% endif %}</dd></div>
+        <div class="flex items-center justify-between gap-3"><dt class="text-muted">Label</dt><dd>{% if p.label_available %}<a href="/products/{{ p.slug }}/label" class="link">View</a>{% elif p.label_path %}<span class="badge badge-warning">File missing on disk</span>{% else %}<span class="badge">Not uploaded</span>{% endif %}</dd></div>
+      </dl>
+      <p class="help mt-4">Until the SDS is published the product page offers a “request it” link instead and lists no ingredients.</p>
+    </div>
+    <form method="post" action="/admin/products/{{ p.id }}/documents" enctype="multipart/form-data" class="card card-pad space-y-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <h3 class="text-base">Upload a document</h3>
+      <div><label class="label" for="doc-kind">Document</label><select id="doc-kind" class="input" name="doc_kind"><option value="sds">Safety data sheet (PDF)</option><option value="label">Label (PDF, JPEG or PNG)</option></select></div>
+      <div><label class="label" for="doc-file">File (up to 20 MB)</label><input id="doc-file" class="input !py-2" type="file" name="doc" accept="application/pdf,image/jpeg,image/png" required></div>
+      <button type="submit" class="btn btn-secondary">Upload</button>
+    </form>
+  </div>
+</section>
+
+<section class="mt-10" id="movements">
+  <div><p class="eyebrow">Inventory</p><h2 class="text-xl mt-1">Recent stock movements</h2></div>
+  <div class="card mt-4">
+    {% if movements is defined and movements %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th scope="col">When</th><th scope="col">SKU</th><th scope="col" class="num">Change</th><th scope="col">Reason</th><th scope="col">Note</th></tr></thead>
+        <tbody>
+          {% for m in movements %}
+          <tr>
+            <td class="text-muted whitespace-nowrap">{{ m.created_at|est_datetime }}</td>
+            <td class="font-mono">{{ m.sku }}</td>
+            <td class="num {{ 'text-success' if m.delta > 0 else 'text-danger' }}">{{ '%+d'|format(m.delta) }}</td>
+            <td>{{ badge(m.reason) }}{% if m.order_id %} <a href="/admin/orders/{{ m.order_id }}" class="link text-xs">order</a>{% endif %}</td>
+            <td class="text-muted">{{ m.note }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}{{ empty('No movements recorded yet.') }}{% endif %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

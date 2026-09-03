@@ -1,0 +1,79 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, onoff, empty %}
+
+{% macro discount_form(d, csrf_token) -%}
+{% set k = 'd' ~ (d.id if d else 'new') ~ '-' %}
+<form method="post" action="/admin/discounts/save" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="id" value="{{ d.id if d else 0 }}">
+  <div><label class="label" for="{{ k }}code">Code</label><input id="{{ k }}code" class="input font-mono uppercase" name="code" value="{{ d.code if d else '' }}" maxlength="40" required autocomplete="off"></div>
+  <div><label class="label" for="{{ k }}kind">Kind</label>
+    <select id="{{ k }}kind" class="input" name="kind">
+      {% for kind, label in [('percent', 'Percent off'), ('fixed', 'Fixed amount off'), ('free_shipping', 'Free shipping')] %}
+      <option value="{{ kind }}" {% if d and d.kind == kind %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div><label class="label" for="{{ k }}value">Value</label>
+    <input id="{{ k }}value" class="input" name="value" inputmode="decimal" value="{% if d %}{% if d.kind == 'fixed' %}{{ '%.2f'|format(d.value / 100) }}{% elif d.kind == 'percent' %}{{ d.value }}{% endif %}{% endif %}">
+    <p class="help">Percent (0–100) or dollars for fixed. Ignored for free shipping.</p>
+  </div>
+  <div><label class="label" for="{{ k }}min">Minimum subtotal (USD)</label><input id="{{ k }}min" class="input" name="min_subtotal" inputmode="decimal" value="{{ ('%.2f'|format(d.min_subtotal_cents / 100)) if (d and d.min_subtotal_cents) else '' }}"></div>
+  <div><label class="label" for="{{ k }}max">Max uses</label><input id="{{ k }}max" class="input" type="number" name="max_uses" min="1" inputmode="numeric" value="{{ d.max_uses or '' if d else '' }}"><p class="help">Blank = unlimited</p></div>
+  <div><label class="label" for="{{ k }}email">Restrict to email</label><input id="{{ k }}email" class="input" type="email" name="restricted_to_email" value="{{ d.restricted_to_email or '' if d else '' }}"></div>
+  <div><label class="label" for="{{ k }}starts">Starts</label><input id="{{ k }}starts" class="input" type="date" name="starts_at" value="{{ (d.starts_at or '')[:10] if d else '' }}"></div>
+  <div><label class="label" for="{{ k }}expires">Expires</label><input id="{{ k }}expires" class="input" type="date" name="expires_at" value="{{ (d.expires_at or '')[:10] if d else '' }}"><p class="help">Valid through the end of that day</p></div>
+  <div><label class="label" for="{{ k }}channel">Channel</label><input id="{{ k }}channel" class="input" name="channel" value="{{ d.channel if d else '' }}" maxlength="40" list="channels" autocomplete="off"></div>
+  <div class="sm:col-span-2"><label class="label" for="{{ k }}note">Note</label><input id="{{ k }}note" class="input" name="note" value="{{ d.note if d else '' }}" maxlength="300"></div>
+  <div class="flex items-end justify-between gap-3 sm:col-span-2 lg:col-span-4">
+    <label class="text-sm"><input type="checkbox" class="checkbox" name="is_active" value="1" {% if (d and d.is_active) or not d %}checked{% endif %}>Active</label>
+    <button type="submit" class="btn {{ 'btn-secondary' if d else 'btn-primary' }}">{{ 'Save code' if d else 'Create code' }}</button>
+  </div>
+</form>
+{%- endmacro %}
+
+{% block content %}
+{{ head('People', 'Discount codes', 'Codes are stored upper-case. Newsletter welcome codes are created automatically and appear here too.') }}
+<datalist id="channels"><option value="newsletter"><option value="abandoned"><option value="paid-meta"><option value="paid-google"><option value="print"><option value="referral"><option value="service-visit"></datalist>
+
+<details class="card card-pad mt-6" {% if not discounts %}open{% endif %}>
+  <summary class="font-display font-bold text-base cursor-pointer min-h-11 flex items-center">New code</summary>
+  <div class="mt-4">{{ discount_form(None, csrf_token) }}</div>
+</details>
+
+<div class="card mt-6">
+  {% if discounts %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">Code</th><th scope="col">Discount</th><th scope="col" class="num">Uses</th><th scope="col" class="num">Revenue</th><th scope="col">Window</th><th scope="col">State</th><th scope="col" class="relative"><span class="sr-only">Actions</span></th></tr></thead>
+      <tbody>
+        {% for d in discounts %}
+        <tr>
+          <td><span class="font-mono font-semibold">{{ d.code }}</span>{% if d.channel %}<p class="text-xs text-faint">{{ d.channel }}</p>{% endif %}{% if d.restricted_to_email %}<p class="text-xs text-faint break-all">{{ d.restricted_to_email }}</p>{% endif %}</td>
+          <td class="whitespace-nowrap">{% if d.kind == 'percent' %}{{ d.value }}% off{% elif d.kind == 'fixed' %}{{ d.value|fmt_money }} off{% else %}Free shipping{% endif %}{% if d.min_subtotal_cents %}<p class="text-xs text-faint">min {{ d.min_subtotal_cents|fmt_money }}</p>{% endif %}</td>
+          <td class="num">{{ d.usage_count }}{% if d.max_uses %} / {{ d.max_uses }}{% endif %}<p class="text-xs text-faint">{{ d.redemptions }} orders</p></td>
+          <td class="num">{{ d.revenue_cents|fmt_money }}</td>
+          <td class="text-muted text-xs whitespace-nowrap">{% if d.starts_at %}{{ d.starts_at|est_date }}{% else %}Now{% endif %} → {% if d.expires_at %}{{ d.expires_at|est_date }}{% else %}open{% endif %}</td>
+          <td>{{ onoff(d.is_active) }}</td>
+          <td class="whitespace-nowrap">
+            <form method="post" action="/admin/discounts/{{ d.id }}/toggle" class="inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit" class="btn btn-ghost btn-sm">{{ 'Disable' if d.is_active else 'Enable' }}</button>
+            </form>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="7" class="!pt-0">
+            <details>
+              <summary class="text-sm text-nav tap-inline">Edit {{ d.code }}{% if d.note %} <span class="text-faint ml-2 font-normal">{{ d.note }}</span>{% endif %}</summary>
+              <div class="mt-3 panel p-4">{{ discount_form(d, csrf_token) }}</div>
+            </details>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}{{ empty('No codes yet.') }}{% endif %}
+</div>
+{% endblock %}

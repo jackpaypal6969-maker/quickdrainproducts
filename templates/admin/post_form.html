@@ -1,0 +1,39 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, badge %}
+{% from "components/icons.html" import icon %}
+{% set p = post or {} %}
+{% block content %}
+{% call head('Content', p.get('title') or 'New post', ('Last saved ' ~ (p.updated_at|est_datetime)) if post else 'Markdown-lite body. Publish when it reads right.') %}
+<a href="/admin/posts" class="btn btn-ghost">All content</a>
+{% if post and p.status == 'published' %}<a href="/blog/{{ p.slug }}" class="btn btn-secondary" rel="noopener">View post {{ icon('external', 14) }}</a>{% endif %}
+{% endcall %}
+
+<form method="post" action="/admin/posts/save" class="mt-6 grid gap-6 xl:grid-cols-[1.6fr_1fr] items-start">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="id" value="{{ p.get('id') or 0 }}">
+  <div class="card card-pad space-y-4">
+    <div class="field"><label class="label" for="title">Title</label><input id="title" class="input text-lg font-semibold" name="title" value="{{ p.get('title') or '' }}" maxlength="200" required></div>
+    <div class="field"><label class="label" for="excerpt">Excerpt</label><textarea id="excerpt" class="input !min-h-[4.5rem]" name="excerpt" rows="2" maxlength="500">{{ p.get('excerpt') or '' }}</textarea><p class="help">Shown on the Notes index and as the default meta description.</p></div>
+    <div class="field"><label class="label" for="body">Body</label><textarea id="body" class="input font-mono text-sm leading-relaxed" name="body" rows="22" maxlength="60000">{{ p.get('body') or '' }}</textarea><p class="help">Paragraphs, ## headings, **bold**, *italic*, - lists, [links](https://…). HTML is escaped.</p></div>
+  </div>
+  <aside class="space-y-6 xl:sticky xl:top-6">
+    <div class="card card-pad space-y-4">
+      <div class="field"><label class="label" for="status">Status</label>
+        <select id="status" class="input" name="status">
+          <option value="draft" {% if (p.get('status') or 'draft') == 'draft' %}selected{% endif %}>Draft</option>
+          <option value="published" {% if p.get('status') == 'published' %}selected{% endif %}>Published</option>
+        </select>
+        {% if p.get('published_at') %}<p class="help">First published {{ p.published_at|est_datetime }}</p>{% endif %}
+      </div>
+      <div class="field"><label class="label" for="slug">Slug</label><input id="slug" class="input font-mono" name="slug" value="{{ p.get('slug') or '' }}" maxlength="100"><p class="help">Blank = derived from the title</p></div>
+      <div class="field"><label class="label" for="author">Author</label><input id="author" class="input" name="author" value="{{ p.get('author') or 'Quick Drain' }}" maxlength="80"></div>
+      <button type="submit" class="btn btn-primary btn-block">{{ 'Save post' if post else 'Create post' }}</button>
+    </div>
+    <div class="card card-pad space-y-4">
+      <h2 class="text-base">Search</h2>
+      <div class="field"><label class="label" for="seo_title">SEO title</label><input id="seo_title" class="input" name="seo_title" value="{{ p.get('seo_title') or '' }}" maxlength="150"></div>
+      <div class="field"><label class="label" for="seo_description">SEO description</label><textarea id="seo_description" class="input !min-h-[4.5rem]" name="seo_description" rows="3" maxlength="300">{{ p.get('seo_description') or '' }}</textarea></div>
+    </div>
+  </aside>
+</form>
+{% endblock %}

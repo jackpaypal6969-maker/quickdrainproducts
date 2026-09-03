@@ -21,7 +21,8 @@ def customer_list(request: Request, q: str = "", page: int = 1, conn: sqlite3.Co
     like = f"%{q.strip()}%"
     where = "WHERE (email LIKE ? OR first_name LIKE ? OR last_name LIKE ?)" if q.strip() else ""
     params: tuple = (like, like, like) if q.strip() else ()
-    rows = [dict(r) for r in all_rows(conn, f"""SELECT c.*, (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.id) AS order_count,
+    rows = [dict(r) for r in all_rows(conn, f"""SELECT c.id, c.email, c.first_name, c.last_name, c.phone, c.marketing_opt_in, c.is_active, c.created_at, c.last_login_at, c.deleted_at,
+              (c.password_hash != '') AS registered, (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.id) AS order_count,
               (SELECT COALESCE(SUM(total_cents - refunded_cents),0) FROM orders o WHERE o.customer_id = c.id) AS lifetime_cents
               FROM customers c {where} ORDER BY c.created_at DESC LIMIT ? OFFSET ?""", (*params, per, (page - 1) * per))]
     total = one(conn, f"SELECT COUNT(*) AS n FROM customers {where}", params)["n"]

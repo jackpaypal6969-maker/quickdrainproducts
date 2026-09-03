@@ -1,0 +1,38 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, empty, pager %}
+{% block content %}
+{{ head('People', 'Customers', total|plural('customer') ~ (' matching' if q else '')) }}
+
+<form method="get" action="/admin/customers" class="mt-6 flex gap-2 lg:w-96" role="search">
+  <label class="sr-only" for="q">Search customers</label>
+  <input id="q" class="input" type="search" name="q" value="{{ q }}" placeholder="Email or name">
+  <button type="submit" class="btn btn-secondary shrink-0">Search</button>
+</form>
+
+<div class="card mt-4">
+  {% if customers %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">Customer</th><th scope="col">Type</th><th scope="col" class="num">Orders</th><th scope="col" class="num">Lifetime</th><th scope="col">Marketing</th><th scope="col">Joined</th></tr></thead>
+      <tbody>
+        {% for c in customers %}
+        <tr>
+          <td>
+            <a href="/admin/customers/{{ c.id }}" class="tap-text font-semibold hover:underline break-all">{{ c.email }}</a>
+            {% if c.first_name or c.last_name %}<p class="text-muted text-xs">{{ c.first_name }} {{ c.last_name }}</p>{% endif %}
+            {% if not c.is_active or c.deleted_at %}<span class="badge badge-danger mt-1">Deactivated</span>{% endif %}
+          </td>
+          <td><span class="badge">{{ 'Account' if c.password_hash else 'Guest' }}</span></td>
+          <td class="num">{{ c.order_count }}</td>
+          <td class="num">{{ c.lifetime_cents|fmt_money }}</td>
+          <td class="text-muted">{{ 'Opted in' if c.marketing_opt_in else '—' }}</td>
+          <td class="text-muted whitespace-nowrap">{{ c.created_at|est_date }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}{{ empty('No customers match.') }}{% endif %}
+</div>
+{{ pager(page, pages, '/admin/customers?q=' ~ (q|urlencode) ~ '&') }}
+{% endblock %}

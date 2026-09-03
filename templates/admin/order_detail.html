@@ -1,0 +1,180 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, badge, empty, json_details %}
+{% from "components/icons.html" import icon %}
+{% block content %}
+{% call head('Order', order.order_number, 'Placed ' ~ (order.created_at|est_datetime) ~ ' · ' ~ order.email) %}
+<a href="/admin/orders" class="btn btn-ghost">All orders</a>
+{% if stripe_session_url %}<a href="{{ stripe_session_url }}" class="btn btn-secondary" rel="noopener" target="_blank">Checkout session {{ icon('external', 14) }}</a>{% endif %}
+{% if stripe_payment_url %}<a href="{{ stripe_payment_url }}" class="btn btn-primary" rel="noopener" target="_blank">Refund in Stripe {{ icon('external', 14) }}</a>{% endif %}
+{% endcall %}
+
+<div class="mt-4 flex flex-wrap items-center gap-2">
+  {{ badge(order.status) }}
+  {% if order.stripe_subscription_id %}<span class="badge badge-accent">Subscription</span>{% endif %}
+  {% if order.discount_code %}<span class="badge">Code {{ order.discount_code }}</span>{% endif %}
+  {% if order.refunded_cents %}<span class="badge badge-warning">{{ order.refunded_cents|fmt_money }} refunded</span>{% endif %}
+</div>
+
+<div class="mt-6 grid gap-6 xl:grid-cols-[1.6fr_1fr] items-start">
+  <div class="space-y-6 min-w-0">
+    <section class="card">
+      <h2 class="text-lg px-5 pt-5 pb-3">Lines</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th scope="col">Item</th><th scope="col" class="num">Qty</th><th scope="col" class="num">Unit</th><th scope="col" class="num">Discount</th><th scope="col" class="num">Credit</th><th scope="col" class="num">Line</th></tr></thead>
+          <tbody>
+            {% for it in items %}
+            <tr>
+              <td>
+                <span class="font-semibold">{{ it.product_name }}</span>{% if it.variant_name %} <span class="text-muted">· {{ it.variant_name }}</span>{% endif %}
+                <p class="text-xs text-faint font-mono">{{ it.sku }}{% if it.is_subscription %} · monthly{% endif %} · {{ it.units_per_pack }} × {{ it.qty }} = {{ it.units_per_pack * it.qty }} bottles</p>
+              </td>
+              <td class="num">{{ it.qty }}</td>
+              <td class="num">{{ it.unit_price_cents|fmt_money }}</td>
+              <td class="num text-muted">{% if it.discount_cents %}−{{ it.discount_cents|fmt_money }}{% else %}—{% endif %}</td>
+              <td class="num text-muted">{% if it.credit_cents %}−{{ it.credit_cents|fmt_money }}{% else %}—{% endif %}</td>
+              <td class="num font-semibold">{{ it.line_total_cents|fmt_money }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <dl class="px-5 py-4 border-t border-line-soft text-sm grid gap-1 sm:max-w-xs sm:ml-auto">
+        <div class="flex justify-between"><dt class="text-muted">Subtotal</dt><dd class="tabular-nums">{{ order.subtotal_cents|fmt_money }}</dd></div>
+        {% if order.discount_cents %}<div class="flex justify-between"><dt class="text-muted">Discount{% if order.discount_code %} ({{ order.discount_code }}){% endif %}</dt><dd class="tabular-nums">−{{ order.discount_cents|fmt_money }}</dd></div>{% endif %}
+        {% if order.credit_cents %}<div class="flex justify-between"><dt class="text-muted">Store credit</dt><dd class="tabular-nums">−{{ order.credit_cents|fmt_money }}</dd></div>{% endif %}
+        <div class="flex justify-between"><dt class="text-muted">Shipping</dt><dd class="tabular-nums">{{ order.shipping_cents|fmt_money }}</dd></div>
+        <div class="flex justify-between"><dt class="text-muted">Tax</dt><dd class="tabular-nums">{{ order.tax_cents|fmt_money }}</dd></div>
+        <div class="flex justify-between font-bold text-base pt-2 border-t border-line-soft"><dt>Total</dt><dd class="tabular-nums">{{ order.total_cents|fmt_money }}</dd></div>
+        {% if order.refunded_cents %}<div class="flex justify-between text-warning"><dt>Refunded</dt><dd class="tabular-nums">−{{ order.refunded_cents|fmt_money }}</dd></div>{% endif %}
+      </dl>
+    </section>
+
+    <div class="grid gap-6 md:grid-cols-2">
+      <section class="card card-pad text-sm">
+        <h2 class="text-lg">Ship to</h2>
+        <address class="not-italic mt-3 text-muted leading-relaxed">
+          <span class="text-ink font-semibold">{{ order.shipping_name or '—' }}</span><br>
+          {% if order.shipping_line1 %}{{ order.shipping_line1 }}<br>{% endif %}
+          {% if order.shipping_line2 %}{{ order.shipping_line2 }}<br>{% endif %}
+          {{ order.shipping_city }}{% if order.shipping_state %}, {{ order.shipping_state }}{% endif %} {{ order.shipping_postal_code }}<br>
+          {{ order.shipping_country }}{% if order.shipping_phone %}<br>{{ order.shipping_phone }}{% endif %}
+        </address>
+        {% if order.tracking_number %}<p class="mt-3 font-mono text-xs">{{ order.carrier }} {{ order.tracking_number }}</p>{% endif %}
+        {% if order.shipped_at %}<p class="help">Shipped {{ order.shipped_at|est_datetime }}</p>{% endif %}
+        {% if order.delivered_at %}<p class="help">Delivered {{ order.delivered_at|est_datetime }}</p>{% endif %}
+      </section>
+      <section class="card card-pad text-sm">
+        <h2 class="text-lg">Customer</h2>
+        <p class="mt-3">{% if customer %}<a href="/admin/customers/{{ customer.id }}" class="link">{{ customer.email }}</a>{% if customer.first_name or customer.last_name %}<br><span class="text-muted">{{ customer.first_name }} {{ customer.last_name }}</span>{% endif %}<br><span class="badge mt-2">{{ 'Account' if customer.registered else 'Guest' }}</span>{% else %}<span class="text-muted">{{ order.email }}</span><br><span class="badge mt-2">Guest</span>{% endif %}</p>
+        <dl class="mt-4 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-muted">
+          <dt>Source</dt><dd>{{ order.utm_source or '(direct)' }}{% if order.utm_medium %} / {{ order.utm_medium }}{% endif %}{% if order.utm_campaign %} · {{ order.utm_campaign }}{% endif %}</dd>
+          <dt>IP</dt><dd class="font-mono">{{ order.ip or '—' }}</dd>
+          <dt>Payment intent</dt><dd class="font-mono break-all">{{ order.stripe_payment_intent_id or '—' }}</dd>
+          <dt>Session</dt><dd class="font-mono break-all">{{ order.stripe_checkout_session_id }}</dd>
+          {% if order.stripe_customer_id %}<dt>Stripe customer</dt><dd class="font-mono break-all">{{ order.stripe_customer_id }}</dd>{% endif %}
+          {% if order.stripe_subscription_id %}<dt>Subscription</dt><dd class="font-mono break-all">{{ order.stripe_subscription_id }}</dd>{% endif %}
+        </dl>
+      </section>
+    </div>
+
+    <section class="card">
+      <h2 class="text-lg px-5 pt-5 pb-3">Returns</h2>
+      {% if rmas %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th scope="col">Requested</th><th scope="col">Reason</th><th scope="col">Status</th><th scope="col">Note</th></tr></thead>
+          <tbody>
+            {% for r in rmas %}
+            <tr>
+              <td class="text-muted whitespace-nowrap">{{ r.created_at|est_datetime }}</td>
+              <td><span class="font-semibold">{{ r.reason }}</span>{% if r.details %}<p class="text-muted text-xs mt-1 whitespace-pre-wrap">{{ r.details }}</p>{% endif %}</td>
+              <td>{{ badge(r.status) }}</td>
+              <td class="text-muted text-xs">{{ r.admin_note }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="px-5 pb-4 text-sm"><a href="/admin/rma" class="link">Manage in the returns queue</a></p>
+      {% else %}{{ empty('No return requests on this order.') }}{% endif %}
+    </section>
+
+    <section class="card">
+      <h2 class="text-lg px-5 pt-5 pb-3">Emails sent</h2>
+      {% if mails %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th scope="col">When</th><th scope="col">Template</th><th scope="col">Subject</th><th scope="col">Status</th></tr></thead>
+          <tbody>
+            {% for m in mails %}
+            <tr>
+              <td class="text-muted whitespace-nowrap">{{ m.created_at|est_datetime }}</td>
+              <td class="font-mono text-xs">{{ m.template }}</td>
+              <td>{{ m.subject }}{% if m.error %}<p class="text-xs text-danger mt-1">{{ m.error }}</p>{% endif %}</td>
+              <td>{{ badge(m.status) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}{{ empty('Nothing has been emailed about this order.') }}{% endif %}
+    </section>
+
+    <section class="card">
+      <h2 class="text-lg px-5 pt-5 pb-3">Audit trail</h2>
+      {% if log %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th scope="col">When</th><th scope="col">Who</th><th scope="col">Action</th><th scope="col">Change</th></tr></thead>
+          <tbody>
+            {% for e in log %}
+            <tr>
+              <td class="text-muted whitespace-nowrap">{{ e.created_at|est_datetime }}</td>
+              <td>{{ e.actor_name or e.actor_type }}<p class="text-xs text-faint font-mono">{{ e.ip }}</p></td>
+              <td class="font-mono text-xs">{{ e.action }}</td>
+              <td class="min-w-[14rem]">{{ json_details(e.before_json, e.after_json) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}{{ empty('No admin actions yet.') }}{% endif %}
+    </section>
+  </div>
+
+  <aside class="space-y-6 xl:sticky xl:top-6">
+    <form method="post" action="/admin/orders/{{ order.id }}/status" class="card card-pad space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <h2 class="text-lg">Fulfilment</h2>
+      <div class="field">
+        <label class="label" for="status">Status</label>
+        <select id="status" class="input" name="status">
+          {% for s in statuses %}<option value="{{ s }}" {% if s == order.status %}selected{% endif %}>{{ s|replace('_', ' ')|capitalize }}</option>{% endfor %}
+        </select>
+        <p class="help">Refunds are issued in Stripe; the webhook moves the order to refunded on its own.</p>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-[7rem_1fr]">
+        <div><label class="label" for="carrier">Carrier</label><input id="carrier" class="input" name="carrier" value="{{ order.carrier }}" maxlength="40" list="carriers" autocomplete="off"><datalist id="carriers"><option value="USPS"><option value="UPS"><option value="FedEx"></datalist></div>
+        <div><label class="label" for="tracking_number">Tracking number</label><input id="tracking_number" class="input font-mono" name="tracking_number" value="{{ order.tracking_number }}" maxlength="80" autocomplete="off"></div>
+      </div>
+      <label class="text-sm"><input type="checkbox" class="checkbox" name="notify" value="1" checked>Email the customer when marked shipped</label>
+      <button type="submit" class="btn btn-primary btn-block">Update order</button>
+    </form>
+
+    <form method="post" action="/admin/orders/{{ order.id }}/note" class="card card-pad space-y-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <h2 class="text-lg">Internal note</h2>
+      <div><label class="label" for="admin_note">Visible to admins only</label><textarea id="admin_note" class="input" name="admin_note" rows="4" maxlength="4000">{{ order.admin_note }}</textarea></div>
+      <button type="submit" class="btn btn-secondary btn-block">Save note</button>
+    </form>
+
+    <form method="post" action="/admin/orders/{{ order.id }}/resend-confirmation" class="card card-pad space-y-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <h2 class="text-lg">Confirmation email</h2>
+      <p class="text-sm text-muted">Re-sends the original order confirmation to {{ order.email }}.</p>
+      <button type="submit" class="btn btn-secondary btn-block">Resend confirmation</button>
+    </form>
+  </aside>
+</div>
+{% endblock %}

@@ -8,9 +8,10 @@ import hmac
 import json
 import logging
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse, PlainTextResponse, RedirectResponse, Response
 
@@ -151,8 +152,8 @@ def create_app() -> FastAPI:
             conn.close()
         return JSONResponse({"ok": True, "env": settings.env, "products": products, "stripe": bool(settings.stripe_secret_key), "stripe_mode": "live" if settings.stripe_is_live else "test"})
 
-    @app.exception_handler(HTTPException)
-    async def http_exception_handler(request: Request, exc: HTTPException):
+    @app.exception_handler(StarletteHTTPException)
+    async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         location = (exc.headers or {}).get("Location") if exc.headers else None
         if exc.status_code in {302, 303, 307} and location:
             return RedirectResponse(location, status_code=exc.status_code)

@@ -19,11 +19,12 @@ load_dotenv(_DEFAULT_APP_DIR / ".env", override=False)
 
 
 def _flag(name: str, default: str = "off") -> bool:
-    return os.environ.get(name, default).strip().lower() in {"1", "on", "true", "yes"}
+    # A present-but-empty key (`KEY=`) means "use the default", not "empty".
+    return (os.environ.get(name) or default).strip().lower() in {"1", "on", "true", "yes"}
 
 
 def _int(name: str, default: int) -> int:
-    raw = os.environ.get(name, "").strip()
+    raw = (os.environ.get(name) or "").strip()
     try:
         return int(raw) if raw else default
     except ValueError:
@@ -31,7 +32,7 @@ def _int(name: str, default: int) -> int:
 
 
 def _str(name: str, default: str = "") -> str:
-    return os.environ.get(name, default).strip()
+    return (os.environ.get(name) or default).strip()
 
 
 @dataclass(frozen=True)
@@ -111,11 +112,20 @@ class Settings:
             problems.append("SECRET_KEY must be set and at least 32 characters (openssl rand -hex 32)")
         if self.is_production and not self.cookie_secure and self.base_url.startswith("https://"):
             problems.append("BASE_URL is https but COOKIE_SECURE is off")
-        if self.is_production and self.stripe_is_live:
-            # Deliberate: the brief keeps Stripe in test mode until told otherwise.
+        if self.stripe_is_live and not _flag("STRIPE_LIVE_OK", "off"):
+            # Deliberate: the brief keeps Stripe in test mode until told otherwise, in every environment.
             problems.append("STRIPE_SECRET_KEY is a live key; live mode is not enabled for this build (set STRIPE_LIVE_OK=on to override)")
-            if _flag("STRIPE_LIVE_OK", "off"):
-                problems.pop()
+        if self.is_production and self.stripe_secret_key and not self.stripe_webhook_secret:
+            problems.append("STRIPE_WEBHOOK_SECRET is empty: Stripe would take payments that never become orders")
+        if self.is_production and not self.email_dry_run and not self.resend_api_key:
+            problems.append("RESEND_API_KEY is empty and EMAIL_DRY_RUN is off: no email could be sent")
+        if self.is_production and "@" not in self.email_from:
+            problems.append("EMAIL_FROM must be a sender address like 'Quick Drain Products <orders@your-domain>'")
+        try:
+            from zoneinfo import ZoneInfo
+            ZoneInfo(self.tz)
+        except Exception:  # noqa: BLE001
+            problems.append(f"TZ '{self.tz}' is not a valid IANA zone (use America/New_York)")
         return problems
 
 

@@ -1,0 +1,115 @@
+{% extends "admin/base.html" %}
+{% from "admin/_macros.html" import head, empty %}
+{% set qs = 'group=' ~ group ~ '&days=' ~ days %}
+{% block content %}
+{{ head('Site', 'Reports', 'Canceled orders are excluded. Every table has a CSV twin with the same window.') }}
+
+<form method="get" action="/admin/reports" class="mt-6 flex flex-wrap items-end gap-3">
+  <div><label class="label" for="group">Group revenue by</label>
+    <select id="group" class="input" name="group">
+      {% for g in ['day', 'week', 'month'] %}<option value="{{ g }}" {% if g == group %}selected{% endif %}>{{ g|capitalize }}</option>{% endfor %}
+    </select>
+  </div>
+  <div><label class="label" for="days">Window</label>
+    <select id="days" class="input" name="days">
+      {% for d in [7, 30, 90, 365] %}<option value="{{ d }}" {% if d == days %}selected{% endif %}>Last {{ d }} days</option>{% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn-secondary">Apply</button>
+</form>
+
+<section class="card mt-6">
+  <div class="flex items-center justify-between gap-3 px-5 pt-5 pb-3"><h2 class="text-lg">Revenue by {{ group }}</h2><a href="/admin/reports/revenue.csv?{{ qs }}" class="btn btn-ghost btn-sm">CSV</a></div>
+  {% if revenue %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">Period</th><th scope="col" class="num">Orders</th><th scope="col" class="num">Subtotal</th><th scope="col" class="num">Discounts</th><th scope="col" class="num">Shipping</th><th scope="col" class="num">Tax</th><th scope="col" class="num">Total</th><th scope="col" class="num">Refunded</th><th scope="col" class="num">Net</th></tr></thead>
+      <tbody>
+        {% for r in revenue %}
+        <tr>
+          <td class="font-mono whitespace-nowrap">{{ r.period }}</td>
+          <td class="num">{{ r.orders }}</td>
+          <td class="num">{{ r.subtotal_cents|fmt_money }}</td>
+          <td class="num text-muted">{{ r.discount_cents|fmt_money }}</td>
+          <td class="num text-muted">{{ r.shipping_cents|fmt_money }}</td>
+          <td class="num text-muted">{{ r.tax_cents|fmt_money }}</td>
+          <td class="num">{{ r.total_cents|fmt_money }}</td>
+          <td class="num text-muted">{{ r.refunded_cents|fmt_money }}</td>
+          <td class="num font-semibold">{{ r.net_cents|fmt_money }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}{{ empty('No orders in this window.') }}{% endif %}
+</section>
+
+<section class="card mt-6">
+  <div class="flex items-center justify-between gap-3 px-5 pt-5 pb-3"><h2 class="text-lg">Units by pack</h2><a href="/admin/reports/units.csv?{{ qs }}" class="btn btn-ghost btn-sm">CSV</a></div>
+  {% if units %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">SKU</th><th scope="col">Pack</th><th scope="col" class="num">Packs</th><th scope="col" class="num">Bottles</th><th scope="col" class="num">Orders</th><th scope="col" class="num">Revenue</th></tr></thead>
+      <tbody>
+        {% for u in units %}
+        <tr>
+          <td class="font-mono">{{ u.sku }}</td>
+          <td>{{ u.product_name }}{% if u.variant_name %} <span class="text-muted">· {{ u.variant_name }}</span>{% endif %}</td>
+          <td class="num">{{ u.packs }}</td>
+          <td class="num">{{ u.bottles }}</td>
+          <td class="num">{{ u.orders }}</td>
+          <td class="num font-semibold">{{ u.revenue_cents|fmt_money }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}{{ empty('No line items in this window.') }}{% endif %}
+</section>
+
+<section class="card mt-6">
+  <div class="flex items-center justify-between gap-3 px-5 pt-5 pb-3"><h2 class="text-lg">Discount codes</h2><a href="/admin/reports/discounts.csv?{{ qs }}" class="btn btn-ghost btn-sm">CSV</a></div>
+  {% if discounts %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">Code</th><th scope="col">Channel</th><th scope="col">Discount</th><th scope="col" class="num">Lifetime uses</th><th scope="col" class="num">Orders</th><th scope="col" class="num">Revenue</th><th scope="col" class="num">Given away</th></tr></thead>
+      <tbody>
+        {% for d in discounts %}
+        <tr>
+          <td class="font-mono">{{ d.code }}</td>
+          <td class="text-muted">{{ d.channel or '—' }}</td>
+          <td class="whitespace-nowrap">{% if d.kind == 'percent' %}{{ d.value }}%{% elif d.kind == 'fixed' %}{{ d.value|fmt_money }}{% else %}Free shipping{% endif %}</td>
+          <td class="num">{{ d.usage_count }}{% if d.max_uses %} / {{ d.max_uses }}{% endif %}</td>
+          <td class="num">{{ d.orders }}</td>
+          <td class="num">{{ d.revenue_cents|fmt_money }}</td>
+          <td class="num text-muted">{{ d.discount_cents|fmt_money }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}{{ empty('No discount codes exist.') }}{% endif %}
+</section>
+
+<section class="card mt-6">
+  <div class="flex items-center justify-between gap-3 px-5 pt-5 pb-3"><h2 class="text-lg">Channels</h2><a href="/admin/reports/channels.csv?{{ qs }}" class="btn btn-ghost btn-sm">CSV</a></div>
+  {% if channels %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">Source</th><th scope="col">Campaign</th><th scope="col" class="num">Orders</th><th scope="col" class="num">With code</th><th scope="col" class="num">Revenue</th></tr></thead>
+      <tbody>
+        {% for c in channels %}
+        <tr>
+          <td>{{ c.source }}</td>
+          <td class="text-muted">{{ c.campaign or '—' }}</td>
+          <td class="num">{{ c.orders }}</td>
+          <td class="num text-muted">{{ c.with_code }}</td>
+          <td class="num font-semibold">{{ c.revenue_cents|fmt_money }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}{{ empty('No attributed orders in this window.') }}{% endif %}
+</section>
+{% endblock %}

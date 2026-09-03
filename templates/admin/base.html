@@ -1,0 +1,138 @@
+{# Admin layout. Standalone: extends nothing, no storefront chrome. Sticky left nav on desktop, top bar + sheet on mobile.
+   Child templates set {% set bare = True %} for the sign-in / 2FA screens to get a centred card instead of the nav. #}
+{% from "components/icons.html" import icon %}
+{% set counts = counts if (counts is defined and counts is mapping) else {} %}
+{% set section = section if section is defined else '' %}
+{% macro navlist(section, counts) %}
+{% set groups = [
+  ('Sell', [
+    ('/admin/', 'Dashboard', ['dashboard'], 0, 0),
+    ('/admin/orders', 'Orders', ['orders', 'order_detail'], counts.get('orders_open'), counts.get('orders_hold')),
+    ('/admin/rma', 'Returns', ['rma'], counts.get('rma_open'), 0),
+  ]),
+  ('Catalog', [
+    ('/admin/products', 'Products', ['products', 'product_form'], 0, 0),
+    ('/admin/collections', 'Collections', ['collections'], 0, 0),
+  ]),
+  ('People', [
+    ('/admin/customers', 'Customers', ['customers', 'customer_detail'], 0, 0),
+    ('/admin/discounts', 'Discounts', ['discounts'], 0, 0),
+    ('/admin/newsletter', 'Newsletter', ['newsletter'], 0, 0),
+    ('/admin/reviews', 'Reviews', ['reviews'], counts.get('reviews_pending'), 0),
+    ('/admin/contact', 'Contact', ['contact'], counts.get('contact_new'), 0),
+  ]),
+  ('Site', [
+    ('/admin/posts', 'Content', ['posts', 'post_form', 'page_form'], 0, 0),
+    ('/admin/reports', 'Reports', ['reports'], 0, 0),
+    ('/admin/audit', 'Audit log', ['audit'], 0, 0),
+    ('/admin/emails', 'Email log', ['emails'], 0, 0),
+    ('/admin/logins', 'Sign-ins', ['logins'], 0, 0),
+    ('/admin/settings', 'Settings', ['settings'], 0, 0),
+  ]),
+] %}
+{% for label, items in groups %}
+<p class="eyebrow !text-faint px-3 pt-4 pb-1.5{% if loop.first %} !pt-1{% endif %}">{{ label }}</p>
+{% for href, name, keys, count, warn in items %}
+<a href="{{ href }}" class="nav-link flex items-center justify-between gap-2 !py-2.5 min-h-11" {% if section in keys %}aria-current="page"{% endif %}>
+  <span>{{ name }}</span>
+  {% if count or warn %}
+  <span class="flex gap-1">
+    {% if count %}<span class="badge badge-accent !py-0.5 !px-2">{{ count }}</span>{% endif %}
+    {% if warn %}<span class="badge badge-warning !py-0.5 !px-2" title="On hold">{{ warn }}</span>{% endif %}
+  </span>
+  {% endif %}
+</a>
+{% endfor %}
+{% endfor %}
+{% endmacro %}
+{% macro flashbox(flash) %}
+{% if flash %}
+<div class="alert {{ 'alert-error' if flash.kind == 'error' else 'alert-ok' }}" role="{{ 'alert' if flash.kind == 'error' else 'status' }}" id="flash-root">{{ flash.message }}</div>
+{% endif %}
+{% endmacro %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{ meta_title if meta_title else 'Admin' }} · {{ settings.app_name }}</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#140B33">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/static/fonts/geist-variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/static/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{ asset('css/app.css') }}">
+{% block head %}{% endblock %}
+</head>
+<body class="bg-bg text-ink antialiased">
+<a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] btn btn-primary btn-sm">Skip to content</a>
+{% if bare is defined and bare %}
+<main id="main" tabindex="-1" class="min-h-dvh grid place-items-center px-4 py-10 glow-top">
+  <div class="w-full max-w-sm">
+    <p class="flex items-baseline justify-center gap-2 mb-6">
+      <span class="font-display font-extrabold tracking-[-0.04em] text-xl leading-none">Quick Drain</span>
+      <span class="eyebrow !text-[0.75rem]">Admin</span>
+    </p>
+    {% if flash %}<div class="mb-4">{{ flashbox(flash) }}</div>{% endif %}
+    <div class="card card-pad">
+      {{ self.content() }}
+    </div>
+  </div>
+</main>
+{% else %}
+<div class="lg:grid lg:grid-cols-[15.5rem_minmax(0,1fr)] min-h-dvh">
+  <aside class="hidden lg:flex flex-col sticky top-0 h-dvh border-r border-line-soft bg-bg-alt">
+    <a href="/admin/" class="flex items-baseline gap-2 px-5 h-16 shrink-0 border-b border-line-soft" aria-label="Admin home">
+      <span class="font-display font-extrabold tracking-[-0.04em] text-[1.2rem] leading-none">Quick Drain</span>
+      <span class="eyebrow !text-[0.75rem]">Admin</span>
+    </a>
+    <nav class="flex-1 overflow-y-auto p-3" aria-label="Admin">
+      {{ navlist(section, counts) }}
+      <div class="hairline mt-4 pt-3"><a href="/" class="nav-link flex items-center gap-1.5 !py-2.5 min-h-11" rel="noopener">Storefront {{ icon('external', 14) }}</a></div>
+    </nav>
+    <div class="p-3 border-t border-line-soft flex items-center justify-between gap-2">
+      <span class="text-sm min-w-0 truncate"><span class="text-faint">Signed in as</span> <span class="font-semibold">{{ admin.username if admin is defined else '' }}</span></span>
+      <form method="post" action="/admin/logout" class="shrink-0">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="btn btn-ghost btn-sm">Sign out</button>
+      </form>
+    </div>
+  </aside>
+
+  <div class="min-w-0 flex flex-col">
+    <header class="lg:hidden sticky top-0 z-40 h-14 px-4 flex items-center justify-between gap-3 border-b border-line-soft bg-bg-alt">
+      <a href="/admin/" class="flex items-baseline gap-2 min-h-11 py-2" aria-label="Admin home">
+        <span class="font-display font-extrabold tracking-[-0.04em] text-[1.2rem] leading-none">Quick Drain</span>
+        <span class="eyebrow !text-[0.75rem]">Admin</span>
+      </a>
+      <button type="button" class="icon-btn" data-open-nav aria-controls="mobile-nav" aria-expanded="false" aria-label="Open admin menu">{{ icon('menu', 22) }}</button>
+    </header>
+
+    <main id="main" tabindex="-1" class="w-full max-w-7xl min-w-0 px-4 sm:px-6 lg:px-10 py-6 lg:py-10">
+      {% if flash %}<div class="mb-6">{{ flashbox(flash) }}</div>{% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+<div class="overlay" data-overlay-for="mobile-nav" hidden></div>
+<aside id="mobile-nav" class="sheet sheet-left" role="dialog" aria-modal="true" aria-label="Admin menu" data-sheet hidden>
+  <div class="flex items-center justify-between px-5 h-14 border-b border-line-soft shrink-0">
+    <span class="font-display font-extrabold tracking-[-0.04em] text-lg">Admin <span class="text-faint font-body font-normal text-sm">{{ admin.username if admin is defined else '' }}</span></span>
+    <button type="button" class="icon-btn" data-close-sheet aria-label="Close menu">{{ icon('x', 22) }}</button>
+  </div>
+  <nav class="flex-1 overflow-y-auto p-3" aria-label="Admin mobile">
+    {{ navlist(section, counts) }}
+    <div class="hairline mt-4 pt-3"><a href="/" class="nav-link flex items-center gap-1.5 !py-2.5 min-h-11">Storefront {{ icon('external', 14) }}</a></div>
+  </nav>
+  <form method="post" action="/admin/logout" class="p-3 border-t border-line-soft shrink-0">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit" class="btn btn-secondary btn-block">Sign out</button>
+  </form>
+</aside>
+{% endif %}
+<div id="toast-root" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:w-96 z-[80] space-y-2 pointer-events-none" aria-live="polite"></div>
+<script src="{{ asset('js/app.js') }}" defer></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{% extends "admin/base.html" %}
+{% set bare = True %}
+{% block content %}
+<p class="eyebrow">Step 2 of 2</p>
+<h1 class="text-xl mt-2">Save your backup codes</h1>
+<p class="text-muted text-sm mt-1">Each code signs you in once if you lose the authenticator. They are shown one time only; store them somewhere you trust.</p>
+<ol class="mt-5 grid grid-cols-2 gap-2 font-mono text-sm" aria-label="Backup codes">
+  {% for c in codes %}
+  <li class="panel px-3 py-2.5 select-all text-center tabular-nums">{{ c }}</li>
+  {% endfor %}
+</ol>
+<div class="alert alert-warn mt-5">Resetting the authenticator from Settings invalidates every code above.</div>
+<a href="/admin/2fa/email" class="btn btn-primary btn-block mt-5">I have saved them, continue</a>
+<p class="help mt-3 text-center">Next: a one-time code goes to your admin email.</p>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "admin/base.html" %}
+{% set bare = True %}
+{% block content %}
+<p class="eyebrow">Step 1 of 2</p>
+<h1 class="text-xl mt-2">Set up your authenticator</h1>
+<p class="text-muted text-sm mt-1">Scan the code with any TOTP app (1Password, Google Authenticator, Authy), then enter the six digits it shows.</p>
+<div class="mt-5 rounded-md bg-white p-3 w-fit mx-auto">
+  <img src="{{ qr }}" width="196" height="196" alt="QR code for the authenticator app" class="w-[196px] h-[196px]">
+</div>
+<details class="mt-4 text-sm">
+  <summary class="text-nav tap-inline">Cannot scan? Enter the key by hand</summary>
+  <p class="font-mono text-xs break-all mt-2 panel p-3 select-all">{{ secret }}</p>
+</details>
+<form method="post" action="/admin/2fa/setup" class="mt-5 space-y-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="field">
+    <label class="label" for="code">Six-digit code</label>
+    <input id="code" class="input font-mono tracking-[0.3em] text-lg" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,7}" maxlength="7" required autofocus>
+  </div>
+  <button type="submit" class="btn btn-primary btn-block">Confirm and continue</button>
+</form>
+<p class="help mt-4 text-center">You will get ten backup codes on the next screen.</p>
+{% endblock %}

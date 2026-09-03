@@ -107,7 +107,12 @@ def totp_setup_confirm(request: Request, code: str = Form(""), conn: sqlite3.Con
         conn.execute("UPDATE admin_users SET totp_enabled = 1, backup_codes = ? WHERE id = ?", (hashes_json, admin["id"]))
         audit.log(conn, "admin.totp_enrolled", actor_type="admin", actor_id=admin["id"], actor_name=admin["username"], target_type="admin", target_id=admin["id"], ip=ip(request))
         request.state.session["a_totp"] = True
-    _send_email_code(conn, admin)
+        if not settings.admin_2fa_required:
+            request.state.session["a2"] = True
+            record_admin_success(conn, admin["id"])
+            audit.log(conn, "admin.login", actor_type="admin", actor_id=admin["id"], actor_name=admin["username"], ip=ip(request), after={"factors": "password+totp"})
+    if settings.admin_2fa_required:
+        _send_email_code(conn, admin)
     return render(request, "admin/backup_codes.html", {"codes": codes, "meta_title": "Backup codes", "no_index": True}, conn=conn)
 
 

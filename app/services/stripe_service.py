@@ -24,13 +24,16 @@ def _client() -> None:
 
 
 def configured() -> bool:
-    return bool(settings.stripe_secret_key and settings.stripe_publishable_key)
+    """Checkout is offered only when the webhook that turns payments into orders
+    can be verified. Keys without a webhook secret would charge cards for nothing."""
+    return bool(settings.stripe_secret_key and settings.stripe_publishable_key and settings.stripe_webhook_secret)
 
 
-def _image_url(base: str | None) -> list[str]:
+def _image_url(base: str | None, source: str | None = "static") -> list[str]:
     if not base or not settings.base_url.startswith("https://"):
         return []  # Stripe needs a public https URL; skip on the raw port
-    return [f"{settings.base_url}/static/img/products/{base}-768.jpg"]
+    folder = "/media/uploads" if source == "upload" else "/static/img/products"
+    return [f"{settings.base_url}{folder}/{base}-768.jpg"]
 
 
 def create_checkout_session(conn: sqlite3.Connection, cart: dict, tot: dict, *, email: str, customer: dict | None, ip: str) -> stripe.checkout.Session:
@@ -51,7 +54,7 @@ def create_checkout_session(conn: sqlite3.Connection, cart: dict, tot: dict, *, 
                 "name": f"{it['product_name']} — {it['variant_name']}" + (f" (every {months} {'month' if months == 1 else 'months'})" if months else ""),
                 "description": (f"{it['units_per_pack']} × 4 fl oz bottle" if it["units_per_pack"] > 1 else "4 fl oz bottle") + (f", {it['sub_percent']}% subscriber price, cancel any time" if months else ""),
                 "metadata": {"variant_id": str(it["variant_id"]), "sku": it["sku"], "kind": "product"},
-                "images": _image_url(it.get("image_base")),
+                "images": _image_url(it.get("image_base"), it.get("image_source")),
             },
         }
         if months:
@@ -201,7 +204,11 @@ def handle_event(conn: sqlite3.Connection, event: stripe.Event) -> str:
         return subscriptions.sync_from_stripe(conn, data, deleted=kind.endswith("deleted"))
 
     if kind == "invoice.paid":
-        return subscriptions.handle_invoice_paid(conn, data, event["id"])
+        outcome = subscriptions.handle_invoice_paid(conn, data, event["id"])
+        if outcome == "invoice: subscription unknown locally":
+            # 500 → Stripe retries with backoff; by then checkout.session.completed has usually landed.
+            raise RuntimeError(outcome)
+        return outcome
 
     if kind == "invoice.payment_failed":
         return subscriptions.handle_invoice_failed(conn, data, event["id"])
