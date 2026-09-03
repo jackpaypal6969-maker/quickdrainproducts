@@ -31,8 +31,8 @@ TEST_ENV = {
     "DB_PATH": str(DB_PATH),
     "MEDIA_DIR": str(MEDIA_DIR),
     "EMAIL_DRY_RUN": "on",
-    os.environ["SUBSCRIPTIONS_ENABLED"] = "on"
-    os.environ["ADMIN_2FA"] = "full"
+    "SUBSCRIPTIONS_ENABLED": "on",
+    "ADMIN_2FA": "full",
     "STRIPE_SECRET_KEY": "sk_test_dummy",
     "STRIPE_PUBLISHABLE_KEY": "pk_test_dummy",
     "STRIPE_WEBHOOK_SECRET": "whsec_test",
