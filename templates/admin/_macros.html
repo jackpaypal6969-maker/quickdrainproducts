@@ -52,11 +52,12 @@
 {% endif %}
 {%- endmacro %}
 
+{# Filter chips: one swipeable row bleeding to the screen edges on phones, wrapping on desktop. #}
 {% macro chips(items, current, base, param='status', all_label='') -%}
-<div class="flex flex-wrap gap-2" role="navigation" aria-label="Filter">
-  {% if all_label %}<a href="{{ base }}" class="nav-link inline-flex items-center min-h-11 !py-2.5 border border-line-soft" {% if not current %}aria-current="page"{% endif %}>{{ all_label }}</a>{% endif %}
+<div class="flex gap-2 overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="navigation" aria-label="Filter">
+  {% if all_label %}<a href="{{ base }}" class="nav-link shrink-0 inline-flex items-center min-h-11 !py-2.5 border border-line-soft whitespace-nowrap" {% if not current %}aria-current="page"{% endif %}>{{ all_label }}</a>{% endif %}
   {% for it in items %}
-  <a href="{{ base }}{{ '&' if '?' in base else '?' }}{{ param }}={{ it }}" class="nav-link inline-flex items-center min-h-11 !py-2.5 border border-line-soft" {% if current == it %}aria-current="page"{% endif %}>{{ it|replace('_', ' ')|capitalize }}</a>
+  <a href="{{ base }}{{ '&' if '?' in base else '?' }}{{ param }}={{ it }}" class="nav-link shrink-0 inline-flex items-center min-h-11 !py-2.5 border border-line-soft whitespace-nowrap" {% if current == it %}aria-current="page"{% endif %}>{{ it|replace('_', ' ')|capitalize }}</a>
   {% endfor %}
 </div>
 {%- endmacro %}

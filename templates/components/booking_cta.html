@@ -1,17 +1,15 @@
-{# Cross-sell to the service business: the store feeds Quick Drain and vice versa. #}
+{# Cross-sell to the service business, as a full-bleed statement rather than a card. #}
 {% from "components/icons.html" import icon %}
-<section class="section-tight">
-  <div class="container-x">
-    <div class="card card-pad md:flex md:items-center md:justify-between gap-8 glow-bottom">
-      <div class="max-w-xl">
-        <p class="eyebrow">Drain backing up right now?</p>
-        <h2 class="h3 mt-2">That is a diagnostic visit, not a bottle.</h2>
-        <p class="text-muted mt-2 text-sm">A camera inspection with 512 Hz locating shows what is actually in the line before anyone quotes a fix. Drain Shot is for keeping a clean line clean afterwards.</p>
-      </div>
-      <div class="flex flex-col sm:flex-row gap-3 mt-5 md:mt-0 shrink-0">
-        <a href="{{ settings.booking_url }}" class="btn btn-primary" rel="noopener">Book a diagnostic {{ icon('arrow', 16) }}</a>
-        <a href="tel:{{ settings.phone_tel }}" class="btn btn-secondary">{{ icon('phone', 16) }} {{ settings.phone_display }}</a>
-      </div>
+<section class="band">
+  <div class="container-x band-grid">
+    <div class="max-w-2xl">
+      <p class="eyebrow">Drain backing up right now</p>
+      <h2 class="h2 mt-3">That is a diagnostic visit, not a bottle.</h2>
+      <p class="text-muted mt-4 max-w-xl">A camera inspection with 512 Hz locating shows what is actually in the line before anyone quotes a fix. Drain Shot is for keeping a clean line clean afterwards.</p>
+    </div>
+    <div class="flex flex-col sm:flex-row gap-3 shrink-0">
+      <a href="{{ settings.booking_url }}" class="btn btn-primary btn-lg" rel="noopener">Book a diagnostic {{ icon('arrow', 16) }}</a>
+      <a href="tel:{{ settings.phone_tel }}" class="btn btn-secondary btn-lg">{{ icon('phone', 16) }} {{ settings.phone_display }}</a>
     </div>
   </div>
 </section>

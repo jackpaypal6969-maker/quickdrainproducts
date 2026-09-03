@@ -11,7 +11,7 @@ from ..deps import get_db
 
 router = APIRouter()
 
-STATIC_PATHS = ["/", "/products", "/blog", "/shipping-and-safety", "/contact", "/legal/terms", "/legal/privacy", "/legal/refunds", "/legal/shipping", "/legal/accessibility"]
+STATIC_PATHS = ["/", "/products", "/build-your-box", "/blog", "/shipping-and-safety", "/contact", "/legal/terms", "/legal/privacy", "/legal/refunds", "/legal/shipping", "/legal/accessibility"]
 
 
 @router.get("/sitemap.xml")

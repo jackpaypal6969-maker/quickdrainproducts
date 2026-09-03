@@ -1,39 +1,65 @@
-{# The signature element: one row per pack, twelve month cells, the dosed months lit.
-   Pure arithmetic on the label (one bottle = one drain-month). #}
+{# The two-path offer. Left: the box, one row per pack (twelve monthly doses = one drain
+   for one year). Right: your box, built to a drain count at /build-your-box.
+   Everything here is arithmetic on the label: one bottle = one drain-month.
+   Macro name kept as `ledger` so existing imports keep working. #}
+{% from "components/icons.html" import icon %}
 {% macro ledger(product, with_buttons=True, csrf_token="") -%}
-<div class="space-y-3" data-ledger>
-  {% for row in product.dose_rows %}
-  {% set v = row.variant %}
-  <div class="ledger-row card px-4 py-4 sm:px-5 grid gap-3 sm:grid-cols-[9rem_1fr_auto] sm:items-center" data-ledger-row="{{ v.id }}">
-    <div>
-      <p class="font-display font-bold text-lg leading-tight">{{ v.name }}</p>
-      <p class="text-sm text-muted">{{ row.units }} {{ 'bottle' if row.units == 1 else 'bottles' }} · {{ row.per_unit_cents|fmt_money }} each</p>
-    </div>
-    <div>
-      <div class="ledger" role="img" aria-label="{{ row.one_drain_months }} of 12 months covered for one drain">
-        {% for m in range(12) %}<span class="ledger-cell {{ 'is-dosed' if m < row.one_drain_months else '' }}"></span>{% endfor %}
+{% set subs = product.subscriptions if product.subscriptions is defined else None %}
+{% set months = (subs.intervals[0] if subs and subs.intervals else 12) %}
+<div class="offer" data-ledger>
+  <div class="offer-path">
+    <p class="eyebrow">The box</p>
+    {% for row in product.dose_rows %}
+    {% set v = row.variant %}
+    <div class="ledger-row {{ 'mt-10 pt-8 border-t border-line-soft' if not loop.first else '' }}" data-ledger-row="{{ v.id }}">
+      <h3 class="offer-title">{{ row.units }} bottles.<br>One drain, one year.</h3>
+      <p class="text-muted mt-4 max-w-md">The label sets the dose: one bottle, one drain, once a month. {{ row.units }} bottles is that sentence for {{ row.one_drain_months }} months. Or {{ row.drains_one_month }} drains for one.</p>
+      <div class="cal" role="img" aria-label="{{ row.one_drain_months }} of 12 months covered for one drain">
+        {% for m in ['J','F','M','A','M','J','J','A','S','O','N','D'] %}<span class="cal-cell ledger-cell {{ 'is-dosed' if loop.index0 < row.one_drain_months else '' }}">{{ m }}</span>{% endfor %}
       </div>
-      <p class="text-xs text-faint mt-1.5">One drain for {{ row.one_drain_months }} {{ 'month' if row.one_drain_months == 1 else 'months' }}, or {{ row.drains_one_month }} {{ 'drain' if row.drains_one_month == 1 else 'drains' }} for one month.</p>
-    </div>
-    <div class="flex items-center justify-between sm:justify-end gap-3">
-      <div class="text-right">
-        <p class="font-display font-extrabold text-xl tabular-nums leading-none">{{ v.price_cents|fmt_money }}</p>
-        {% if v.compare_at_cents and v.compare_at_cents > v.price_cents %}<p class="text-xs text-faint line-through tabular-nums">{{ v.compare_at_cents|fmt_money }}</p>{% endif %}
-      </div>
+      <p class="cal-note">One cell, one month, one drain.</p>
+      <dl class="offer-meta">
+        <div>
+          <dt>One-time<small>{{ row.units }} × 4 fl oz, {{ row.per_unit_cents|fmt_money }} a bottle</small></dt>
+          <dd>{% if v.compare_at_cents and v.compare_at_cents > v.price_cents %}<s>{{ v.compare_at_cents|fmt_money }}</s>{% endif %}{{ v.price_cents|fmt_money }}</dd>
+        </div>
+        {% if subs and subs.enabled %}
+        <div>
+          <dt>{{ 'Yearly' if months == 12 else 'Every ' ~ months ~ ' months' }} subscription<small>{{ v.sub_percent }}% off, a fresh box {{ 'each year' if months == 12 else 'each ' ~ months ~ ' months' }}. Cancel any time.</small></dt>
+          <dd class="is-sub">{{ v.sub_price_cents|fmt_money }}</dd>
+        </div>
+        {% endif %}
+      </dl>
       {% if with_buttons %}
-      {% if v.stock > 0 %}
-      <form action="/cart/add" method="post" data-add-form class="shrink-0">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <input type="hidden" name="variant_id" value="{{ v.id }}">
-        <input type="hidden" name="qty" value="1">
-        <button type="submit" class="btn btn-primary btn-sm" data-add-button>Add</button>
-      </form>
-      {% else %}
-      <span class="badge badge-danger">Sold out</span>
+      <div class="offer-actions">
+        {% if v.stock > 0 %}
+        <form action="/cart/add" method="post" data-add-form>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="variant_id" value="{{ v.id }}">
+          <input type="hidden" name="qty" value="1">
+          <button type="submit" class="btn btn-primary" data-add-button>Get the {{ row.units }}-pack</button>
+        </form>
+        {% if subs and subs.enabled %}<a href="/products/{{ product.slug }}#buy" class="arrow-link">Subscribe instead {{ icon('arrow', 14) }}</a>{% endif %}
+        {% else %}
+        <span class="badge badge-danger">Sold out</span>
+        <a href="/products/{{ product.slug }}#buy" class="arrow-link">Get notified {{ icon('arrow', 14) }}</a>
+        {% endif %}
+      </div>
       {% endif %}
-      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <div class="offer-path">
+    <p class="eyebrow">Your box</p>
+    <h3 class="offer-title">Count your drains.<br>We do the arithmetic.</h3>
+    <p class="text-muted mt-4 max-w-md">Kitchen, bathroom sinks, showers, tubs, laundry. Tell the builder how many, and it packs one bottle per drain per month for the stretch you choose.</p>
+    <p class="offer-sum" aria-label="Drains times months equals bottles">
+      <em class="not-italic">Drains</em> <span class="op">×</span> <em class="not-italic">months</em> <span class="op">=</span> <em class="not-italic">bottles</em>
+    </p>
+    <p class="cal-note">Same bottle, same dose, sized to your house.</p>
+    <div class="offer-actions">
+      <a href="/build-your-box" class="btn btn-secondary">Build your box {{ icon('arrow', 16) }}</a>
     </div>
   </div>
-  {% endfor %}
 </div>
 {%- endmacro %}

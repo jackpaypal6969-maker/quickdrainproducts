@@ -22,6 +22,14 @@
 </div>
 {%- endmacro %}
 
+{# Every section of the product form ends with its own Save so a phone never has to scroll to the bottom. #}
+{% macro section_save(editing) -%}
+<div class="mt-5 pt-4 border-t border-line-soft flex items-center justify-between gap-3">
+  <a href="#main" class="link text-sm">Back to top</a>
+  <button type="submit" class="btn btn-primary">{{ 'Save product' if editing else 'Create product' }}</button>
+</div>
+{%- endmacro %}
+
 {% macro variant_form(v, pid, csrf_token) -%}
 {% set k = 'v' ~ (v.id if v else 'new') ~ '-' %}
 <form method="post" action="/admin/products/{{ pid }}/variants/save" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -41,9 +49,9 @@
   {{ field('stripe_price_id', 'Stripe price ID', v.stripe_price_id if v else '', mono=True, maxlength=80, help='price_… for one-time checkout', id=k ~ 'sp') }}
   {{ field('stripe_subscription_price_id', 'Stripe subscription price ID', v.stripe_subscription_price_id if v else '', mono=True, maxlength=80, help='Recurring price; blank hides the subscribe option', id=k ~ 'ssp') }}
   {{ field('subscription_discount_percent', 'Subscription discount (%)', (v.subscription_discount_percent if v.subscription_discount_percent is not none else '') if v else '', type='number', min=0, inputmode='numeric', help='Blank = site-wide default from Settings', id=k ~ 'subpct') }}
-  <div class="flex items-end justify-between gap-3 sm:col-span-2 lg:col-span-4 pt-1">
+  <div class="flex flex-wrap items-center justify-between gap-3 sm:col-span-2 lg:col-span-4 pt-1">
     <label class="text-sm"><input type="checkbox" class="checkbox" name="is_active" value="1" {% if (v and v.is_active) or not v %}checked{% endif %}>Active (purchasable)</label>
-    <button type="submit" class="btn btn-secondary">{{ 'Save pack' if v else 'Add pack' }}</button>
+    <button type="submit" class="btn btn-secondary w-full sm:w-auto">{{ 'Save pack' if v else 'Add pack' }}</button>
   </div>
 </form>
 {%- endmacro %}
@@ -54,12 +62,22 @@
 {% if editing %}<a href="/products/{{ p.slug }}" class="btn btn-secondary" rel="noopener">View on store {{ icon('external', 14) }}</a>{% endif %}
 {% endcall %}
 
+{# Jump nav: sticks under the phone top bar (h-14) and at the top of the page on desktop. Sections carry scroll-mt so anchors land below it. #}
+{% set jumps = [('basics', 'Basics'), ('label', 'Label'), ('description', 'Description'), ('specs', 'Specs'), ('faq', 'FAQ'), ('seo', 'SEO')] %}
+{% if editing %}{% set jumps = jumps + [('packs', 'Variants & stock'), ('images', 'Images'), ('documents', 'Documents'), ('movements', 'Movements')] %}{% endif %}
+<nav class="sticky top-14 lg:top-0 z-30 mt-5 -mx-4 sm:-mx-6 lg:-mx-10 px-4 sm:px-6 lg:px-10 py-2 bg-bg/95 backdrop-blur border-b border-line-soft" aria-label="Product sections">
+  <div class="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    {% for jid, jlabel in jumps %}<a href="#{{ jid }}" class="nav-link shrink-0 inline-flex items-center min-h-11 !py-2.5 border border-line-soft whitespace-nowrap">{{ jlabel }}</a>{% endfor %}
+  </div>
+</nav>
+
 <form method="post" action="/admin/products/save" class="mt-6 space-y-6">
   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <input type="hidden" name="id" value="{{ p.get('id') or 0 }}">
 
-  <section class="card card-pad">
-    <h2 class="text-lg">Basics</h2>
+  <section class="card card-pad scroll-mt-32 lg:scroll-mt-20" id="basics">
+    <p class="eyebrow">1 · Basics</p>
+    <h2 class="text-lg mt-1">Name, slug and visibility</h2>
     <div class="mt-4 grid gap-4 md:grid-cols-2">
       {{ field('name', 'Name', p.get('name') or '', required=True, maxlength=120) }}
       {{ field('slug', 'URL slug', p.get('slug') or '', mono=True, maxlength=80, help='Blank = derived from the name') }}
@@ -79,16 +97,18 @@
         <p class="help">Caustic and acid are DOT corrosives and are flagged hazmat automatically.</p>
       </div>
       {{ field('sort', 'Sort order', p.get('sort') or 0, type='number', inputmode='numeric') }}
-      <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm self-end">
+      <div class="flex flex-col sm:flex-row sm:flex-wrap gap-x-6 text-sm self-end">
         <label><input type="checkbox" class="checkbox" name="is_active" value="1" {% if p.get('is_active', 1) %}checked{% endif %}>Active on the store</label>
         <label><input type="checkbox" class="checkbox" name="is_featured" value="1" {% if p.get('is_featured') %}checked{% endif %}>Featured on home</label>
         <label><input type="checkbox" class="checkbox" name="hazmat" value="1" {% if p.get('hazmat') %}checked{% endif %}>Hazmat (ground only)</label>
       </div>
     </div>
+    {{ section_save(editing) }}
   </section>
 
-  <section class="card card-pad">
-    <h2 class="text-lg">Label facts</h2>
+  <section class="card card-pad scroll-mt-32 lg:scroll-mt-20" id="label">
+    <p class="eyebrow">2 · Label</p>
+    <h2 class="text-lg mt-1">Label facts</h2>
     <p class="text-muted text-sm mt-1">Copy the label word for word. The store never claims more than what is entered here.</p>
     <div class="mt-4 grid gap-4 md:grid-cols-2">
       <div class="md:col-span-2">{{ field('dose_text', 'Dosing statement', p.get('dose_text') or '', maxlength=300, help='e.g. “Dosed for monthly use on any drain”') }}</div>
@@ -104,30 +124,36 @@
       {{ field('not_safe_for', 'Not for (comma list)', p.get('not_safe_for') or '', maxlength=500) }}
       <div class="md:col-span-2">{{ field('prop65_warning', 'Prop 65 warning', p.get('prop65_warning') or '', maxlength=1000, help='Blank = no warning required') }}</div>
     </div>
+    {{ section_save(editing) }}
   </section>
 
-  <section class="card card-pad">
-    <h2 class="text-lg">Description</h2>
-    {{ area('description', 'Product description', p.get('description') or '', help='Markdown-lite: paragraphs, **bold**, lists, links. Rendered escaped.', rows=8, maxlength=20000) }}
+  <section class="card card-pad scroll-mt-32 lg:scroll-mt-20" id="description">
+    <p class="eyebrow">3 · Description</p>
+    <h2 class="text-lg mt-1">Product description</h2>
+    <div class="mt-4">{{ area('description', 'Product description', p.get('description') or '', help='Markdown-lite: paragraphs, **bold**, lists, links. Rendered escaped.', rows=8, maxlength=20000) }}</div>
+    {{ section_save(editing) }}
   </section>
 
-  <section class="card card-pad">
-    <h2 class="text-lg">Specifications</h2>
+  <section class="card card-pad scroll-mt-32 lg:scroll-mt-20" id="specs">
+    <p class="eyebrow">4 · Specs</p>
+    <h2 class="text-lg mt-1">Specifications</h2>
     <p class="text-muted text-sm mt-1">Label / value pairs for the spec table. Blank rows are ignored.</p>
-    <div class="mt-4 space-y-2">
+    <div class="mt-4 space-y-3 sm:space-y-2">
       {% set specs = (p.get('specs') or []) + [{}, {}, {}] %}
       {% for s in specs %}
-      <div class="grid gap-2 sm:grid-cols-[1fr_2fr]">
-        <div><label class="sr-only" for="spec-l-{{ loop.index }}">Spec label {{ loop.index }}</label><input id="spec-l-{{ loop.index }}" class="input" name="spec_label" value="{{ s.get('label') or '' }}" maxlength="80" placeholder="Label"></div>
-        <div><label class="sr-only" for="spec-v-{{ loop.index }}">Spec value {{ loop.index }}</label><input id="spec-v-{{ loop.index }}" class="input" name="spec_value" value="{{ s.get('value') or '' }}" maxlength="500" placeholder="Value"></div>
+      <div class="grid gap-2 sm:grid-cols-[1fr_2fr] rounded-md border border-line-soft p-3 sm:border-0 sm:p-0">
+        <div><label class="label sm:sr-only" for="spec-l-{{ loop.index }}">Spec label {{ loop.index }}</label><input id="spec-l-{{ loop.index }}" class="input" name="spec_label" value="{{ s.get('label') or '' }}" maxlength="80" placeholder="Label"></div>
+        <div><label class="label sm:sr-only" for="spec-v-{{ loop.index }}">Value</label><input id="spec-v-{{ loop.index }}" class="input" name="spec_value" value="{{ s.get('value') or '' }}" maxlength="500" placeholder="Value"></div>
       </div>
       {% endfor %}
     </div>
+    {{ section_save(editing) }}
   </section>
 
-  <section class="card card-pad">
-    <h2 class="text-lg">FAQ</h2>
-    <p class="text-muted text-sm mt-1">Question and answer pairs. Blank rows are ignored.</p>
+  <section class="card card-pad scroll-mt-32 lg:scroll-mt-20" id="faq">
+    <p class="eyebrow">5 · FAQ</p>
+    <h2 class="text-lg mt-1">Questions and answers</h2>
+    <p class="text-muted text-sm mt-1">Blank rows are ignored.</p>
     <div class="mt-4 space-y-4">
       {% set faqs = (p.get('faqs') or []) + [{}, {}, {}] %}
       {% for f in faqs %}
@@ -137,43 +163,52 @@
       </div>
       {% endfor %}
     </div>
+    {{ section_save(editing) }}
   </section>
 
-  <section class="card card-pad">
-    <h2 class="text-lg">Search</h2>
+  <section class="card card-pad scroll-mt-32 lg:scroll-mt-20" id="seo">
+    <p class="eyebrow">6 · SEO</p>
+    <h2 class="text-lg mt-1">Search</h2>
     <div class="mt-4 grid gap-4">
       {{ field('seo_title', 'SEO title', p.get('seo_title') or '', maxlength=150, help='Blank uses the product name') }}
       {{ area('seo_description', 'SEO description', p.get('seo_description') or '', rows=2, maxlength=300) }}
     </div>
+    {{ section_save(editing) }}
   </section>
 
-  <div class="flex flex-wrap items-center gap-3 sticky bottom-0 py-3 bg-bg/95 border-t border-line-soft">
+  <div class="flex flex-wrap items-center gap-3 lg:sticky lg:bottom-0 py-3 bg-bg/95 border-t border-line-soft">
     <button type="submit" class="btn btn-primary">{{ 'Save product' if editing else 'Create product' }}</button>
     <a href="/admin/products" class="btn btn-ghost">Cancel</a>
   </div>
 </form>
 
 {% if editing %}
-<section class="mt-10" id="packs">
+<section class="mt-10 scroll-mt-32 lg:scroll-mt-20" id="packs">
   <div class="flex flex-wrap items-end justify-between gap-3">
-    <div><p class="eyebrow">Packs</p><h2 class="text-xl mt-1">Variants and stock</h2></div>
+    <div><p class="eyebrow">7 · Packs</p><h2 class="text-xl mt-1">Variants and stock</h2></div>
     <p class="text-muted text-sm">Prices are dollars; stock changes are logged as movements.</p>
   </div>
   <div class="mt-4 space-y-4">
     {% for v in p.all_variants %}
     <article class="card card-pad">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <h3 class="text-base flex items-center gap-2">{{ v.name }} <span class="text-faint font-mono text-xs font-normal">{{ v.sku }}</span> {{ onoff(v.is_active) }}</h3>
+        <div class="min-w-0">
+          <h3 class="text-base break-words">{{ v.name }}</h3>
+          <p class="mt-1 flex flex-wrap items-center gap-2"><span class="text-faint font-mono text-xs">{{ v.sku }}</span> {{ onoff(v.is_active) }}</p>
+        </div>
         <span class="badge {{ 'badge-danger' if v.stock <= 0 else ('badge-warning' if v.stock <= v.low_stock_threshold else 'badge-success') }} tabular-nums">{{ v.stock }} in stock</span>
       </div>
-      <div class="mt-4">{{ variant_form(v, p.id, csrf_token) }}</div>
       <form method="post" action="/admin/products/{{ p.id }}/variants/{{ v.id }}/stock" class="mt-4 pt-4 border-t border-line-soft grid gap-3 sm:grid-cols-[8rem_1fr_auto] items-end">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <div><label class="label" for="stk-{{ v.id }}">Adjust stock</label><input id="stk-{{ v.id }}" class="input" type="number" name="delta" value="0" step="1" inputmode="numeric" aria-describedby="stk-help-{{ v.id }}"></div>
         <div><label class="label" for="stk-note-{{ v.id }}">Note</label><input id="stk-note-{{ v.id }}" class="input" name="note" maxlength="200" placeholder="Received 24 from supplier"></div>
-        <button type="submit" class="btn btn-secondary">Apply</button>
+        <button type="submit" class="btn btn-secondary w-full sm:w-auto">Apply</button>
         <p class="help sm:col-span-3 !mt-0" id="stk-help-{{ v.id }}">Positive adds (restock), negative removes (adjust). Cannot go below zero.</p>
       </form>
+      <details class="mt-4 pt-4 border-t border-line-soft" {% if p.all_variants|length == 1 %}open{% endif %}>
+        <summary class="text-sm text-nav tap-inline font-semibold">Pack details and pricing</summary>
+        <div class="mt-3">{{ variant_form(v, p.id, csrf_token) }}</div>
+      </details>
     </article>
     {% endfor %}
     <details class="card card-pad">
@@ -183,12 +218,12 @@
   </div>
 </section>
 
-<section class="mt-10" id="images">
-  <div><p class="eyebrow">Media</p><h2 class="text-xl mt-1">Images</h2></div>
+<section class="mt-10 scroll-mt-32 lg:scroll-mt-20" id="images">
+  <div><p class="eyebrow">8 · Media</p><h2 class="text-xl mt-1">Images</h2></div>
   <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     {% for img in p.images %}
     <article class="card overflow-hidden">
-      <div class="aspect-[4/5] bg-bg-deep border-b border-line-soft">
+      <div class="aspect-[4/3] sm:aspect-[4/5] bg-bg-deep border-b border-line-soft">
         {% if img.src %}<img src="{{ img.src }}" alt="{{ img.alt }}" width="{{ img.width }}" height="{{ img.height }}" loading="lazy" class="w-full h-full object-contain">{% else %}<p class="h-full grid place-items-center text-faint text-sm">Renditions not built</p>{% endif %}
       </div>
       <div class="p-4">
@@ -196,9 +231,9 @@
         <p class="text-sm text-muted mt-2 line-clamp-2">{{ img.alt or 'No alt text' }}</p>
         <div class="mt-3 flex gap-2">
           {% if img.kind != 'hero' %}
-          <form method="post" action="/admin/products/{{ p.id }}/images/{{ img.id }}/hero"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit" class="btn btn-secondary btn-sm">Make hero</button></form>
+          <form method="post" action="/admin/products/{{ p.id }}/images/{{ img.id }}/hero" class="flex-1"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit" class="btn btn-secondary w-full">Make hero</button></form>
           {% endif %}
-          <form method="post" action="/admin/products/{{ p.id }}/images/{{ img.id }}/delete"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit" class="btn btn-danger btn-sm">Delete</button></form>
+          <form method="post" action="/admin/products/{{ p.id }}/images/{{ img.id }}/delete" class="flex-1"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit" class="btn btn-danger w-full">Delete</button></form>
         </div>
       </div>
     </article>
@@ -209,13 +244,13 @@
       <div><label class="label" for="img-file">File (JPEG, PNG or WebP, up to 12 MB)</label><input id="img-file" class="input !py-2" type="file" name="image" accept="image/jpeg,image/png,image/webp" required></div>
       <div><label class="label" for="img-alt">Alt text</label><input id="img-alt" class="input" name="alt" maxlength="200" placeholder="Drain Shot bottle beside a kitchen sink"></div>
       <div><label class="label" for="img-kind">Kind</label><select id="img-kind" class="input" name="kind"><option value="gallery">Gallery</option><option value="hero">Hero (replaces current)</option><option value="label">Label photo</option></select></div>
-      <button type="submit" class="btn btn-secondary">Upload and build renditions</button>
+      <button type="submit" class="btn btn-secondary w-full sm:w-auto">Upload and build renditions</button>
     </form>
   </div>
 </section>
 
-<section class="mt-10" id="documents">
-  <div><p class="eyebrow">Documents</p><h2 class="text-xl mt-1">SDS and label</h2></div>
+<section class="mt-10 scroll-mt-32 lg:scroll-mt-20" id="documents">
+  <div><p class="eyebrow">9 · Documents</p><h2 class="text-xl mt-1">SDS and label</h2></div>
   <div class="mt-4 grid gap-4 lg:grid-cols-2">
     <div class="card card-pad">
       <dl class="space-y-3 text-sm">
@@ -229,26 +264,38 @@
       <h3 class="text-base">Upload a document</h3>
       <div><label class="label" for="doc-kind">Document</label><select id="doc-kind" class="input" name="doc_kind"><option value="sds">Safety data sheet (PDF)</option><option value="label">Label (PDF, JPEG or PNG)</option></select></div>
       <div><label class="label" for="doc-file">File (up to 20 MB)</label><input id="doc-file" class="input !py-2" type="file" name="doc" accept="application/pdf,image/jpeg,image/png" required></div>
-      <button type="submit" class="btn btn-secondary">Upload</button>
+      <button type="submit" class="btn btn-secondary w-full sm:w-auto">Upload</button>
     </form>
   </div>
 </section>
 
-<section class="mt-10" id="movements">
-  <div><p class="eyebrow">Inventory</p><h2 class="text-xl mt-1">Recent stock movements</h2></div>
+<section class="mt-10 scroll-mt-32 lg:scroll-mt-20" id="movements">
+  <div><p class="eyebrow">10 · Inventory</p><h2 class="text-xl mt-1">Recent stock movements</h2></div>
   <div class="card mt-4">
     {% if movements is defined and movements %}
-    <div class="table-wrap">
+    {# Phones and tablets: one line per movement. #}
+    <ul class="lg:hidden divide-y divide-line-soft">
+      {% for m in movements %}
+      <li class="p-4 flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <p class="flex flex-wrap items-center gap-2"><span class="font-mono text-sm">{{ m.sku }}</span>{{ badge(m.reason) }}{% if m.order_id %}<a href="/admin/orders/{{ m.order_id }}" class="link text-xs">order</a>{% endif %}</p>
+          <p class="text-xs text-muted mt-1">{{ m.created_at|est_short }}{% if m.note %} · {{ m.note }}{% endif %}</p>
+        </div>
+        <span class="font-mono font-semibold tabular-nums shrink-0 {{ 'text-success' if m.delta > 0 else 'text-danger' }}">{{ '%+d'|format(m.delta) }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    <div class="hidden lg:block table-wrap">
       <table class="table">
         <thead><tr><th scope="col">When</th><th scope="col">SKU</th><th scope="col" class="num">Change</th><th scope="col">Reason</th><th scope="col">Note</th></tr></thead>
         <tbody>
           {% for m in movements %}
           <tr>
-            <td class="text-muted whitespace-nowrap">{{ m.created_at|est_datetime }}</td>
+            <td class="text-muted">{{ m.created_at|est_datetime }}</td>
             <td class="font-mono">{{ m.sku }}</td>
             <td class="num {{ 'text-success' if m.delta > 0 else 'text-danger' }}">{{ '%+d'|format(m.delta) }}</td>
             <td>{{ badge(m.reason) }}{% if m.order_id %} <a href="/admin/orders/{{ m.order_id }}" class="link text-xs">order</a>{% endif %}</td>
-            <td class="text-muted">{{ m.note }}</td>
+            <td class="text-muted wrap">{{ m.note }}</td>
           </tr>
           {% endfor %}
         </tbody>

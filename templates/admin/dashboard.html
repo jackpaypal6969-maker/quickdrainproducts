@@ -40,7 +40,24 @@
       <a href="/admin/orders" class="btn btn-ghost btn-sm">All orders</a>
     </div>
     {% if recent %}
-    <div class="table-wrap">
+    {# Phones and tablets: one tappable row per order. #}
+    <ul class="lg:hidden divide-y divide-line-soft border-t border-line-soft">
+      {% for o in recent %}
+      <li>
+        <a href="/admin/orders/{{ o.id }}" class="flex items-center justify-between gap-3 px-5 py-3 min-h-11 active:bg-raised">
+          <div class="min-w-0">
+            <span class="font-mono font-semibold">{{ o.order_number }}</span>
+            <p class="text-xs text-muted truncate">{{ o.email }} · {{ o.created_at|est_short }}</p>
+          </div>
+          <div class="text-right shrink-0">
+            {{ badge(o.status) }}
+            <p class="text-sm tabular-nums mt-1">{{ o.total_cents|fmt_money }}</p>
+          </div>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    <div class="hidden lg:block table-wrap">
       <table class="table">
         <thead><tr><th scope="col">Order</th><th scope="col">Customer</th><th scope="col">Status</th><th scope="col" class="num">Total</th><th scope="col">Placed</th></tr></thead>
         <tbody>

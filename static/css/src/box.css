@@ -1,1 +1,60 @@
-/* Box builder styles (loaded via app.css) */
+/* Build your box (/build-your-box). Loaded via app.css; behaviour in static/js/box.js.
+   Rules of the house: one cyan accent, transform/opacity motion only, 150–250ms,
+   reduced-motion respected. Everything else reuses the app.css vocabulary. */
+@layer components {
+  /* ---- fixture rows: icon · label · stepper ---- */
+  .box-rows { display: block; }
+  .box-row { display: grid; grid-template-columns: 2.5rem minmax(0, 1fr) auto; align-items: center; gap: .75rem 1rem; padding: .9rem clamp(1.25rem, 3vw, 2rem); border-top: 1px solid var(--color-border-soft); }
+  .box-row:last-child { border-bottom: 0; }
+  .box-row-icon { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: var(--radius-md); background: var(--color-raised); color: var(--color-text-nav); transition: color var(--dur-base) var(--ease-standard), background-color var(--dur-base) var(--ease-standard); }
+  .box-row.is-on .box-row-icon { color: var(--color-accent); background: var(--color-accent-soft); }
+  .box-stepper { display: inline-flex; align-items: center; border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: rgba(13, 7, 36, .35); }
+  .box-stepper .icon-btn:disabled { opacity: .35; cursor: not-allowed; background: transparent; }
+  .box-count { width: 2.75rem; height: 2.75rem; text-align: center; background: transparent; border: 0; font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; }
+  .box-count::-webkit-outer-spin-button, .box-count::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .box-count:focus { outline: none; color: var(--color-accent); }
+  .box-stepper:focus-within { border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-accent-soft); }
+  @media (max-width: 24rem) {
+    .box-row { grid-template-columns: 2.5rem minmax(0, 1fr); }
+    .box-stepper { grid-column: 2; justify-self: start; }
+  }
+
+  /* ---- presets ---- */
+  .box-preset[aria-pressed="true"] { border-color: var(--color-accent); background: var(--color-accent-soft); color: var(--color-text); }
+
+  /* ---- dose calendar: fixture · (label) · 12 cells ---- */
+  .box-cal { display: grid; gap: .375rem; }
+  .box-cal-row { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); align-items: center; gap: .625rem; }
+  @media (min-width: 40rem) { .box-cal-row { grid-template-columns: 2.25rem 11rem minmax(0, 1fr); } }
+  .box-cal-fixture { position: relative; display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: var(--radius-sm); background: var(--color-raised); color: var(--color-text-faint); transition: color var(--dur-base) var(--ease-standard); }
+  .box-cal-row.is-on .box-cal-fixture { color: var(--color-accent); }
+  .box-cal-head .box-cal-fixture, .box-cal-foot .box-cal-fixture { background: transparent; }
+  .box-cal-label { font-size: var(--text-sm); color: var(--color-text-faint); transition: color var(--dur-base) var(--ease-standard); }
+  .box-cal-row.is-on .box-cal-label { color: var(--color-text); }
+  .box-cal-foot .box-cal-label { color: var(--color-text-nav); font-weight: 600; }
+  .box-cal-cells { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3px; min-width: 0; }
+  .box-cal-month { white-space: nowrap; font-family: var(--font-display); font-size: .65rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--color-text-faint); text-align: center; line-height: 1; padding-bottom: .25rem; }
+  .box-cell { position: relative; aspect-ratio: 1; border-radius: 4px; background: var(--color-raised); border: 1px solid var(--color-border-soft); overflow: hidden; }
+  .box-cell::after { content: ""; position: absolute; inset: 0; background: var(--color-accent); opacity: 0; transform: scale(.4); transition: opacity var(--dur-base) var(--ease-standard), transform var(--dur-base) var(--ease-standard); }
+  .box-cell.is-dosed::after { opacity: 1; transform: none; }
+  .box-cal-total { font-family: var(--font-display); font-size: .7rem; font-weight: 700; text-align: center; color: var(--color-text-faint); transition: color var(--dur-base) var(--ease-standard); }
+  .box-cal-total.is-on { color: var(--color-accent); }
+
+  /* count chip anchored to the fixture icon */
+  .box-chip { position: absolute; top: -.4rem; right: -.4rem; min-width: 1.15rem; height: 1.15rem; padding-inline: .25rem; border-radius: var(--radius-pill); background: var(--color-accent); color: var(--color-text-on-accent); font-family: var(--font-display); font-size: .7rem; font-weight: 800; line-height: 1; display: grid; place-items: center; opacity: 0; transform: scale(.6); transition: opacity var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); }
+  .box-cal-row.is-on .box-chip { opacity: 1; transform: none; }
+
+  /* ---- summary ---- */
+  .box-summary { box-shadow: var(--shadow-card); }
+  .box-summary.is-ready { box-shadow: var(--glow-accent), var(--shadow-card); }
+  .box-summary .display { font-size: clamp(2.75rem, 6vw, 3.5rem); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .box-pop.is-pop { animation: box-pop 200ms var(--ease-standard); }
+  .box-chip.is-pop { animation: box-pop 200ms var(--ease-standard); }
+  @keyframes box-pop { 0% { transform: scale(1); } 45% { transform: scale(1.12); } 100% { transform: scale(1); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .box-cell::after, .box-chip, .box-row-icon, .box-cal-fixture, .box-cal-label, .box-cal-total { transition-duration: 1ms; transition-delay: 0ms !important; }
+}

@@ -7,124 +7,128 @@
 {% from "components/reviews.html" import review_block %}
 {% from "components/label_reader.html" import label_reader %}
 {% block content %}
-<div class="container-x pt-6">
-  <nav aria-label="Breadcrumb" class="text-xs text-faint flex items-center gap-1"><a href="/" class="tap-inline">Home</a> <span aria-hidden="true">/</span> <a href="/products" class="tap-inline">Products</a> <span aria-hidden="true">/</span> <span class="text-nav">{{ product.name }}</span></nav>
-</div>
-
-<section class="container-x pt-6 pb-12 grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:gap-14">
-  <div>
-    <div class="stage" data-gallery-stage>
-      {% for img in product.images %}
-      <div data-gallery-item id="gallery-{{ loop.index }}" {% if not loop.first %}hidden{% endif %} class="w-full h-full">
-        {{ picture(img, sizes="(min-width: 1024px) 55vw, 100vw", loading=("eager" if loop.first else "lazy"), fetchpriority=("high" if loop.first else "auto")) }}
-      </div>
-      {% endfor %}
-      {% if not product.images %}{{ picture(None) }}{% endif %}
-      <div class="stage-sweep" aria-hidden="true"></div>
-    </div>
-    {% if product.images|length > 1 %}
-    <div class="mt-3 flex gap-2" role="group" aria-label="Product photos">
-      {% for img in product.images %}
-      <button type="button" class="gallery-thumb" data-gallery-thumb="gallery-{{ loop.index }}" aria-current="{{ 'true' if loop.first else 'false' }}" aria-label="Show photo {{ loop.index }}: {{ img.alt }}">
-        {% if img.src %}<img src="{{ img.src }}" width="68" height="68" alt="" loading="lazy" class="w-full h-full object-cover">{% endif %}
-      </button>
-      {% endfor %}
-    </div>
-    {% endif %}
+{% set v0 = product.variants[0] if product.variants else None %}
+<section class="bg-bg-deep border-b border-line-soft">
+  <div class="container-x pt-2">
+    <nav aria-label="Breadcrumb" class="breadcrumb"><a href="/">Home</a> <span aria-hidden="true">/</span> <a href="/products">Products</a> <span aria-hidden="true">/</span> <span class="text-nav">{{ product.name }}</span></nav>
   </div>
-
-  <div>
-    <p class="eyebrow">{{ product.formulation_type|capitalize }} · drain maintainer</p>
-    <h1 class="h2 mt-3">{{ product.name }}</h1>
-    <p class="lede mt-3 !text-md">{{ product.tagline }}</p>
-    {% if product.review_count %}<a href="#reviews" class="mt-3 inline-flex items-center gap-2 text-sm text-muted">{{ stars(product.rating_avg|round|int, 16) }} {{ product.rating_avg }} · {{ product.review_count|plural('review') }}</a>{% endif %}
-
-    <div class="mt-6 flex items-baseline gap-3">
-      <span class="font-display font-extrabold text-4xl tabular-nums leading-none" data-price>{{ (product.variants[0].price_cents if product.variants else product.from_price_cents)|fmt_money }}</span>
-      <span class="text-faint line-through tabular-nums" data-compare hidden></span>
-      <span class="text-sm text-muted" data-per-unit>per bottle</span>
-      {% set v0 = product.variants[0] if product.variants else None %}<span class="badge {{ 'badge-danger' if (not v0 or v0.stock <= 0) else ('badge-warning' if v0.stock <= v0.low_stock_threshold else 'badge-success') }} ml-auto whitespace-nowrap" data-stock>{{ 'Sold out' if (not v0 or v0.stock <= 0) else ('Only ' ~ v0.stock ~ ' left' if v0.stock <= v0.low_stock_threshold else 'In stock') }}</span>
+  <div class="container-x pt-2 pb-12 lg:pb-16 grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-16 lg:items-start">
+    <div class="lg:sticky lg:top-[calc(var(--header-h-condensed)+1rem)]">
+      <div class="stage stage-float" data-gallery-stage>
+        {% for img in product.images %}
+        <div data-gallery-item id="gallery-{{ loop.index }}" {% if not loop.first %}hidden{% endif %} class="w-full h-full">
+          {{ picture(img, sizes="(min-width: 1024px) 50vw, 100vw", loading=("eager" if loop.first else "lazy"), fetchpriority=("high" if loop.first else "auto")) }}
+        </div>
+        {% endfor %}
+        {% if not product.images %}{{ picture(None) }}{% endif %}
+      </div>
+      {% if product.images|length > 1 %}
+      <div class="mt-4 flex gap-2" role="group" aria-label="Product photos">
+        {% for img in product.images %}
+        <button type="button" class="gallery-thumb" data-gallery-thumb="gallery-{{ loop.index }}" aria-current="{{ 'true' if loop.first else 'false' }}" aria-label="Show photo {{ loop.index }}: {{ img.alt }}">
+          {% if img.src %}<img src="{{ img.src }}" width="68" height="68" alt="" loading="lazy" class="w-full h-full object-cover">{% endif %}
+        </button>
+        {% endfor %}
+      </div>
+      {% endif %}
     </div>
 
-    <form action="/cart/add" method="post" class="mt-6 space-y-5" data-add-form>
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      {{ variant_selector(product) }}
-      {% if product.subscriptions.enabled and product.variants %}
-      {# Source: shadcn/ui "radio-group" tiles (MIT); interval + price logic in app.js #}
-      <fieldset data-delivery-selector>
-        <legend class="label">Delivery</legend>
-        <input type="hidden" name="subscribe" value="0" data-subscribe-input>
-        <div class="grid gap-2">
-          <label class="choice">
-            <input type="radio" name="delivery" value="once" checked>
-            <span class="choice-body">
-              <span><span class="block font-semibold">One-time purchase</span><span class="block text-xs text-muted">Ships once. Reorder whenever you like.</span></span>
-              <span class="font-display font-bold tabular-nums" data-once-price>{{ product.variants[0].price_cents|fmt_money }}</span>
-            </span>
-          </label>
-          <label class="choice">
-            <input type="radio" name="delivery" value="sub">
-            <span class="choice-body">
-              <span><span class="block font-semibold">Subscribe &amp; save <span data-sub-percent>{{ product.variants[0].sub_percent }}</span>%</span><span class="block text-xs text-muted">A fresh year's supply ships and bills automatically. Cancel any time from your account.</span></span>
-              <span class="font-display font-bold tabular-nums text-accent" data-sub-price>{{ product.variants[0].sub_price_cents|fmt_money }}</span>
-            </span>
-          </label>
-        </div>
-        <div class="mt-3 panel p-3 flex flex-wrap items-center gap-3" data-interval-wrap hidden>
-          {% if product.subscriptions.intervals|length > 1 %}
-          <label class="label !mb-0" for="interval">Deliver every</label>
-          <select id="interval" name="interval" class="input !w-auto !min-h-[2.75rem]" data-interval-select>
-            {% for m in product.subscriptions.intervals %}<option value="{{ m }}">{{ m }} {{ 'month' if m == 1 else 'months' }}</option>{% endfor %}
-          </select>
-          {% else %}
-          {% set only = product.subscriptions.intervals[0] %}
-          <select id="interval" name="interval" class="hidden" data-interval-select aria-hidden="true" tabindex="-1"><option value="{{ only }}" selected>{{ only }}</option></select>
-          <p class="text-sm font-semibold">Renews every {{ only }} {{ 'month' if only == 1 else 'months' }}</p>
-          {% endif %}
-          <p class="text-xs text-muted basis-full" data-interval-hint aria-live="polite"></p>
-        </div>
-      </fieldset>
-      {% endif %}
-      <div class="flex items-end gap-3">
-        <div>
-          <label class="label" for="qty">Quantity</label>
-          <div class="inline-flex items-center rounded-pill border border-line">
-            <button type="button" class="icon-btn" data-qty-step="-1" aria-label="Decrease quantity">{{ icon('minus', 16) }}</button>
-            <input id="qty" class="w-12 h-11 text-center bg-transparent font-bold tabular-nums border-0 focus:outline-none" type="number" name="qty" value="1" min="1" max="50" inputmode="numeric" data-qty-input>
-            <button type="button" class="icon-btn" data-qty-step="1" aria-label="Increase quantity">{{ icon('plus', 16) }}</button>
-          </div>
-        </div>
-        <button type="submit" class="btn btn-primary btn-lg flex-1" data-add-button data-add-button-main>Add to cart</button>
+    <div id="buy" class="min-w-0 lg:pt-4">
+      <p class="eyebrow">{{ product.formulation_type|capitalize }} · drain maintainer</p>
+      <h1 class="h1 !text-[clamp(2.5rem,5vw,3.75rem)] mt-4">{{ product.name }}</h1>
+      <p class="lede mt-4 !text-md">{{ product.tagline }}</p>
+      {% if product.review_count %}<a href="#reviews" class="mt-3 inline-flex items-center gap-2 text-sm text-muted min-h-11">{{ stars(product.rating_avg|round|int, 16) }} {{ product.rating_avg }} · {{ product.review_count|plural('review') }}</a>{% endif %}
+
+      <div class="price-row">
+        <span class="price" data-price>{{ (v0.price_cents if v0 else product.from_price_cents)|fmt_money }}</span>
+        <span class="text-faint line-through tabular-nums" data-compare hidden></span>
+        <span class="text-sm text-muted" data-per-unit>per bottle</span>
+        <span class="badge {{ 'badge-danger' if (not v0 or v0.stock <= 0) else ('badge-warning' if v0.stock <= v0.low_stock_threshold else 'badge-success') }} ml-auto whitespace-nowrap" data-stock>{{ 'Sold out' if (not v0 or v0.stock <= 0) else ('Only ' ~ v0.stock ~ ' left' if v0.stock <= v0.low_stock_threshold else 'In stock') }}</span>
       </div>
-    </form>
 
-    <form action="/notify-me" method="post" class="mt-4 panel p-4" data-notify-form data-ajax-form hidden>
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <input type="hidden" name="variant_id" value="" data-notify-variant>
-      <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
-      <label class="label" for="notify-email">Email me when this pack is back</label>
-      <div class="flex gap-2"><input id="notify-email" class="input" type="email" name="email" required placeholder="you@example.com"><button type="submit" class="btn btn-secondary shrink-0">Notify me</button></div>
-      <p class="help" data-form-message aria-live="polite"></p>
-    </form>
+      <form action="/cart/add" method="post" class="mt-6 space-y-6" data-add-form>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div>
+          {{ variant_selector(product) }}
+          <p class="help !mt-2">Prefer a custom size? <a href="/build-your-box" class="link">Build your box</a>: one bottle per drain per month, packed to your count.</p>
+        </div>
+        {% if product.subscriptions.enabled and product.variants %}
+        {# Source: shadcn/ui "radio-group" tiles (MIT); interval + price logic in app.js #}
+        <fieldset data-delivery-selector>
+          <legend class="label">Delivery</legend>
+          <input type="hidden" name="subscribe" value="0" data-subscribe-input>
+          <div class="grid gap-2">
+            <label class="choice">
+              <input type="radio" name="delivery" value="once" checked>
+              <span class="choice-body">
+                <span><span class="block font-semibold">One-time purchase</span><span class="choice-sub">Ships once. Reorder whenever you like.</span></span>
+                <span class="font-display font-bold tabular-nums" data-once-price>{{ v0.price_cents|fmt_money }}</span>
+              </span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="delivery" value="sub">
+              <span class="choice-body">
+                <span><span class="block font-semibold">Subscribe &amp; save <span data-sub-percent>{{ v0.sub_percent }}</span>%</span><span class="choice-sub">A fresh year's supply ships and bills automatically. Cancel any time from your account.</span></span>
+                <span class="font-display font-bold tabular-nums text-accent" data-sub-price>{{ v0.sub_price_cents|fmt_money }}</span>
+              </span>
+            </label>
+          </div>
+          <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-l-2 border-accent pl-4 py-1" data-interval-wrap hidden>
+            {% if product.subscriptions.intervals|length > 1 %}
+            <label class="label !mb-0" for="interval">Deliver every</label>
+            <select id="interval" name="interval" class="input !w-auto !min-h-[2.75rem]" data-interval-select>
+              {% for m in product.subscriptions.intervals %}<option value="{{ m }}">{{ m }} {{ 'month' if m == 1 else 'months' }}</option>{% endfor %}
+            </select>
+            {% else %}
+            {% set only = product.subscriptions.intervals[0] %}
+            <select id="interval" name="interval" class="hidden" data-interval-select aria-hidden="true" tabindex="-1"><option value="{{ only }}" selected>{{ only }}</option></select>
+            <p class="text-sm font-semibold">{{ 'Renews yearly' if only == 12 else 'Renews every ' ~ only ~ (' month' if only == 1 else ' months') }}</p>
+            {% endif %}
+            <p class="text-xs text-muted basis-full" data-interval-hint aria-live="polite"></p>
+          </div>
+        </fieldset>
+        {% endif %}
+        <div class="flex items-end gap-3">
+          <div>
+            <label class="label" for="qty">Quantity</label>
+            <div class="qty">
+              <button type="button" class="icon-btn" data-qty-step="-1" aria-label="Decrease quantity">{{ icon('minus', 16) }}</button>
+              <input id="qty" type="number" name="qty" value="1" min="1" max="50" inputmode="numeric" data-qty-input>
+              <button type="button" class="icon-btn" data-qty-step="1" aria-label="Increase quantity">{{ icon('plus', 16) }}</button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg flex-1" data-add-button data-add-button-main>Add to cart</button>
+        </div>
+      </form>
 
-    <ul class="mt-6 space-y-2 text-sm text-muted">
-      <li class="flex gap-2">{{ icon('package', 16, 'text-accent mt-0.5 shrink-0') }} Ships as an ordinary parcel at the flat rate. <a href="/shipping-and-safety" class="link">Why</a></li>
-      <li class="flex gap-2">{{ icon('truck', 16, 'text-accent mt-0.5 shrink-0') }} {{ settings.flat_shipping_cents|fmt_money }} flat-rate shipping, free from {{ settings.free_shipping_threshold_cents|fmt_money_short }}.</li>
-      <li class="flex gap-2">{{ icon('shield', 16, 'text-accent mt-0.5 shrink-0') }} Stripe-hosted checkout. Card details never touch this server.</li>
-      {% if product.prop65_warning %}<li class="flex gap-2 text-warning">{{ icon('alert', 16, 'mt-0.5 shrink-0') }} {{ product.prop65_warning }}</li>{% endif %}
-    </ul>
+      <form action="/notify-me" method="post" class="mt-4 panel p-4" data-notify-form data-ajax-form hidden>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="variant_id" value="" data-notify-variant>
+        <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
+        <label class="label" for="notify-email">Email me when this pack is back</label>
+        <div class="flex gap-2"><input id="notify-email" class="input" type="email" name="email" required placeholder="you@example.com"><button type="submit" class="btn btn-secondary shrink-0">Notify me</button></div>
+        <p class="help" data-form-message aria-live="polite"></p>
+      </form>
+
+      <ul class="facts">
+        <li>Ships as an ordinary parcel at the flat rate. <a href="/shipping-and-safety" class="link">Why</a></li>
+        <li>{{ settings.flat_shipping_cents|fmt_money }} flat-rate shipping, free from {{ settings.free_shipping_threshold_cents|fmt_money_short }}.</li>
+        <li>Stripe-hosted checkout. Card details never touch this server.</li>
+        {% if product.prop65_warning %}<li class="is-warn">{{ product.prop65_warning }}</li>{% endif %}
+      </ul>
+    </div>
   </div>
 </section>
 
-<section class="section bg-bg-alt border-y border-line-soft">
-  <div class="container-x grid gap-10 lg:grid-cols-[1fr_1.2fr]">
+<section class="section bg-bg-alt border-b border-line-soft">
+  <div class="container-x sec-side">
     <div data-reveal>
       <p class="eyebrow">What the label says</p>
       <h2 class="h2 mt-3">Four lines. Tap each one.</h2>
-      <div class="prose mt-4">{{ product.description|md }}</div>
-      <div class="mt-5 flex flex-wrap gap-2 text-sm">
-        {% if product.sds_available %}<a href="/products/{{ product.slug }}/sds" class="btn btn-secondary btn-sm">{{ icon('file', 14) }} Safety data sheet (PDF)</a>{% else %}<a href="/contact" class="btn btn-secondary btn-sm">SDS not yet published — request it</a>{% endif %}
-        {% if product.label_available %}<a href="/products/{{ product.slug }}/label" class="btn btn-secondary btn-sm">{{ icon('file', 14) }} Label</a>{% endif %}
+      <div class="prose mt-5 !text-base">{{ product.description|md }}</div>
+      <div class="mt-6 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+        {% if product.sds_available %}<a href="/products/{{ product.slug }}/sds" class="arrow-link">Safety data sheet (PDF) {{ icon('arrow', 14) }}</a>{% else %}<a href="/contact" class="arrow-link">SDS not yet published, request it {{ icon('arrow', 14) }}</a>{% endif %}
+        {% if product.label_available %}<a href="/products/{{ product.slug }}/label" class="arrow-link">Label {{ icon('arrow', 14) }}</a>{% endif %}
       </div>
     </div>
     <div data-reveal>{{ label_reader(product, "pd-lbl") }}</div>
@@ -133,27 +137,27 @@
 
 <section class="section" id="packs">
   <div class="container-x">
-    <div class="max-w-2xl" data-reveal>
+    <div class="sec-head" data-reveal>
       <p class="eyebrow">Dose &amp; coverage</p>
-      <h2 class="h2 mt-3">One bottle is one monthly dose for one drain.</h2>
-      <p class="text-muted mt-4">{{ product.dose_text }} — {{ product.net_volume_oz|int }} fl oz ({{ product.net_volume_ml|int }} mL) per bottle. The table multiplies that by the pack.</p>
+      <h2 class="h2">One bottle is one monthly dose for one drain.</h2>
+      <p class="text-muted">{{ product.dose_text }}, {{ product.net_volume_oz|int }} fl oz ({{ product.net_volume_ml|int }} mL) per bottle. Everything below multiplies that by the pack.</p>
     </div>
-    <div class="mt-8" data-reveal>{{ ledger(product, True, csrf_token) }}</div>
-    <div class="mt-10 grid gap-8 lg:grid-cols-2" data-reveal>
+    <div class="mt-10" data-reveal>{{ ledger(product, False, csrf_token) }}</div>
+    <div class="mt-12 sec-side" data-reveal>
       <div>
         <h3 class="h3">Directions</h3>
-        {% if product.directions %}<div class="prose mt-3">{{ product.directions|md }}</div>
-        {% else %}<p class="text-muted mt-3">The label's direction is “dosed for monthly use on any drain”: one bottle per drain, once a month. If the packaging carries further directions, they appear here word for word once they are on file.</p>{% endif %}
+        {% if product.directions %}<div class="prose mt-3 !text-base">{{ product.directions|md }}</div>
+        {% else %}<p class="text-muted mt-3 max-w-md">The label's direction is “dosed for monthly use on any drain”: one bottle per drain, once a month. If the packaging carries further directions, they appear here word for word once they are on file.</p>{% endif %}
       </div>
-      <div>
+      <div class="min-w-0">
         <h3 class="h3">Specifications</h3>
-        <div class="table-wrap mt-3"><table class="table">
-          <tbody>
-          {% for s in product.specs %}<tr><th scope="row" class="!normal-case !tracking-normal !text-sm !text-nav w-40">{{ s.label }}</th><td class="text-muted">{{ s.value }}</td></tr>{% endfor %}
-          {% if product.safe_for_list %}<tr><th scope="row" class="!normal-case !tracking-normal !text-sm !text-nav">Safe for</th><td class="text-muted">{{ product.safe_for_list|join(', ') }}</td></tr>{% endif %}
-          {% if product.not_safe_for_list %}<tr><th scope="row" class="!normal-case !tracking-normal !text-sm !text-nav">Not for</th><td class="text-muted">{{ product.not_safe_for_list|join(', ') }}</td></tr>{% endif %}
-          </tbody>
-        </table></div>
+        <dl class="mt-3 border-t border-line">
+          {% for s in product.specs %}
+          <div class="grid gap-1 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-6 py-3 border-b border-line-soft text-sm"><dt class="text-nav font-medium">{{ s.label }}</dt><dd class="text-muted">{{ s.value }}</dd></div>
+          {% endfor %}
+          {% if product.safe_for_list %}<div class="grid gap-1 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-6 py-3 border-b border-line-soft text-sm"><dt class="text-nav font-medium">Safe for</dt><dd class="text-muted">{{ product.safe_for_list|join(', ') }}</dd></div>{% endif %}
+          {% if product.not_safe_for_list %}<div class="grid gap-1 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-6 py-3 border-b border-line-soft text-sm"><dt class="text-nav font-medium">Not for</dt><dd class="text-muted">{{ product.not_safe_for_list|join(', ') }}</dd></div>{% endif %}
+        </dl>
       </div>
     </div>
   </div>
@@ -161,7 +165,7 @@
 
 {% if product.faqs %}
 <section class="section bg-bg-deep border-y border-line-soft">
-  <div class="container-x grid gap-10 lg:grid-cols-[1fr_1.6fr]">
+  <div class="container-x sec-side">
     <div data-reveal><p class="eyebrow">Straight answers</p><h2 class="h2 mt-3">Questions before ordering.</h2></div>
     <div data-reveal>{{ faq(product.faqs, "pd-faq") }}</div>
   </div>
@@ -171,7 +175,7 @@
 <section class="section" id="reviews">
   <div class="container-x">
     <div data-reveal><p class="eyebrow">Verified buyers</p><h2 class="h2 mt-3">Reviews</h2></div>
-    <div class="mt-8" data-reveal>{{ review_block(product, reviews, breakdown, csrf_token, customer) }}</div>
+    <div class="mt-10" data-reveal>{{ review_block(product, reviews, breakdown, csrf_token, customer) }}</div>
   </div>
 </section>
 

@@ -3,18 +3,18 @@
 <div class="overlay" data-overlay-for="mobile-nav" hidden></div>
 <aside id="mobile-nav" class="sheet sheet-left" role="dialog" aria-modal="true" aria-label="Menu" data-sheet hidden>
   <div class="flex items-center justify-between px-5 h-[var(--header-h)] border-b border-line-soft">
-    <span class="font-display font-extrabold tracking-[-0.04em] text-xl">Quick Drain <span class="eyebrow !text-[0.75rem]">Products</span></span>
+    <span class="wordmark">Quick Drain <small>Products</small></span>
     <button type="button" class="icon-btn" data-close-sheet aria-label="Close menu">{{ icon('x', 22) }}</button>
   </div>
-  <nav class="flex flex-col p-3 gap-1" aria-label="Mobile">
-    <a href="/products/drain-shot" class="nav-link text-base py-3">Drain Shot</a>
-    <a href="/products" class="nav-link text-base py-3">All products</a>
-    <a href="/blog" class="nav-link text-base py-3">Notes</a>
-    <a href="/shipping-and-safety" class="nav-link text-base py-3">Shipping &amp; safety</a>
+  <nav class="flex flex-col px-5 pt-2" aria-label="Mobile">
+    <a href="/products/drain-shot" class="nav-link text-base py-3" {% if path.startswith('/products') %}aria-current="page"{% endif %}>Drain Shot</a>
+    <a href="/build-your-box" class="nav-link text-base py-3" {% if path.startswith('/build-your-box') %}aria-current="page"{% endif %}>Build your box</a>
+    <a href="/blog" class="nav-link text-base py-3" {% if path.startswith('/blog') %}aria-current="page"{% endif %}>Notes</a>
+    <a href="/shipping-and-safety" class="nav-link text-base py-3" {% if path == '/shipping-and-safety' %}aria-current="page"{% endif %}>Shipping &amp; safety</a>
     <a href="/orders/lookup" class="nav-link text-base py-3">Find your order</a>
     <a href="{{ '/account' if customer else '/account/login' }}" class="nav-link text-base py-3">{{ 'Your account' if customer else 'Sign in' }}</a>
-    <div class="hairline my-2"></div>
-    <a href="{{ settings.booking_url }}" class="btn btn-primary mx-2" rel="noopener">Book a diagnostic visit</a>
-    <a href="tel:{{ settings.phone_tel }}" class="btn btn-secondary mx-2 mt-2">{{ icon('phone', 16) }} {{ settings.phone_display }}</a>
+    <p class="footer-k mt-8 mb-2">Drain backing up now</p>
+    <a href="{{ settings.booking_url }}" class="btn btn-primary" rel="noopener">Book a diagnostic visit</a>
+    <a href="tel:{{ settings.phone_tel }}" class="btn btn-secondary mt-2">{{ icon('phone', 16) }} {{ settings.phone_display }}</a>
   </nav>
 </aside>

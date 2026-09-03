@@ -114,6 +114,27 @@ def media_upload(rel: str):
     return FileResponse(path, headers={"Cache-Control": "public, max-age=604800"})
 
 
+@router.get("/build-your-box")
+def build_your_box(request: Request, conn: sqlite3.Connection = Depends(get_db)):
+    """Count the drains in a house, get a yearly box. One bottle is one drain-month,
+    so a 12-pack is one drain-year and the cart line is the 12-pack × drains."""
+    product = catalog.get_product(conn, "drain-shot")
+    if not product or not product["variants"]:
+        raise HTTPException(404)
+    # The year box is the 12-pack; fall back to the first active pack if the catalog changes.
+    variant = next((v for v in product["variants"] if int(v.get("units_per_pack") or 0) == 12), product["variants"][0])
+    units = max(int(variant.get("units_per_pack") or 12), 1)
+    return render(request, "pages/box_builder.html", {
+        "product": product,
+        "variant": variant,
+        "per_bottle_cents": round(variant["price_cents"] / units),
+        "sub_percent": variant["sub_percent"],
+        "jsonld": [organization_ld(), breadcrumb_ld([("Home", "/"), ("Build your box", "/build-your-box")])],
+        "meta_title": f"Build your box — a year of Drain Shot sized to your house | {settings.app_name}",
+        "meta_description": "Count the drains in your home and get a custom yearly box of Drain Shot: one bottle per drain per month, twelve months, one delivery. Subscribe and it renews every year.",
+    }, conn=conn)
+
+
 @router.get("/shipping-and-safety")
 def shipping_and_safety(request: Request, conn: sqlite3.Connection = Depends(get_db)):
     products = catalog.list_products(conn)

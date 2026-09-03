@@ -21,14 +21,15 @@
       <p class="text-muted mt-2 whitespace-pre-wrap">{{ r.body }}</p>
       <p class="text-xs text-faint mt-3">{{ r.email or 'no email' }}{% if r.order_id %} · <a href="/admin/orders/{{ r.order_id }}" class="link">order</a>{% endif %}{% if r.customer_id %} · <a href="/admin/customers/{{ r.customer_id }}" class="link">customer</a>{% endif %} · {{ r.ip }}</p>
     </div>
-    <div class="flex lg:flex-col gap-2 flex-wrap">
+    {# Phones: buttons share one row (wrapping if needed); desktop: a column beside the review. #}
+    <div class="flex flex-wrap gap-2 lg:flex-col lg:flex-nowrap lg:w-36">
       {% if r.status != 'approved' %}
-      <form method="post" action="/admin/reviews/{{ r.id }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="approve"><button type="submit" class="btn btn-primary btn-sm w-full">Approve</button></form>
+      <form method="post" action="/admin/reviews/{{ r.id }}" class="flex-1 lg:flex-none"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="approve"><button type="submit" class="btn btn-primary w-full">Approve</button></form>
       {% endif %}
       {% if r.status != 'rejected' %}
-      <form method="post" action="/admin/reviews/{{ r.id }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="reject"><button type="submit" class="btn btn-secondary btn-sm w-full">Reject</button></form>
+      <form method="post" action="/admin/reviews/{{ r.id }}" class="flex-1 lg:flex-none"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="reject"><button type="submit" class="btn btn-secondary w-full">Reject</button></form>
       {% endif %}
-      <form method="post" action="/admin/reviews/{{ r.id }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="delete"><button type="submit" class="btn btn-danger btn-sm w-full">Delete</button></form>
+      <form method="post" action="/admin/reviews/{{ r.id }}" class="flex-1 lg:flex-none"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="delete"><button type="submit" class="btn btn-danger w-full">Delete</button></form>
     </div>
   </article>
   {% else %}

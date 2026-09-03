@@ -23,15 +23,16 @@
       <p class="text-muted mt-2 whitespace-pre-wrap">{{ m.body }}</p>
       <p class="text-xs text-faint mt-3 font-mono">{{ m.ip }}</p>
     </div>
-    <div class="flex lg:flex-col gap-2 flex-wrap">
+    {# Phones: buttons share one row (wrapping if needed); desktop: a column beside the message. #}
+    <div class="flex flex-wrap gap-2 lg:flex-col lg:flex-nowrap lg:w-40">
       {% if m.status != 'replied' %}
-      <form method="post" action="/admin/contact/{{ m.id }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="status" value="replied"><button type="submit" class="btn btn-primary btn-sm w-full">Mark replied</button></form>
+      <form method="post" action="/admin/contact/{{ m.id }}" class="flex-1 lg:flex-none"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="status" value="replied"><button type="submit" class="btn btn-primary w-full">Mark replied</button></form>
       {% endif %}
       {% if m.status != 'closed' %}
-      <form method="post" action="/admin/contact/{{ m.id }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="status" value="closed"><button type="submit" class="btn btn-secondary btn-sm w-full">Close</button></form>
+      <form method="post" action="/admin/contact/{{ m.id }}" class="flex-1 lg:flex-none"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="status" value="closed"><button type="submit" class="btn btn-secondary w-full">Close</button></form>
       {% endif %}
       {% if m.status != 'new' %}
-      <form method="post" action="/admin/contact/{{ m.id }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="status" value="new"><button type="submit" class="btn btn-ghost btn-sm w-full">Reopen</button></form>
+      <form method="post" action="/admin/contact/{{ m.id }}" class="flex-1 lg:flex-none"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="status" value="new"><button type="submit" class="btn btn-ghost border-line-soft w-full">Reopen</button></form>
       {% endif %}
     </div>
   </article>

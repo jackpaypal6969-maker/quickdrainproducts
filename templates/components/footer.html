@@ -1,42 +1,61 @@
 {% from "components/icons.html" import icon %}
-<footer class="mt-16 border-t border-line-soft bg-bg-deep">
-  <div class="container-x py-12 grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
-    <div>
-      <p class="font-display font-extrabold tracking-[-0.04em] text-xl">Quick Drain <span class="eyebrow !text-[0.75rem]">Products</span></p>
-      <p class="mt-3 text-sm text-muted max-w-xs">The retail arm of Quick Drain, Long Island's diagnostics-first sewer, drain, septic and wastewater service. Maintenance products, sold with the same restraint.</p>
-      <p class="mt-3 text-sm flex flex-wrap items-center gap-x-3"><a href="tel:{{ settings.phone_tel }}" class="link tap-inline">{{ settings.phone_display }}</a> <a href="{{ settings.parent_site_url }}" class="link tap-inline" rel="noopener">quickdrainny.com</a></p>
+<footer class="footer">
+  <div class="container-x">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <p class="wordmark">Quick Drain <small>Products</small></p>
+        <p class="mt-4 text-sm text-muted max-w-xs">The retail arm of Quick Drain, Long Island's diagnostics-first sewer, drain, septic and wastewater service. One maintenance product, sold with the same restraint.</p>
+        <p class="mt-4 text-sm flex flex-wrap items-center gap-x-4"><a href="tel:{{ settings.phone_tel }}" class="tap-inline text-ink hover:text-accent">{{ settings.phone_display }}</a> <a href="{{ settings.parent_site_url }}" class="tap-inline text-ink hover:text-accent" rel="noopener">quickdrainny.com</a></p>
+      </div>
+      <div class="footer-col">
+        <p class="footer-k">Shop</p>
+        <ul>
+          <li><a href="/products/drain-shot">Drain Shot</a></li>
+          <li><a href="/build-your-box">Build your box</a></li>
+          <li><a href="/products">All products</a></li>
+          <li><a href="/shipping-and-safety">Shipping &amp; safety</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <p class="footer-k">Help</p>
+        <ul>
+          <li><a href="/orders/lookup">Find your order</a></li>
+          <li><a href="/contact">Contact</a></li>
+          <li><a href="{{ '/account' if customer else '/account/login' }}">{{ 'Your account' if customer else 'Sign in' }}</a></li>
+          <li><a href="{{ settings.booking_url }}" rel="noopener">Book a service visit</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <p class="footer-k">Legal</p>
+        <ul>
+          <li><a href="/legal/terms">Terms of sale</a></li>
+          <li><a href="/legal/privacy">Privacy</a></li>
+          <li><a href="/legal/refunds">Refunds &amp; returns</a></li>
+          <li><a href="/legal/shipping">Shipping policy</a></li>
+          <li><a href="/legal/accessibility">Accessibility</a></li>
+        </ul>
+      </div>
     </div>
-    <div>
-      <p class="eyebrow mb-3">Shop</p>
-      <ul class="text-sm text-nav">
-        <li><a href="/products/drain-shot" class="tap-row">Drain Shot</a></li>
-        <li><a href="/products" class="tap-row">All products</a></li>
-        <li><a href="/shipping-and-safety" class="tap-row">Shipping &amp; safety</a></li>
-        <li><a href="/blog" class="tap-row">Drain maintenance notes</a></li>
-      </ul>
+    {% if site.get('newsletter_enabled', '1') == '1' %}
+    <div class="footer-news">
+      <div>
+        <p class="footer-k">Notes by email</p>
+        <p class="text-sm text-muted max-w-md">A welcome code for your first order, then the occasional plain-English note on drain maintenance. Unsubscribe in one click.</p>
+      </div>
+      <form action="/newsletter" method="post" data-ajax-form>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="source" value="footer">
+        <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
+        <label class="sr-only" for="footer-nl-email">Email</label>
+        <input id="footer-nl-email" class="input" type="email" name="email" required autocomplete="email" inputmode="email" placeholder="you@example.com">
+        <button type="submit" class="btn btn-secondary shrink-0">Subscribe</button>
+        <p class="sr-only" data-form-message aria-live="polite"></p>
+      </form>
     </div>
-    <div>
-      <p class="eyebrow mb-3">Help</p>
-      <ul class="text-sm text-nav">
-        <li><a href="/orders/lookup" class="tap-row">Find your order</a></li>
-        <li><a href="/contact" class="tap-row">Contact</a></li>
-        <li><a href="{{ '/account' if customer else '/account/login' }}" class="tap-row">{{ 'Your account' if customer else 'Sign in' }}</a></li>
-        <li><a href="{{ settings.booking_url }}" class="tap-row" rel="noopener">Book a service visit</a></li>
-      </ul>
+    {% endif %}
+    <div class="footer-fine">
+      <p>© {{ current_year() }} Quick Drain. Every product claim on this site comes from the product label or its safety data sheet.</p>
+      <p>Stripe-hosted checkout. Cards never touch this server.</p>
     </div>
-    <div>
-      <p class="eyebrow mb-3">Legal</p>
-      <ul class="text-sm text-nav">
-        <li><a href="/legal/terms" class="tap-row">Terms of sale</a></li>
-        <li><a href="/legal/privacy" class="tap-row">Privacy</a></li>
-        <li><a href="/legal/refunds" class="tap-row">Refunds &amp; returns</a></li>
-        <li><a href="/legal/shipping" class="tap-row">Shipping policy</a></li>
-        <li><a href="/legal/accessibility" class="tap-row">Accessibility</a></li>
-      </ul>
-    </div>
-  </div>
-  <div class="container-x pb-8 flex flex-col sm:flex-row gap-2 justify-between text-xs text-faint">
-    <p>© {{ current_year() }} Quick Drain. Every product claim on this site comes from the product label or its safety data sheet.</p>
-    <p>Stripe-hosted checkout · Cards never touch this server</p>
   </div>
 </footer>

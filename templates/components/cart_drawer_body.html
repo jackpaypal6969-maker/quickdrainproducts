@@ -22,7 +22,7 @@
           <span class="w-6 text-center text-sm font-bold tabular-nums" aria-live="polite">{{ it.qty }}</span>
           <button type="button" class="icon-btn !w-10 !h-10" data-cart-qty="{{ it.id }}" data-delta="1" aria-label="Increase quantity" {% if it.qty >= it.stock %}disabled{% endif %}>{{ icon('plus', 16) }}</button>
         </div>
-        <span class="font-bold tabular-nums">{{ it.line_total_cents|fmt_money }}</span>
+        <span class="font-bold tabular-nums shrink-0 whitespace-nowrap">{{ it.line_total_cents|fmt_money }}</span>
       </div>
       {% if it.short_stock %}<p class="text-xs text-danger mt-1">Only {{ it.stock }} left — quantity will be reduced at checkout.</p>{% endif %}
     </div>

@@ -30,7 +30,7 @@ const PAGES = [
   // cart with a subscription line, then the drawer
   await page.goto(base + '/products/drain-shot', { waitUntil: 'networkidle' });
   const sub = await page.$('input[name=delivery][value=sub]');
-  if (sub) { await sub.click(); await page.click('input[name=variant_id][value="2"]'); }
+  if (sub) { await sub.click(); }
   await page.click('[data-add-button-main]');
   await page.waitForTimeout(900);
   await page.screenshot({ path: path.join(out, 'cart-drawer-390.png') });
