@@ -74,6 +74,7 @@
       <span class="font-display font-extrabold tracking-[-0.04em] text-xl leading-none">Quick Drain</span>
       <span class="eyebrow !text-[0.75rem]">Admin</span>
     </p>
+    {% if settings.admin_2fa == 'off' %}<div class="alert alert-warn mb-4" role="alert"><strong>Admin 2FA is off.</strong> Sign-in is password only. Set <code>ADMIN_2FA=full</code> in .env and restart before real traffic.</div>{% endif %}
     {% if flash %}<div class="mb-4">{{ flashbox(flash) }}</div>{% endif %}
     <div class="card card-pad">
       {{ self.content() }}
@@ -110,6 +111,7 @@
     </header>
 
     <main id="main" tabindex="-1" class="w-full max-w-7xl min-w-0 px-4 sm:px-6 lg:px-10 py-6 lg:py-10">
+      {% if settings.admin_2fa == 'off' %}<div class="alert alert-warn mb-4" role="alert"><strong>Admin 2FA is off.</strong> Sign-in is password only. Set <code>ADMIN_2FA=full</code> in .env and restart before real traffic.</div>{% endif %}
       {% if flash %}<div class="mb-6">{{ flashbox(flash) }}</div>{% endif %}
       {% block content %}{% endblock %}
     </main>

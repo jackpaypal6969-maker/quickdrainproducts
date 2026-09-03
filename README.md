@@ -55,7 +55,7 @@ Then open http://127.0.0.1:8006 (docs at /docs while `ENV` is not `production`).
 | `ADMIN_BASIC_AUTH_USER` | Optional HTTP basic auth in front of /admin (phase 1 lock) |
 | `ADMIN_BASIC_AUTH_PASSWORD` | Password for the above |
 | `ADMIN_ALLOW_IPS` | Optional comma-separated IP allow-list for /admin |
-| `ADMIN_2FA_REQUIRED` | Keep `on`; every admin enrols TOTP + email code |
+| `ADMIN_2FA` | `full` (password + authenticator + emailed code, default), `authenticator` (no emailed code), or `off` (password only; first-setup convenience, final_check fails while set) |
 | `STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (test until told otherwise) |
 | `STRIPE_SECRET_KEY` | Stripe secret key; `sk_live_` is refused unless `STRIPE_LIVE_OK=on` |
 | `STRIPE_WEBHOOK_SECRET` | Signing secret of the `/webhooks/stripe` endpoint |

@@ -58,7 +58,16 @@ class Settings:
     admin_basic_auth_user: str = field(default_factory=lambda: _str("ADMIN_BASIC_AUTH_USER"))
     admin_basic_auth_password: str = field(default_factory=lambda: _str("ADMIN_BASIC_AUTH_PASSWORD"))
     admin_allow_ips: tuple[str, ...] = field(default_factory=lambda: tuple(p.strip() for p in _str("ADMIN_ALLOW_IPS").split(",") if p.strip()))
-    admin_2fa_required: bool = field(default_factory=lambda: _flag("ADMIN_2FA_REQUIRED", "on"))
+    admin_2fa: str = field(default_factory=lambda: (_str("ADMIN_2FA") or ("full" if _flag("ADMIN_2FA_REQUIRED", "on") else "authenticator")).lower())
+
+    @property
+    def admin_2fa_required(self) -> bool:
+        """Email code required after the authenticator (the 'full' chain)."""
+        return self.admin_2fa == "full"
+
+    @property
+    def admin_totp_required(self) -> bool:
+        return self.admin_2fa in ("full", "authenticator")
 
     stripe_publishable_key: str = field(default_factory=lambda: _str("STRIPE_PUBLISHABLE_KEY"))
     stripe_secret_key: str = field(default_factory=lambda: _str("STRIPE_SECRET_KEY"))
@@ -121,6 +130,8 @@ class Settings:
             problems.append("RESEND_API_KEY is empty and EMAIL_DRY_RUN is off: no email could be sent")
         if self.is_production and "@" not in self.email_from:
             problems.append("EMAIL_FROM must be a sender address like 'Quick Drain Products <orders@your-domain>'")
+        if self.admin_2fa not in ("full", "authenticator", "off"):
+            problems.append("ADMIN_2FA must be full, authenticator or off")
         try:
             from zoneinfo import ZoneInfo
             ZoneInfo(self.tz)

@@ -28,17 +28,26 @@ def assert_redirect(resp, location: str):
     assert resp.headers["location"] == location
 
 
-# ---------------------------------------------------------------- gate
-def test_anonymous_admin_redirects_to_login(client):
+def signed_out(client) -> bool:
+    """/admin/ shows the sign-in form (200) until every required factor is done."""
     resp = client.get("/admin/")
-    assert resp.status_code == 302
-    assert resp.headers["location"] == "/admin/login"
+    return resp.status_code == 200 and 'name="password"' in resp.text and "Signed in as" not in resp.text
+
+
+def signed_in(client) -> bool:
+    resp = client.get("/admin/")
+    return resp.status_code == 200 and "Signed in as" in resp.text and 'name="password"' not in resp.text
+
+
+# ---------------------------------------------------------------- gate
+def test_anonymous_admin_shows_login_form_at_admin(client):
+    assert signed_out(client)
 
 
 def test_anonymous_admin_subpages_redirect_to_login(client):
     for path in ("/admin/orders", "/admin/products", "/admin/settings"):
         resp = client.get(path)
-        assert resp.status_code == 302 and resp.headers["location"] == "/admin/login", path
+        assert resp.status_code == 302 and resp.headers["location"] == "/admin/", path
 
 
 # ------------------------------------------------------------ password
@@ -51,7 +60,7 @@ def test_five_wrong_passwords_lock_the_account(client, conn):
     assert row["locked_until"] is not None
     # The right password is refused while locked, and the attempt is logged as such.
     assert_redirect(admin_login(client, admin), "/admin/login")
-    assert client.get("/admin/").status_code == 302
+    assert signed_out(client)
     stages = [r["stage"] for r in conn.execute("SELECT stage FROM admin_login_attempts WHERE username = ? ORDER BY id", (admin["username"],))]
     assert stages == ["password"] * 5 + ["locked"]
 
@@ -60,7 +69,7 @@ def test_correct_password_sends_new_admin_to_totp_setup(client, conn):
     admin = create_admin(conn)
     assert_redirect(admin_login(client, admin), "/admin/2fa/setup")
     # Password alone opens nothing.
-    assert client.get("/admin/").status_code == 302
+    assert signed_out(client)
     ok = conn.execute("SELECT success FROM admin_login_attempts WHERE username = ? ORDER BY id DESC LIMIT 1", (admin["username"],)).fetchone()
     assert ok["success"] == 1
 
@@ -85,7 +94,7 @@ def test_totp_enrolment_shows_backup_codes_and_enables_totp(client, conn):
     codes = set(BACKUP_CODE_RE.findall(resp.text))
     assert len(codes) == 10
     # Enrolment is not a login: the email step is still pending.
-    assert client.get("/admin/").status_code == 302
+    assert signed_out(client)
 
 
 def test_totp_setup_with_wrong_code_does_not_enable(client, conn):
@@ -107,10 +116,10 @@ def test_totp_code_then_wrong_email_code_keeps_admin_closed(client, conn):
     # An emailed code was issued (dry run) and stored hashed.
     row = admin_row(conn, admin["id"])
     assert row["email_otp_hash"] and row["email_otp_expires_at"]
-    assert client.get("/admin/").status_code == 302
+    assert signed_out(client)
 
     assert_redirect(client.post("/admin/2fa/email", data={"code": "000000", "csrf_token": token}), "/admin/2fa/email")
-    assert client.get("/admin/").status_code == 302
+    assert signed_out(client)
     row = admin_row(conn, admin["id"])
     assert row["failed_attempts"] == 1
     last = conn.execute("SELECT stage, success FROM admin_login_attempts WHERE username = ? ORDER BY id DESC LIMIT 1", (admin["username"],)).fetchone()
@@ -132,9 +141,8 @@ def test_correct_email_code_completes_login(client, conn):
     assert row["email_otp_hash"] == "" and row["failed_attempts"] == 0 and row["last_login_at"]
     audit = conn.execute("SELECT after_json FROM audit_log WHERE action = 'admin.login' AND actor_id = ? ORDER BY id DESC LIMIT 1", (admin["id"],)).fetchone()
     assert json.loads(audit["after_json"])["factors"] == "password+totp+email"
-    # The gate is open: /admin/ no longer bounces to the login page.
-    resp = client.get("/admin/")
-    assert not (resp.status_code in (302, 303) and resp.headers.get("location") == "/admin/login")
+    # The gate is open: /admin/ renders the dashboard, not the sign-in form.
+    assert signed_in(client)
 
 
 def test_admin_dashboard_renders_after_full_login(client, conn):
@@ -145,7 +153,7 @@ def test_admin_dashboard_renders_after_full_login(client, conn):
     assert_redirect(client.post("/admin/2fa", data={"code": pyotp.TOTP(secret).now(), "csrf_token": token}), "/admin/2fa/email")
     conn.execute("UPDATE admin_users SET email_otp_hash = ?, email_otp_expires_at = ? WHERE id = ?", (hash_token("135791"), iso(utcnow() + timedelta(minutes=5)), admin["id"]))
     assert_redirect(client.post("/admin/2fa/email", data={"code": "135791", "csrf_token": token}), "/admin/")
-    assert client.get("/admin/").status_code == 200
+    assert signed_in(client)
 
 
 def test_expired_email_code_is_refused(client, conn):
@@ -156,7 +164,7 @@ def test_expired_email_code_is_refused(client, conn):
     assert_redirect(client.post("/admin/2fa", data={"code": pyotp.TOTP(secret).now(), "csrf_token": token}), "/admin/2fa/email")
     conn.execute("UPDATE admin_users SET email_otp_hash = ?, email_otp_expires_at = ? WHERE id = ?", (hash_token("999999"), iso(utcnow() - timedelta(minutes=1)), admin["id"]))
     assert_redirect(client.post("/admin/2fa/email", data={"code": "999999", "csrf_token": token}), "/admin/2fa/email")
-    assert client.get("/admin/").status_code == 302
+    assert signed_out(client)
 
 
 # ------------------------------------------------------------ backup code
@@ -169,7 +177,7 @@ def test_backup_code_is_accepted_in_place_of_totp_on_fresh_login(conn):
         token = get_csrf(fresh)
         assert_redirect(fresh.post("/admin/2fa", data={"code": codes[0], "csrf_token": token}), "/admin/2fa/email")
         # Email step still pending, so the admin stays closed.
-        assert fresh.get("/admin/").status_code == 302
+        assert signed_out(fresh)
 
     row = admin_row(conn, admin["id"])
     remaining = json.loads(row["backup_codes"])

@@ -118,8 +118,13 @@ check("docs hidden", docs_hidden)
 
 # --- admin 2FA ------------------------------------------------------------
 def admin_2fa():
-    if not flag("ADMIN_2FA_REQUIRED", "on"):
-        line("FAIL", "ADMIN_2FA_REQUIRED is off")
+    mode = (os.environ.get("ADMIN_2FA") or ("full" if flag("ADMIN_2FA_REQUIRED", "on") else "authenticator")).lower()
+    if mode == "off":
+        line("FAIL", "ADMIN_2FA=off: admin sign-in is password only — set ADMIN_2FA=full before real traffic")
+        return
+    if mode == "authenticator":
+        line("WARN", "ADMIN_2FA=authenticator: no emailed second code (set ADMIN_2FA=full once Resend is connected)")
+    if False:
         return
     if conn is None:
         raise RuntimeError("no database connection")

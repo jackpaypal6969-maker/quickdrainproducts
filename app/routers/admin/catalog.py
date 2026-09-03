@@ -24,8 +24,8 @@ def _slugify(value: str) -> str:
     return s[:80] or "product"
 
 
-@router.get("/")
-def dashboard(request: Request, conn: sqlite3.Connection = Depends(get_db), admin: dict = Depends(require_admin)):
+def dashboard(request: Request, conn: sqlite3.Connection, admin: dict):
+    """Rendered by admin/auth.py's admin_home once the admin is authenticated."""
     stats = {
         "revenue_30d": one(conn, "SELECT COALESCE(SUM(total_cents - refunded_cents),0) AS c FROM orders WHERE created_at >= datetime('now','-30 days') AND status != 'canceled'")["c"],
         "orders_30d": one(conn, "SELECT COUNT(*) AS n FROM orders WHERE created_at >= datetime('now','-30 days')")["n"],

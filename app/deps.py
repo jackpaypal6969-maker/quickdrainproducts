@@ -64,7 +64,7 @@ def current_admin(request: Request, conn: sqlite3.Connection = Depends(get_db)) 
 
 def require_admin(request: Request, admin: dict | None = Depends(current_admin)) -> dict:
     if not admin:
-        raise HTTPException(status_code=302, headers={"Location": "/admin/login"})
+        raise HTTPException(status_code=302, headers={"Location": "/admin/"})
     return admin
 
 

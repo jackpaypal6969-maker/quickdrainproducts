@@ -11,7 +11,8 @@ from fastapi import APIRouter, Depends, Form, Request
 
 from ...config import settings
 from ...db import one, transaction
-from ...deps import csrf_protect, flash, get_db, ip, redirect, render
+from ...deps import csrf_protect, current_admin, flash, get_db, ip, redirect, render
+from .catalog import dashboard
 from ...security import (check_rate_limit, consume_backup_code, iso, lockout_remaining, new_backup_codes, new_email_otp,
                          new_totp_secret, record_admin_failure, record_admin_success, totp_uri, verify_email_otp, verify_password,
                          verify_totp)
@@ -49,6 +50,16 @@ def login_form(request: Request, conn: sqlite3.Connection = Depends(get_db)):
     return render(request, "admin/login.html", {"meta_title": "Admin sign in", "no_index": True}, conn=conn)
 
 
+@router.get("/")
+def admin_home(request: Request, conn: sqlite3.Connection = Depends(get_db)):
+    """/admin is the one address to remember: the dashboard when signed in,
+    the sign-in form (not a redirect) when not."""
+    admin = current_admin(request, conn)
+    if not admin:
+        return render(request, "admin/login.html", {"meta_title": "Admin sign in", "no_index": True}, conn=conn)
+    return dashboard(request, conn, admin)
+
+
 @router.post("/login")
 def login(request: Request, username: str = Form(""), password: str = Form(""), conn: sqlite3.Connection = Depends(get_db)):
     _reset_admin_session(request)
@@ -70,6 +81,14 @@ def login(request: Request, username: str = Form(""), password: str = Form(""), 
         _attempt(conn, request, username, True, "password")
     request.state.session["aid"] = row["id"]
     request.state.session["a_at"] = iso()
+    if not settings.admin_totp_required:
+        # ADMIN_2FA=off: password only. Loud in the admin and in final_check; not for real traffic.
+        with transaction(conn):
+            record_admin_success(conn, row["id"])
+            audit.log(conn, "admin.login", actor_type="admin", actor_id=row["id"], actor_name=row["username"], ip=ip(request), after={"factors": "password"})
+        request.state.session["a_totp"] = True
+        request.state.session["a2"] = True
+        return redirect("/admin/")
     if not row["totp_enabled"]:
         return redirect("/admin/2fa/setup")
     return redirect("/admin/2fa")
