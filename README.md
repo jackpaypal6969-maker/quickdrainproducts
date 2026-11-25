@@ -280,6 +280,14 @@ curl -fsSL https://raw.githubusercontent.com/jackpaypal6969-maker/quickdrainprod
 
 It clones into `/opt/quick-drain`, writes a first `.env` (paths, `SECRET_KEY`, `BASE_URL=http://<vps-ip>:8086`, `EMAIL_DRY_RUN=on`), and runs `deploy.sh`. Re-running it pulls the latest code and keeps the existing `.env`. Once a domain and TLS exist, pass the URL instead of the IP: `bash -s -- https://shop.your-domain 443` and set `COOKIE_SECURE=on` in `.env`.
 
+### Remove it again
+
+```
+curl -fsSL https://raw.githubusercontent.com/jackpaypal6969-maker/quickdrainproducts/main/deploy/uninstall.sh | bash
+```
+
+`deploy/uninstall.sh` removes only what the install created (the `/opt/quick-drain` checkout with its database and uploads, the `quick-drain` systemd unit, the `zz-quick-drain` nginx site, the cron file, the fail2ban jail, the ufw rule for `PUBLIC_PORT`, `/var/backups/quick-drain` and the `quickdrain` user). nginx and fail2ban are reloaded, never restarted; packages and other sites are untouched. One archive of `.env`, the database and uploads is written to `/root/quick-drain-final-<date>.tar.gz` first, so delete that too if nothing should remain.
+
 ## Subscribe-and-save
 
 Customers can choose **one-time** or **subscribe** on the product page and pick a delivery interval. The admin controls it under **Settings**:
